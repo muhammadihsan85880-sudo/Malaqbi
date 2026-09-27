@@ -1,2 +1,0 @@
-# Malaqbi
-Web
