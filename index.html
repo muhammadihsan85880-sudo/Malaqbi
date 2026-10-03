@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MALAQBI</title>
+<style>
+  @font-face { font-family:'system'; src:local('system'); }
+
+  :root{
+    --violet-deep:#123524;
+    --violet-mid:#1f7a4d;
+    --violet-soft:#59b686;
+    --black:#0a0d0b;
+    --black-soft:#161e19;
+    --gold:#c9a227;
+    --gold-soft:#e9d38a;
+    --bg:#f4f6f4;
+    --card:#ffffff;
+    --ink:#10201a;
+    --ink-soft:#5c6b62;
+    --line:#dfe5e1;
+    --ok:#1f7a4d;
+    --warn:#c98a1c;
+    --danger:#c0405a;
+    --dispen:#7c4dc9;
+    --radius-lg:18px;
+    --radius-md:12px;
+    --radius-sm:8px;
+    --shadow:0 10px 30px -14px rgba(8,12,10,.4);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+  }
+  h1,h2,h3,h4,.brand{
+    font-family:"Poppins","Inter",system-ui,sans-serif;
+  }
+
+  /* ---------- ornamental motif ---------- */
+  .lotus-row{
+    display:flex; gap:6px; opacity:.55;
+  }
+  .lotus{ width:10px; height:10px; }
+
+  /* ---------- LOGIN: dua halaman buku register terbuka — tema hijau elegan ---------- */
+  #loginScreen{
+    --lgn-ink:#eef4ef;
+    --lgn-mute:#a9c2b3;
+    --lgn-green:#1f7a4d;
+    --lgn-green-hi:#2f9463;
+    --lgn-green-soft:#8fd8ac;
+    --lgn-green-deep:#163c29;
+    --lgn-gold:#c9a227;
+    --lgn-gold-soft:#e9d38a;
+    --lgn-paper:#152c21;
+    --lgn-paper-hi:#1d3a2c;
+    --lgn-rule:rgba(143,216,172,.09);
+    --lgn-line:#33513f;
+    --lgn-margin:rgba(143,216,172,.38);
+    --lgn-mark:rgba(143,216,172,.42);
+    --lgn-serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+    min-height:100vh;
+    display:grid; place-items:center;
+    padding:clamp(14px,4vw,48px);
+    background:
+      radial-gradient(ellipse 75% 60% at 50% 0%, rgba(122,206,158,.35), transparent 70%),
+      radial-gradient(ellipse 65% 55% at 50% 110%, rgba(31,122,77,.35), transparent 70%),
+      linear-gradient(160deg, #1e5138 0%, #143a28 55%, #0e2a1c 100%);
+    color:var(--lgn-ink);
+    color-scheme:dark;
+    font-family:"Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+  }
+  .lgn-book{
+    position:relative; width:min(1060px,100%); min-height:min(620px,calc(100vh - 32px));
+    display:grid; grid-template-columns:1fr 1fr;
+    padding:10px; border-radius:22px;
+    background:linear-gradient(160deg,#3aa06a 0%,#1f7a4d 45%,#163c29 100%);
+    box-shadow:0 0 0 1px rgba(201,162,39,.35), 0 1px 0 rgba(233,211,138,.16) inset, 0 50px 70px -36px #000, 0 0 90px -30px rgba(201,162,39,.28);
+  }
+  .lgn-book::before{ /* bayangan lipatan di tengah buku */
+    content:""; position:absolute; z-index:2; top:10px; bottom:10px; left:50%; width:64px; transform:translateX(-50%);
+    background:linear-gradient(90deg,transparent,rgba(0,0,0,.22) 36%,rgba(0,0,0,.50) 50%,rgba(22,60,41,.14) 60%,rgba(22,60,41,.05) 72%,transparent);
+    pointer-events:none;
+  }
+  .lgn-hero, .lgn-side{
+    position:relative; display:flex; min-width:0;
+    background-color:var(--lgn-paper);
+  }
+  /* halaman kiri: identitas */
+  .lgn-hero{
+    order:1; flex-direction:column; align-items:flex-start; justify-content:center;
+    padding:clamp(30px,4.4vw,56px) clamp(30px,4.4vw,56px) clamp(30px,4.4vw,56px) clamp(34px,5vw,64px);
+    border-radius:14px 0 0 14px; color:var(--lgn-ink);
+  }
+  .lgn-hero-logo{ width:clamp(170px,18vw,225px); margin:0 0 30px; display:block; }
+  .lgn-hero-logo img, .lgn-logo img{
+    width:100%; height:auto; display:block;
+    filter:brightness(1.4) saturate(.92) drop-shadow(0 0 24px rgba(201,162,39,.20)); /* terangkan logo hijau tua di latar gelap dengan kesan emas */
+  }
+  .lgn-hero h1{
+    position:relative;
+    margin:0; max-width:17ch; text-wrap:balance;
+    font-family:var(--lgn-serif); font-weight:700; letter-spacing:-.01em;
+    font-size:clamp(30px,3.3vw,42px); line-height:1.1; color:#f4f8f5;
+    padding-bottom:16px;
+  }
+  .lgn-hero h1::after{
+    content:""; position:absolute; left:0; bottom:0; width:56px; height:3px; border-radius:99px;
+    background:linear-gradient(90deg,var(--lgn-gold),var(--lgn-gold-soft));
+  }
+  .lgn-hero p{ margin:14px 0 0; max-width:31ch; font-size:16px; line-height:1.6; color:var(--lgn-mute); }
+  .lgn-hero p.lgn-today{ margin-top:30px; font-size:15px; font-weight:600; color:var(--lgn-ink); }
+  .lgn-today mark{
+    background:none;
+    color:var(--lgn-gold-soft); font-weight:700; padding:0 2px;
+  }
+  .lgn-agenda-btn{
+    appearance:none; cursor:pointer; font-family:inherit; margin-top:16px;
+    display:inline-flex; align-items:center; gap:10px; padding:12px 20px;
+    border-radius:10px; border:1.5px solid rgba(127,208,162,.65); background:transparent;
+    font-size:15px; font-weight:700; color:#d3efdf;
+    transition:background-color .12s ease, transform .12s ease;
+  }
+  .lgn-agenda-btn:hover{ background:rgba(89,182,134,.14); }
+  .lgn-agenda-btn:active{ transform:translateY(1px); }
+  .lgn-agenda-btn svg{ width:20px; height:20px; }
+
+  /* halaman kanan: isian masuk */
+  .lgn-side{
+    order:2; align-items:center;
+    padding:clamp(30px,4.4vw,56px);
+    border-radius:0 14px 14px 0;
+  }
+  .lgn-card{ width:100%; max-width:370px; }
+  .lgn-logo{ display:none; width:150px; margin:0 0 14px; }
+  .lgn-title{ margin:0; font-family:var(--lgn-serif); font-weight:700; font-size:40px; letter-spacing:-.01em; line-height:1.1; color:#f4f8f5; }
+  .lgn-sub{ margin:8px 0 24px; font-size:15px; line-height:1.5; color:var(--lgn-mute); }
+
+  .lgn-alt{ display:grid; grid-template-columns:1fr; gap:10px; margin-bottom:6px; }
+  .lgn-alt button{
+    appearance:none; cursor:pointer; font-family:inherit; font-size:15px; font-weight:600;
+    height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; gap:10px;
+    white-space:nowrap; transition:background-color .12s ease, transform .12s ease;
+  }
+  .lgn-alt button:active{ transform:translateY(1px); }
+  .lgn-google{ background:var(--lgn-paper-hi); color:var(--lgn-ink); border:1.5px solid var(--lgn-line); }
+  .lgn-google:hover{ background:#1a2b21; }
+  .lgn-agenda-m{ display:none !important; background:transparent; color:#d3efdf; border:1.5px solid rgba(127,208,162,.65); }
+  .lgn-agenda-m:hover{ background:rgba(89,182,134,.14); }
+  .lgn-alt svg{ width:20px; height:20px; flex:none; }
+
+  .lgn-or{ display:flex; align-items:center; gap:12px; margin:16px 0 18px; font-size:13px; font-weight:500; color:#7f9788; }
+  .lgn-or::before,.lgn-or::after{ content:""; flex:1; height:1px; background:var(--lgn-line); }
+
+  #loginScreen .lgn-field{ margin-bottom:18px; }
+  .lgn-labelrow{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:2px; }
+  #loginScreen .lgn-labelrow label{ margin:0; font-size:13.5px; font-weight:600; letter-spacing:0; color:#c3d6c9; }
+  .lgn-link{ appearance:none; background:none; border:none; padding:0; cursor:pointer; font-family:inherit; font-size:13px; font-weight:600; color:var(--lgn-green-soft); }
+  .lgn-link:hover{ text-decoration:underline; }
+  .lgn-input{ position:relative; }
+  #loginScreen .lgn-input input{
+    width:100%; height:50px; padding:0 4px; border:0; border-bottom:2px solid #3f6a53; border-radius:0;
+    background:var(--lgn-paper); color:var(--lgn-ink);
+    font-family:inherit; font-size:16px; font-weight:500;
+    transition:border-color .12s ease, box-shadow .12s ease, background-color .12s ease;
+  }
+  #loginScreen .lgn-input input::placeholder{ color:#6f8a7a; font-weight:400; }
+  #loginScreen .lgn-input input:focus{ outline:none; border-bottom-color:var(--lgn-gold); box-shadow:0 2px 0 0 var(--lgn-gold); background:var(--lgn-paper-hi); }
+  #loginScreen .lgn-input input:-webkit-autofill{ -webkit-box-shadow:0 0 0 1000px var(--lgn-paper-hi) inset; -webkit-text-fill-color:var(--lgn-ink); caret-color:var(--lgn-ink); }
+  .lgn-input.has-eye input{ padding-right:48px; }
+  .lgn-eye{
+    position:absolute; right:0; top:50%; transform:translateY(-50%);
+    width:40px; height:40px; border:none; background:none; cursor:pointer; color:#7f9788;
+    display:flex; align-items:center; justify-content:center; border-radius:8px;
+  }
+  .lgn-eye:hover{ color:var(--lgn-gold-soft); }
+  .lgn-eye svg{ width:22px; height:22px; }
+
+  #loginScreen .lgn-submit{
+    width:100%; height:52px; margin-top:10px; cursor:pointer; border-radius:10px;
+    font-family:inherit; font-size:16px; font-weight:700; color:#fff; background:var(--lgn-green);
+    border:1px solid rgba(233,211,138,.45);
+    box-shadow:0 3px 0 #0a3a23, 0 14px 26px -14px rgba(42,145,96,.7), 0 0 0 1px rgba(201,162,39,.18) inset;
+    transition:background-color .12s ease, transform .12s ease, box-shadow .12s ease;
+  }
+  #loginScreen .lgn-submit:hover{ background:var(--lgn-green-hi); border-color:var(--lgn-gold-soft); }
+  #loginScreen .lgn-submit:active{ transform:translateY(2px); box-shadow:0 1px 0 #0a3a23; }
+
+  #loginScreen .login-error{
+    display:none; margin:0 0 14px; padding:10px 12px; border-radius:8px;
+    background:rgba(224,96,122,.14); border-left:3px solid #e0607a; color:#ffb3c1; font-size:13px; font-weight:600;
+  }
+  .lgn-notice{
+    display:none; margin:10px 0 0; padding:10px 12px; border-radius:8px;
+    background:rgba(201,162,39,.14); border-left:3px solid var(--lgn-gold); color:var(--lgn-gold-soft); font-size:13px; font-weight:600; line-height:1.4;
+  }
+  .lgn-foot{ margin-top:26px; font-size:12.5px; color:#7f9788; font-weight:500; }
+  #loginScreen button:focus-visible{ outline:3px solid rgba(127,208,162,.6); outline-offset:2px; }
+
+  /* ---- Halaman kanan: putih + hijau muda + aksen emas ---- */
+  #loginScreen .lgn-side{
+    --lgn-ink:#173d2a;
+    --lgn-mute:#5a7566;
+    --lgn-paper:#ffffff;
+    --lgn-paper-hi:#f2faf5;
+    --lgn-line:#cfe7d9;
+    --lgn-green-soft:#217a4c;
+    --lgn-gold:#c9a227;
+    color-scheme:light;
+    color:var(--lgn-ink);
+    overflow:hidden;
+    background-color:#ffffff;
+    background-image:
+      radial-gradient(circle at 100% 0%, rgba(143,216,172,.45) 0, transparent 44%),
+      radial-gradient(circle at 0% 100%, rgba(143,216,172,.32) 0, transparent 42%),
+      linear-gradient(180deg,#ffffff 0%,#f6fbf7 100%);
+  }
+  #loginScreen .lgn-side::before{ /* bingkai emas tipis */
+    content:""; position:absolute; inset:12px; pointer-events:none;
+    border:1px solid rgba(201,162,39,.42); border-radius:10px 8px 8px 10px;
+  }
+  #loginScreen .lgn-side::after{ /* garis emas di tepi atas halaman */
+    content:""; position:absolute; left:0; right:0; top:0; height:4px; pointer-events:none;
+    background:linear-gradient(90deg,transparent,#c9a227 22%,#e9d38a 50%,#c9a227 78%,transparent);
+  }
+  #loginScreen .lgn-side .lgn-card{ position:relative; z-index:1; }
+  #loginScreen .lgn-side .lgn-logo img{ filter:none; }
+  #loginScreen .lgn-side .lgn-title{ position:relative; padding-bottom:14px; color:#163c29; }
+  #loginScreen .lgn-side .lgn-title::after{
+    content:""; position:absolute; left:0; bottom:0; width:56px; height:3px; border-radius:99px;
+    background:linear-gradient(90deg,var(--lgn-gold),var(--lgn-gold-soft));
+  }
+  #loginScreen .lgn-side .lgn-sub{ margin-top:14px; color:#5a7566; }
+
+  #loginScreen .lgn-side .lgn-google{ background:#ffffff; color:#173d2a; border:1.5px solid #cfe7d9; box-shadow:0 1px 2px rgba(22,60,41,.06); }
+  #loginScreen .lgn-side .lgn-google:hover{ background:#e9f7ee; border-color:#c9a227; }
+  #loginScreen .lgn-side .lgn-agenda-m{ color:#1f7a4d; border:1.5px solid rgba(201,162,39,.65); }
+  #loginScreen .lgn-side .lgn-agenda-m:hover{ background:rgba(143,216,172,.25); }
+
+  #loginScreen .lgn-side .lgn-or{ color:#6f8f7c; }
+  #loginScreen .lgn-side .lgn-or::before{ background:linear-gradient(90deg,transparent,rgba(201,162,39,.6)); }
+  #loginScreen .lgn-side .lgn-or::after{ background:linear-gradient(90deg,rgba(201,162,39,.6),transparent); }
+
+  #loginScreen .lgn-side .lgn-labelrow label{ color:#2c4d3b; }
+  #loginScreen .lgn-side .lgn-input input{ border-bottom:2px solid #b7dcc5; background:#ffffff; color:#173d2a; }
+  #loginScreen .lgn-side .lgn-input input::placeholder{ color:#8fa99a; }
+  #loginScreen .lgn-side .lgn-input input:focus{ border-bottom-color:#c9a227; box-shadow:0 2px 0 0 #c9a227; background:#f4fbf6; }
+  #loginScreen .lgn-side .lgn-eye{ color:#6f8f7c; }
+  #loginScreen .lgn-side .lgn-eye:hover{ color:#b48a12; }
+  #loginScreen .lgn-side .lgn-link{ color:#1f7a4d; }
+
+  #loginScreen .lgn-side .lgn-submit{
+    color:#0f3a24; background:linear-gradient(180deg,#b7eccb 0%,#83d3a4 100%);
+    border:1px solid #c9a227;
+    box-shadow:0 3px 0 #b08d1c, 0 14px 26px -14px rgba(201,162,39,.75), inset 0 1px 0 rgba(255,255,255,.75);
+  }
+  #loginScreen .lgn-side .lgn-submit:hover{ background:linear-gradient(180deg,#c6f3d6 0%,#94dcb2 100%); border-color:#dcb93c; }
+  #loginScreen .lgn-side .lgn-submit:active{ transform:translateY(2px); box-shadow:0 1px 0 #b08d1c, inset 0 1px 0 rgba(255,255,255,.6); }
+
+  #loginScreen .lgn-side .login-error{ background:#fdecef; border-left:3px solid #d6455f; color:#a3213b; }
+  #loginScreen .lgn-side .lgn-notice{ background:#fbf3d3; border-left:3px solid #c9a227; color:#6e5410; }
+  #loginScreen .lgn-side .lgn-foot{ color:#6f8f7c; }
+  #loginScreen .lgn-side .lgn-foot::before{ content:"\25C6"; color:#c9a227; font-size:9px; margin-right:8px; vertical-align:1px; }
+  #loginScreen .lgn-side button:focus-visible{ outline:3px solid rgba(201,162,39,.55); outline-offset:2px; }
+
+  /* ---- Jendela agenda harian ---- */
+  .lgn-modal{
+    position:fixed; inset:0; z-index:9999; display:none; align-items:center; justify-content:center;
+    padding:18px; background:rgba(2,6,4,.78); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);
+  }
+  .lgn-modal.open{ display:flex; }
+  .lgn-dialog{
+    width:100%; max-width:560px; max-height:min(86vh,720px); display:flex; flex-direction:column;
+    background:var(--lgn-paper); border-radius:16px; overflow:hidden; color:var(--lgn-ink);
+    border:1px solid rgba(127,208,162,.22);
+    box-shadow:0 40px 80px -30px #000;
+  }
+  .lgn-dhead{ padding:20px 22px 14px; background:linear-gradient(160deg,#3aa06a,#163c29); color:#fff; display:flex; gap:14px; align-items:flex-start; }
+  .lgn-dhead h3{ margin:0; font-family:var(--lgn-serif); font-size:22px; font-weight:700; }
+  .lgn-dhead p{ margin:4px 0 0; font-size:13.5px; color:#cfe8d5; font-weight:600; }
+  .lgn-dclose{ margin-left:auto; flex:none; width:36px; height:36px; border-radius:10px; border:none; cursor:pointer; background:rgba(255,255,255,.12); color:#fff; font-size:20px; line-height:1; }
+  .lgn-dclose:hover{ background:rgba(255,255,255,.22); }
+  .lgn-dtools{ display:flex; gap:10px; padding:14px 22px; border-bottom:1px solid var(--lgn-line); background:var(--lgn-paper-hi); }
+  .lgn-dtools input[type=date]{ flex:1; min-width:0; height:42px; padding:0 12px; border-radius:10px; border:1.5px solid var(--lgn-line); font-family:inherit; font-size:14.5px; background:var(--lgn-paper); color:var(--lgn-ink); }
+  .lgn-dtools button{ height:42px; padding:0 16px; border-radius:10px; border:1.5px solid rgba(127,208,162,.65); background:transparent; color:var(--lgn-green-soft); font-family:inherit; font-weight:700; font-size:14px; cursor:pointer; }
+  .lgn-dtools button:hover{ background:var(--lgn-green); border-color:var(--lgn-green); color:#fff; }
+  .lgn-dbody{ padding:14px 22px 20px; overflow:auto; }
+  .lgn-dsum{ font-size:13px; color:var(--lgn-mute); font-weight:600; margin:0 0 10px; }
+  .lgn-ag{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px; }
+  .lgn-ag li{ display:grid; grid-template-columns:auto 1fr auto; gap:6px 14px; align-items:start; background:var(--lgn-paper-hi); border:1px solid var(--lgn-line); border-left:4px solid var(--lgn-green-hi); border-radius:10px; padding:12px 14px; }
+  .lgn-ag li.done{ border-left-color:var(--lgn-gold); }
+  .lgn-ag .t{ font-weight:800; font-size:13.5px; color:var(--lgn-green-soft); white-space:nowrap; padding-top:1px; }
+  .lgn-ag .j{ font-weight:700; font-size:14.5px; line-height:1.35; color:var(--lgn-ink); }
+  .lgn-ag .d{ grid-column:2 / 3; font-size:13px; color:var(--lgn-mute); line-height:1.4; }
+  .lgn-ag .s{ grid-row:1; grid-column:3; font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:99px; background:rgba(89,182,134,.16); color:var(--lgn-green-soft); white-space:nowrap; }
+  .lgn-ag li.done .s{ background:rgba(201,162,39,.2); color:var(--lgn-gold-soft); }
+  .lgn-empty{ text-align:center; padding:30px 10px; color:var(--lgn-mute); font-size:14px; line-height:1.55; }
+  .lgn-dfoot{ padding:12px 22px 16px; font-size:12px; color:#7f9788; border-top:1px solid var(--lgn-line); background:#0a110d; }
+
+  @media (max-width:900px){
+    #loginScreen{ padding:0; place-items:stretch; background:#143a28; }
+    .lgn-book{ width:100%; min-height:100vh; grid-template-columns:1fr; padding:8px; border-radius:0; box-shadow:none; background:linear-gradient(160deg,#3aa06a 0%,#1f7a4d 45%,#163c29 100%); }
+    .lgn-book::before{ display:none; }
+    .lgn-hero{ display:none; }
+    .lgn-side{
+      order:1; border-radius:12px; align-items:center;
+      padding:30px 22px 26px;
+    }
+    .lgn-card{ max-width:440px; }
+    .lgn-logo{ display:block; }
+    .lgn-title{ font-size:34px; }
+    .lgn-agenda-m{ display:flex !important; }
+    #loginScreen .lgn-side::before{ inset:10px; border-radius:9px; }
+  }
+  @media (max-width:520px){
+    .lgn-ag li{ grid-template-columns:auto 1fr; }
+    .lgn-ag .s{ grid-row:auto; grid-column:1 / -1; justify-self:start; }
+    .lgn-ag .d{ grid-column:1 / -1; }
+  }
+  .field{ margin-bottom:16px; }
+  .field label{
+    display:block; font-size:12.5px; font-weight:600; color:var(--ink-soft);
+    margin-bottom:6px; letter-spacing:.2px;
+  }
+  .field input{
+    width:100%; padding:11px 13px; border-radius:var(--radius-sm);
+    border:1.5px solid var(--line); font-size:14.5px; font-family:inherit;
+    background:#f6faf8; color:var(--ink);
+  }
+  .field input:focus{ outline:none; border-color:var(--violet-mid); background:#fff; }
+  .btn{
+    appearance:none; border:none; cursor:pointer; font-family:inherit;
+    font-weight:600; border-radius:var(--radius-sm); padding:11px 18px;
+    font-size:14px; transition:transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+  }
+  .btn:active{ transform:translateY(1px); }
+  .btn-primary{
+    background:linear-gradient(135deg,var(--violet-mid),var(--black-soft));
+    color:#fff; width:100%;
+    box-shadow:0 8px 18px -8px rgba(8,12,10,.55);
+  }
+  .btn-primary:hover{ box-shadow:0 10px 22px -8px rgba(8,12,10,.7); }
+  .btn-gold{
+    background:linear-gradient(135deg,var(--gold),#a5811b);
+    color:#fff;
+  }
+  .btn-ghost{
+    background:transparent; border:1.5px solid var(--line); color:var(--ink);
+  }
+  .btn-ghost:hover{ border-color:var(--violet-mid); color:var(--violet-mid); }
+  .btn-danger{ background:var(--danger); color:#fff; }
+  .btn-sm{ padding:7px 12px; font-size:12.5px; }
+
+  /* ---------- APP SHELL ---------- */
+  #app{ display:flex; min-height:100vh; }
+  #app[hidden], #loginScreen[hidden]{ display:none !important; }
+  .sidebar-wrap{
+    --sb-w:250px;
+    width:var(--sb-w); flex:none;
+    position:sticky; top:0; height:100vh; z-index:30;
+    transition:width .25s ease;
+  }
+  .sidebar{
+    width:100%; height:100%;
+    background:linear-gradient(190deg,var(--black) 0%,var(--violet-deep) 55%,var(--violet-mid) 100%);
+    color:#fff; display:flex; flex-direction:column;
+    overflow-y:auto; overflow-x:hidden;
+    border-right:1px solid rgba(201,162,39,.18);
+  }
+  .sidebar-head{
+    padding:22px 20px 16px; border-bottom:1px solid rgba(255,255,255,.15);
+  }
+  .sidebar-brand{ display:flex; align-items:center; gap:10px; }
+  .sidebar-om{
+    width:44px;height:44px;border-radius:0;
+    background:transparent;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--gold-soft); font-size:19px; flex:none;
+  }
+  .sidebar-brand h1{ font-size:14.5px; margin:0; line-height:1.25; font-weight:700; }
+  .sidebar-brand p{ margin:2px 0 0; font-size:11px; opacity:.8; }
+  nav.menu{ padding:14px 12px; flex:1; }
+  .menu-item{
+    display:flex; align-items:center; gap:11px;
+    padding:10px 12px; border-radius:var(--radius-sm);
+    color:rgba(255,255,255,.88); font-size:13.5px; font-weight:500;
+    cursor:pointer; margin-bottom:2px; border-left:3px solid transparent;
+    transition:background .12s ease;
+  }
+  .menu-item .ic{ width:18px; text-align:center; font-size:15px; flex:none; }
+  .menu-item:hover{ background:rgba(255,255,255,.10); }
+  .menu-item.active{
+    background:rgba(255,255,255,.16); border-left:3px solid var(--gold-soft);
+    color:#fff;
+  }
+  .sidebar-foot{
+    padding:14px 16px 20px; font-size:10.5px; color:rgba(255,255,255,.6);
+    border-top:1px solid rgba(255,255,255,.15);
+  }
+
+  /* ---------- SIDEBAR: menu bergrup (dropdown) ---------- */
+  .menu-item{ user-select:none; -webkit-tap-highlight-color:transparent; }
+  .menu-item:focus-visible, .sub-item:focus-visible{ outline:2px solid var(--gold-soft); outline-offset:-2px; }
+  .menu-item .ic{ display:inline-flex; align-items:center; justify-content:center; width:22px; font-size:15px; }
+  .menu-item .ic svg{ width:20px; height:20px; display:block; }
+  .menu-item .lbl, .sub-item .lbl{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+  .sidebar-wrap:not(.collapsed) .menu-item .lbl, .sidebar-wrap:not(.collapsed) .sub-item .lbl{ white-space:normal; line-height:1.3; }
+  .menu-sep{ height:1px; background:rgba(255,255,255,.13); margin:10px 6px; }
+
+  .group-head .chev{ margin-left:auto; display:inline-flex; opacity:.75; transition:transform .22s ease; }
+  .group-head .chev svg{ width:16px; height:16px; display:block; }
+  .menu-group.open > .group-head .chev{ transform:rotate(180deg); }
+  .menu-group.open > .group-head{ background:rgba(255,255,255,.10); color:#fff; }
+  .menu-group.has-active > .group-head{ border-left-color:var(--gold-soft); color:#fff; }
+  .menu-group.has-active:not(.open) > .group-head{ background:rgba(255,255,255,.16); }
+
+  .sub-wrap{ display:grid; grid-template-rows:0fr; transition:grid-template-rows .24s ease; }
+  .menu-group.open > .sub-wrap{ grid-template-rows:1fr; }
+  .sub-list{ min-height:0; overflow:hidden; visibility:hidden; transition:visibility 0s linear .24s; }
+  .menu-group.open > .sub-wrap > .sub-list{ visibility:visible; transition-delay:0s; }
+  .sub-list-inner{ padding:2px 0 4px; }
+
+  .sub-item{
+    display:flex; align-items:center; gap:11px;
+    padding:9px 12px 9px 26px; margin-bottom:1px;
+    border-radius:var(--radius-sm); border-left:3px solid transparent;
+    font-size:12.5px; font-weight:500; color:rgba(255,255,255,.72);
+    cursor:pointer; transition:background .12s ease, color .12s ease;
+  }
+  .sub-item .ic{ display:inline-flex; width:18px; justify-content:center; flex:none; }
+  .sub-item .ic svg{ width:16px; height:16px; display:block; }
+  .sub-item:hover{ background:rgba(255,255,255,.09); color:#fff; }
+  .sub-item.active{ background:rgba(255,255,255,.16); border-left-color:var(--gold-soft); color:#fff; }
+
+  /* ---------- SIDEBAR: tombol minimize / maximize ---------- */
+  .sb-toggle{
+    position:absolute; top:26px; right:-15px; z-index:5;
+    width:30px; height:30px; padding:0; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--violet-mid); color:#fff;
+    border:3px solid var(--black); cursor:pointer;
+    box-shadow:0 4px 12px -3px rgba(0,0,0,.45);
+    transition:background .15s ease, transform .15s ease;
+  }
+  .sb-toggle:hover{ background:var(--gold); color:var(--black); }
+  .sb-toggle:active{ transform:scale(.92); }
+  .sb-toggle:focus-visible{ outline:2px solid var(--gold-soft); outline-offset:2px; }
+  .sb-toggle svg{ width:16px; height:16px; display:block; transition:transform .25s ease; }
+  .sidebar-wrap.collapsed .sb-toggle svg{ transform:rotate(180deg); }
+
+  /* ---------- SIDEBAR: kondisi diminimalkan (hanya ikon) ---------- */
+  .sidebar-wrap.collapsed{ --sb-w:72px; }
+  @media (max-width:640px){ .sidebar-wrap.collapsed{ --sb-w:60px; } }
+  .sidebar-wrap.collapsed .sidebar-head{ padding:20px 0 14px; }
+  .sidebar-wrap.collapsed .sidebar-brand{ justify-content:center; }
+  .sidebar-wrap.collapsed .sidebar-om{ width:34px; height:34px; }
+  .sidebar-wrap.collapsed .sidebar-brand > div:not(.sidebar-om){ display:none; }
+  .sidebar-wrap.collapsed nav.menu{ padding:12px 8px; }
+  .sidebar-wrap.collapsed .menu-item{ justify-content:center; padding:11px 0; gap:0; border-left-width:0; }
+  .sidebar-wrap.collapsed .menu-item .lbl,
+  .sidebar-wrap.collapsed .group-head .chev{ display:none; }
+  .sidebar-wrap.collapsed .sub-wrap{ display:none; }
+  .sidebar-wrap.collapsed .menu-item.active,
+  .sidebar-wrap.collapsed .menu-group.has-active > .group-head{ box-shadow:inset 3px 0 0 var(--gold-soft); background:rgba(255,255,255,.16); }
+  .sidebar-wrap.collapsed .menu-group.fly-open > .group-head{ background:rgba(255,255,255,.16); }
+  .sidebar-wrap.collapsed .sidebar-foot{ padding:14px 0 18px; text-align:center; }
+  .sidebar-wrap.collapsed .badge-offline{ padding:6px; }
+  .sidebar-wrap.collapsed .badge-offline .badge-txt{ display:none; }
+
+  .main{ flex:1; min-width:0; display:flex; flex-direction:column; }
+  .topbar{
+    background:linear-gradient(120deg,var(--black-soft),var(--violet-deep));
+    color:#fff; padding:18px 26px;
+    display:flex; align-items:center; justify-content:space-between;
+    flex-wrap:wrap; gap:10px;
+    border-bottom:1px solid rgba(201,162,39,.25);
+  }
+  .topbar-inner{ width:100%; max-width:1320px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+  .topbar h2{ margin:0; font-size:18px; }
+  .topbar p{ margin:2px 0 0; font-size:12px; opacity:.85; }
+  #viewRoot{ padding:22px 26px 60px; max-width:1320px; margin:0 auto; width:100%; box-sizing:border-box; }
+</style>
+</head>
+<body>
+<!-- ================= LOGIN ================= -->
+<div id="loginScreen">
+  <div class="lgn-book">
+  <section class="lgn-hero" aria-label="Informasi aplikasi">
+    <div class="lgn-hero-logo"><img id="lgnLogoA" src="" alt="MALAQBI Logo"></div>
+    <h1>Portal Pembelajaran Guru</h1>
+    <p>Agenda harian dan laporan mengajar dalam satu portal.</p>
+    <p class="lgn-today" hidden>Hari ini, <mark id="lgnToday"></mark></p>
+    <button type="button" class="lgn-agenda-btn" data-lgn-agenda><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h2M14 14h2M8 18h2M14 18h2"/></svg><span>Lihat Agenda Harian</span></button>
+  </section>
+
+  <main class="lgn-side">
+    <div class="lgn-card">
+      <div class="lgn-logo"><img id="lgnLogoB" alt="Logo MALAQBI"></div>
+      <h2 class="lgn-title">Masuk</h2>
+      <p class="lgn-sub">Buka agenda dan laporan mengajar Anda.</p>
+
+      <div id="jsStatus" style="text-align:center; font-size:11px; color:#c98a1c; background:#fdf3d9; padding:7px 10px; border-radius:12px; margin-bottom:14px;">
+        ⏳ Memuat aplikasi... (jika tulisan ini tidak hilang, JavaScript tidak berjalan di browser ini)
+      </div>
+      <div id="diagBanner" style="display:none; text-align:left; font-size:11.5px; color:#c0405a; background:#fdecef; padding:10px 12px; border-radius:12px; margin-bottom:14px; white-space:pre-wrap; word-break:break-word;"></div>
+
+      <div class="lgn-alt">
+        <button type="button" class="lgn-google" id="lgnGoogleBtn"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 8 3.1l5.7-5.7C34 6.1 29.3 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 8 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg><span>Masuk dengan Google</span></button>
+        <button type="button" class="lgn-agenda-m" data-lgn-agenda><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h2M14 14h2M8 18h2M14 18h2"/></svg><span>Lihat Agenda Harian</span></button>
+      </div>
+      <div class="lgn-notice" id="lgnNotice" role="status"></div>
+
+
+      <div class="lgn-or" aria-hidden="true">atau</div>
+      <div class="login-error" id="loginError" role="alert">Username atau password salah.</div>
+      <form id="loginForm" action="javascript:void(0);" method="post" onsubmit="return false;">
+        <div class="lgn-field">
+          <div class="lgn-labelrow"><label for="username">Nama pengguna</label></div>
+          <div class="lgn-input">
+            <input type="text" id="username" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Masukkan username">
+          </div>
+        </div>
+        <div class="lgn-field">
+          <div class="lgn-labelrow">
+            <label for="password">Kata sandi</label>
+            <button type="button" class="lgn-link" data-lgn-soon="Atur ulang kata sandi">Lupa sandi?</button>
+          </div>
+          <div class="lgn-input has-eye">
+            <input type="password" id="password" autocomplete="current-password" placeholder="Masukkan password">
+            <button type="button" class="lgn-eye" id="lgnEye" aria-label="Tampilkan kata sandi" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+        </div>
+        <button type="submit" class="lgn-submit">Masuk Aplikasi</button>
+      </form>
+      <div class="lgn-foot">Mode offline. Data tersimpan di perangkat ini.</div>
+    </div>
+  </main>
+  </div>
+
+  <div class="lgn-modal" id="lgnAgendaModal" role="dialog" aria-modal="true" aria-labelledby="lgnAgTitle">
+    <div class="lgn-dialog">
+      <div class="lgn-dhead">
+        <div><h3 id="lgnAgTitle">Agenda Harian</h3><p id="lgnAgDate"></p></div>
+        <button type="button" class="lgn-dclose" id="lgnAgClose" aria-label="Tutup">×</button>
+      </div>
+      <div class="lgn-dtools">
+        <input type="date" id="lgnAgInput" aria-label="Pilih tanggal">
+        <button type="button" id="lgnAgToday">Hari ini</button>
+      </div>
+      <div class="lgn-dbody"><p class="lgn-dsum" id="lgnAgSum"></p><ul class="lgn-ag" id="lgnAgList"></ul><div class="lgn-empty" id="lgnAgEmpty" hidden></div></div>
+      <div class="lgn-dfoot">Tampilan baca saja. Untuk mengubah agenda, masuk ke aplikasi.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  function $(id){ return document.getElementById(id); }
+  var jsStatus = $("jsStatus");
+  if(jsStatus) jsStatus.style.display = "none";
+  
+  var loginForm = $("loginForm");
+  var loginScreen = $("loginScreen");
+  var app = $("app");
+  var loginError = $("loginError");
+  
+  if(loginForm) {
+    loginForm.addEventListener("submit", function(){
+      var u = $("username").value.trim();
+      var p = $("password").value;
+      if(u && p) {
+        if(loginScreen) loginScreen.setAttribute("hidden", "true");
+        if(app) app.removeAttribute("hidden");
+      } else {
+        if(loginError) loginError.style.display = "block";
+      }
+    });
+  }
+})();
+</script>
+
+<!-- ================= APP ================= -->
+<div id="app" hidden>
+  <div class="sidebar-wrap" id="sidebarWrap">
+    <aside class="sidebar">
+      <div class="sidebar-head">
+        <div class="sidebar-brand">
+          <div class="sidebar-om">M</div>
+          <div>
+            <h1>MALAQBI</h1>
+            <p>Portal Pembelajaran</p>
+          </div>
+        </div>
+      </div>
+      <nav class="menu">
+        <div class="menu-item active">
+          <span class="ic">🏠</span>
+          <span class="lbl">Dashboard</span>
+        </div>
+        <div class="menu-item">
+          <span class="ic">📅</span>
+          <span class="lbl">Agenda Harian</span>
+        </div>
+        <div class="menu-item">
+          <span class="ic">📝</span>
+          <span class="lbl">Presensi Siswa</span>
+        </div>
+        <div class="menu-item">
+          <span class="ic">📊</span>
+          <span class="lbl">Penilaian</span>
+        </div>
+      </nav>
+      <div class="sidebar-foot">
+        <span class="badge-offline"><span class="dot"></span><span class="badge-txt">Mode Lokal / Offline</span></span>
+      </div>
+    </aside>
+  </div>
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div>
+          <h2>Portal Guru MALAQBI</h2>
+          <p>Selamat datang di sistem manajemen kegiatan pembelajaran</p>
+        </div>
+      </div>
+    </header>
+    <div id="viewRoot">
+      <div class="card">
+        <h3>Selamat Datang di MALAQBI</h3>
+        <p>Aplikasi telah siap digunakan untuk pengelolaan pembelajaran dan kegiatan sekolah.</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>
