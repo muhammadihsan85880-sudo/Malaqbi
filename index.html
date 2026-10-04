@@ -9739,12 +9739,14 @@ function renderUjianCBT(root){
           <div class="desc">Di Google Sheets: File &gt; Share &gt; Publish to web, pilih sheet "Hasil", format CSV. Tempel link yang dihasilkan di bawah.</div>
         </div></div>
         <div class="field"><label>Link CSV Sheet "Hasil"</label><input type="text" id="cbtCsvUrl" placeholder="https://docs.google.com/.../pub?output=csv"></div>
-        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:4px;">
           <button class="btn btn-primary btn-sm" id="cbtFetchCsvBtn" style="width:auto;">⭳ Ambil Hasil</button>
+          <button class="btn btn-ghost btn-sm" id="cbtSaveCsvUrlBtn" style="width:auto;">💾 Simpan Link</button>
           <span style="font-size:12px; color:var(--ink-soft); align-self:center;">atau</span>
           <label class="btn btn-ghost btn-sm" for="cbtCsvFile" style="width:auto; cursor:pointer;">📁 Unggah File CSV</label>
           <input type="file" id="cbtCsvFile" accept=".csv" style="display:none;">
         </div>
+        <p style="font-size:11.5px; color:var(--ink-soft); margin:0 0 10px;">Link tersimpan di perangkat ini dan tetap ada walau sudah logout atau aplikasi ditutup.</p>
       </div>
       <div class="doc-shell">
         <div class="doc-shell-head" style="justify-content:space-between; flex-wrap:wrap; gap:10px;">
@@ -9782,7 +9784,7 @@ function renderUjianCBT(root){
   root.querySelector("#cbtSaveEndpointBtn").onclick = ()=>{
     const url = cbtNormUrl(root.querySelector("#cbtEndpoint").value);
     root.querySelector("#cbtEndpoint").value = url;
-    DB.set(DB.keys.ujianConfig, { endpointUrl:url });
+    DB.set(DB.keys.ujianConfig, { ...DB.get(DB.keys.ujianConfig, {}), endpointUrl:url });
     toast("Endpoint server tersimpan");
   };
   root.querySelector("#cbtShowGasBtn").onclick = ()=>{
@@ -10161,6 +10163,16 @@ function renderUjianCBT(root){
   };
 
   /* ---------- tab: Hasil Ujian ---------- */
+  const csvUrlInput = root.querySelector("#cbtCsvUrl");
+  csvUrlInput.value = DB.get(DB.keys.ujianConfig, {}).csvUrl || "";
+  function simpanCsvUrl(url){
+    DB.set(DB.keys.ujianConfig, { ...DB.get(DB.keys.ujianConfig, {}), csvUrl:url });
+  }
+  csvUrlInput.onchange = ()=> simpanCsvUrl(csvUrlInput.value.trim());
+  root.querySelector("#cbtSaveCsvUrlBtn").onclick = ()=>{
+    simpanCsvUrl(csvUrlInput.value.trim());
+    toast("Link CSV tersimpan di perangkat ini","ok");
+  };
   const hasilTbody = root.querySelector("#cbtHasilTbody");
   const hasilFilterKelas = root.querySelector("#cbtHasilFilterKelas");
   hasilFilterKelas.innerHTML += getKelasList().map(k=>`<option value="${esc(k)}">${esc(k)}</option>`).join("");
@@ -10208,8 +10220,9 @@ function renderUjianCBT(root){
     drawHasil();
   }
   root.querySelector("#cbtFetchCsvBtn").onclick = ()=>{
-    const url = root.querySelector("#cbtCsvUrl").value.trim();
+    const url = csvUrlInput.value.trim();
     if(!url){ toast("Isi link CSV terlebih dahulu"); return; }
+    simpanCsvUrl(url);
     toast("Mengambil data...");
     fetch(url).then(r=>r.text()).then(prosesCsv).catch(()=> toast("Gagal mengambil CSV — coba unggah file CSV secara manual","danger"));
   };
@@ -10318,9 +10331,32 @@ function renderUjianCBT(root){
     if(st==="Selesai") return `<span style="padding:3px 10px; border-radius:999px; background:#e8eefc; color:#2a4aa0; font-size:11.5px; font-weight:700; white-space:nowrap;">✓ Selesai</span>`;
     return `<span style="padding:3px 10px; border-radius:999px; background:#eceff1; color:#5b6b64; font-size:11.5px; font-weight:700; white-space:nowrap;">Terputus</span>`;
   }
+  /* Gabungkan baris yang mewakili siswa sama (kunci: NIS, atau nama bila NIS kosong).
+     Server seharusnya menyimpan satu baris per siswa per tes, tapi jika ada data lama/
+     duplikat di sheet "Pantau" (mis. skrip GAS di server belum versi terbaru, atau NIS
+     tersimpan dengan variasi spasi/format), tampilan tetap dirapikan jadi satu baris per
+     siswa: status paling maju yang dipakai (Selesai > Mengerjakan > Terputus), pelanggaran
+     & riwayat log digabung agar tidak ada yang hilang. */
+  function dedupePantau(list){
+    const prio = { Selesai:2, Mengerjakan:1, Terputus:0 };
+    const map = {};
+    list.forEach(r=>{
+      const key = String(r.nis || r.nama || "").trim().toLowerCase() || Math.random();
+      const st = statusPantau(r);
+      const ada = map[key];
+      if(!ada){ map[key] = Object.assign({}, r); return; }
+      const stAda = statusPantau(ada);
+      const pilihBaru = (prio[st] !== prio[stAda]) ? (prio[st] > prio[stAda]) : (r.detikLalu < ada.detikLalu);
+      const gabung = pilihBaru ? Object.assign({}, r) : ada;
+      gabung.pelanggaran = Math.max(Number(r.pelanggaran)||0, Number(ada.pelanggaran)||0);
+      gabung.log = ((r.log&&r.log.length)||0) > ((ada.log&&ada.log.length)||0) ? r.log : ada.log;
+      map[key] = gabung;
+    });
+    return Object.values(map);
+  }
   function drawPantau(){
     const urut = { Mengerjakan:0, Terputus:1, Selesai:2 };
-    const list = pantauData.map(r=>Object.assign({}, r, { st:statusPantau(r) }))
+    const list = dedupePantau(pantauData).map(r=>Object.assign({}, r, { st:statusPantau(r) }))
       .sort((a,b)=> (urut[a.st]-urut[b.st]) || ((b.pelanggaran>0)-(a.pelanggaran>0)) || String(a.nama).localeCompare(String(b.nama)));
     const n = st=> list.filter(r=>r.st===st).length;
     const curang = list.filter(r=>r.pelanggaran>0).length;
