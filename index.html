@@ -1909,7 +1909,6 @@
         </div>
         <button type="submit" class="lgn-submit">Masuk Aplikasi</button>
       </form>
-      <div class="lgn-foot">Mode offline. Data tersimpan di perangkat ini.</div>
     </div>
   </main>
   </div>
@@ -5135,7 +5134,10 @@ function viewAktivitas(item){
   const bodyHtml = `
     <p style="font-size:12px; color:var(--ink-soft); margin:0 0 14px;">📅 ${esc(rentangLabel)}</p>
     ${!totalAktivitas ? `<div class="empty-state"><div class="ic">🗂</div>Belum ada aktivitas yang tersimpan pada rentang tanggal tahun ajaran ini.</div>` : `
-      <button type="button" class="btn btn-gold btn-sm" id="dlAktivitasPdfBtn" style="width:auto; margin-bottom:16px;">⭳ Unduh PDF Aktivitas</button>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+        <button type="button" class="btn btn-gold btn-sm" id="dlAktivitasPdfBtn" style="width:auto;">⭳ Unduh PDF Aktivitas</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="dlAktivitasExcelBtn" style="width:auto;">⭳ Unduh Excel (per Kegiatan &amp; Kelas)</button>
+      </div>
       ${aktivitasSectionsHtml(data)}
     `}
     <div style="margin-bottom:6px;">
@@ -5150,7 +5152,181 @@ function viewAktivitas(item){
 
   if(totalAktivitas){
     document.getElementById("dlAktivitasPdfBtn").onclick = ()=> downloadAktivitasPdf(item, data, rentangLabel);
+    document.getElementById("dlAktivitasExcelBtn").onclick = ()=> downloadAktivitasExcel(item, data, rentangLabel);
   }
+}
+
+/* ---- Unduh Excel Aktivitas Periode: satu sheet "Ringkasan" (matriks kegiatan × kelas)
+   lalu sheet terpisah per kegiatan + kelasnya masing-masing (mis. "Absensi - XI-1",
+   "Jurnal - XI-1", dst). Agenda Harian tidak berbasis kelas sehingga jadi satu sheet sendiri. ---- */
+function downloadAktivitasExcel(item, data, rentangLabel){
+  if(!totalAktivitasPeriode(data)){ toast("Belum ada aktivitas untuk diunduh"); return; }
+  toast("Menyiapkan file Excel...");
+
+  function groupByKelas(rows){
+    const map = {};
+    rows.forEach(r=>{
+      const k = r.kelas || "Tanpa Kelas";
+      (map[k] = map[k] || []).push(r);
+    });
+    return map;
+  }
+  function sanitizeSheetName(name){
+    return (name || "Sheet").replace(/[\\\/\?\*\[\]:]/g, "-").trim().slice(0,31) || "Sheet";
+  }
+  const siswaMap = {};
+  DB.get(DB.keys.siswa, []).forEach(s=> siswaMap[s.id] = s.nama);
+  const STATUS_LABEL = { S:"Sakit", I:"Izin", A:"Alpa", D:"Dispen" };
+  function namaTidakHadir(records){
+    const byStatus = {};
+    (records||[]).forEach(r=>{
+      if(r.status==="H") return;
+      const nama = siswaMap[r.siswaId] || "(tidak dikenal)";
+      (byStatus[r.status] = byStatus[r.status] || []).push(nama);
+    });
+    const parts = ["S","I","A","D"].filter(k=> byStatus[k] && byStatus[k].length)
+      .map(k=> `${STATUS_LABEL[k]}: ${byStatus[k].join(", ")}`);
+    return parts.length ? parts.join(" | ") : "-";
+  }
+
+  const globalP = listFilesByOwner("materi_ajar_global").catch(()=>[]);
+  const perItemP = Promise.all(data.materi.map(m=> listFilesByOwner("materi_"+m.id).catch(()=>[]).then(files=>({m, files}))));
+
+  Promise.all([globalP, perItemP]).then(([globalFiles, perItem])=>{
+    const wb = XLSX.utils.book_new();
+    const usedNames = new Set();
+    function addSheet(name, aoa, colWidths){
+      let safe = sanitizeSheetName(name), finalName = safe, n = 2;
+      while(usedNames.has(finalName.toLowerCase())){
+        const suffix = "("+n+")";
+        finalName = safe.slice(0, 31-suffix.length) + suffix; n++;
+      }
+      usedNames.add(finalName.toLowerCase());
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      if(colWidths) ws["!cols"] = colWidths;
+      XLSX.utils.book_append_sheet(wb, ws, finalName);
+    }
+    const judulPeriode = `Tahun Ajaran ${item.tahunAjaran} — Semester ${item.semester}`;
+    const kegiatanDefs = [
+      { key:"absensi", label:"Absensi" },
+      { key:"jurnal", label:"Jurnal Mengajar" },
+      { key:"catatan", label:"Catatan Guru" },
+      { key:"materi", label:"Materi Ajar" }
+    ];
+    const kelasSetAll = new Set();
+    kegiatanDefs.forEach(k=> data[k.key].forEach(r=> kelasSetAll.add(r.kelas || "Tanpa Kelas")));
+    const kelasListAll = Array.from(kelasSetAll).sort(naturalCompare);
+
+    /* ---- Sheet 1: Ringkasan ---- */
+    const ringkasanAoa = [
+      [ "Aktivitas " + judulPeriode ],
+      [ laporanProfilLine() ],
+      [ "Rentang: " + rentangLabel ],
+      [],
+      [ "Kegiatan", ...kelasListAll, "Total" ]
+    ];
+    kegiatanDefs.forEach(k=>{
+      const row = [k.label]; let total = 0;
+      kelasListAll.forEach(kelas=>{
+        const n = data[k.key].filter(r=> (r.kelas||"Tanpa Kelas")===kelas).length;
+        row.push(n); total += n;
+      });
+      row.push(total);
+      ringkasanAoa.push(row);
+    });
+    ringkasanAoa.push([]);
+    ringkasanAoa.push([ "Agenda Harian Selesai (tidak berbasis kelas)", data.agenda.length ]);
+    addSheet("Ringkasan", ringkasanAoa, [{wch:24}, ...kelasListAll.map(()=>({wch:10})), {wch:9}]);
+
+    /* ---- Sheet: Agenda Harian ---- */
+    if(data.agenda.length){
+      const aoa = [
+        [ "Agenda Harian Selesai — " + judulPeriode ],
+        [ laporanProfilLine() ],
+        [],
+        [ "No","Tanggal","Waktu","Kegiatan","Deskripsi" ]
+      ];
+      data.agenda.forEach((a,i)=> aoa.push([ i+1, fmtDate(a.tanggal), a.waktu||"-", a.judul, a.deskripsi||"-" ]));
+      addSheet("Agenda Harian", aoa, [{wch:4},{wch:12},{wch:8},{wch:28},{wch:45}]);
+    }
+
+    /* ---- Sheet per kelas: Absensi ---- */
+    const absensiByKelas = groupByKelas(data.absensi);
+    Object.keys(absensiByKelas).sort(naturalCompare).forEach(kelas=>{
+      const aoa = [
+        [ `Absensi — Kelas ${kelas}` ],
+        [ laporanProfilLine() ],
+        [],
+        [ "No","Tanggal","Hadir","Sakit","Izin","Alpa","Dispen","Nama Siswa Tidak Hadir" ]
+      ];
+      absensiByKelas[kelas].forEach((a,i)=>{
+        const c = {H:0,S:0,I:0,A:0,D:0}; (a.records||[]).forEach(r=> c[r.status]=(c[r.status]||0)+1);
+        aoa.push([ i+1, fmtDate(a.tanggal), c.H, c.S, c.I, c.A, c.D, namaTidakHadir(a.records) ]);
+      });
+      addSheet(`Absensi - ${kelas}`, aoa, [{wch:4},{wch:12},{wch:7},{wch:7},{wch:7},{wch:7},{wch:7},{wch:60}]);
+    });
+
+    /* ---- Sheet per kelas: Jurnal Mengajar ---- */
+    const jurnalByKelas = groupByKelas(data.jurnal);
+    Object.keys(jurnalByKelas).sort(naturalCompare).forEach(kelas=>{
+      const aoa = [
+        [ `Jurnal Mengajar — Kelas ${kelas}` ],
+        [ laporanProfilLine() ],
+        [],
+        [ "No","Tanggal","Materi","Kegiatan","Deskripsi" ]
+      ];
+      jurnalByKelas[kelas].forEach((j,i)=> aoa.push([ i+1, fmtDate(j.tanggal), j.materi||"-", j.kegiatan||"-", j.deskripsi||"-" ]));
+      addSheet(`Jurnal - ${kelas}`, aoa, [{wch:4},{wch:12},{wch:22},{wch:22},{wch:45}]);
+    });
+
+    /* ---- Sheet per kelas: Catatan Guru ---- */
+    const catatanByKelas = groupByKelas(data.catatan);
+    Object.keys(catatanByKelas).sort(naturalCompare).forEach(kelas=>{
+      const aoa = [
+        [ `Catatan Guru — Kelas ${kelas}` ],
+        [ laporanProfilLine() ],
+        [],
+        [ "No","Tanggal","Siswa","Judul" ]
+      ];
+      catatanByKelas[kelas].forEach((c,i)=> aoa.push([ i+1, fmtDate(c.tanggal), c.siswaNama||"-", c.judul ]));
+      addSheet(`Catatan - ${kelas}`, aoa, [{wch:4},{wch:12},{wch:22},{wch:34}]);
+    });
+
+    /* ---- Sheet per kelas: Materi Ajar (termasuk daftar lampiran/link) ---- */
+    const filesByMateriId = {}; perItem.forEach(({m, files})=> filesByMateriId[m.id] = files);
+    const materiByKelas = groupByKelas(data.materi);
+    Object.keys(materiByKelas).sort(naturalCompare).forEach(kelas=>{
+      const aoa = [
+        [ `Materi Ajar — Kelas ${kelas}` ],
+        [ laporanProfilLine() ],
+        [],
+        [ "No","Tanggal","Judul","Dokumen/Link" ]
+      ];
+      materiByKelas[kelas].forEach((m,i)=>{
+        const files = filesByMateriId[m.id] || [];
+        const fileLabel = files.length ? files.map(f=> (f.mimeType==="link"?"Link: ":"File: ")+f.filename).join(" | ") : "-";
+        aoa.push([ i+1, fmtDate(m.tanggal), m.judul, fileLabel ]);
+      });
+      addSheet(`Materi - ${kelas}`, aoa, [{wch:4},{wch:12},{wch:30},{wch:50}]);
+    });
+
+    /* ---- Sheet: Dokumen & Link Materi Ajar (Umum) ---- */
+    if(globalFiles.length){
+      const aoa = [
+        [ "Dokumen & Link Materi Ajar (Umum)" ],
+        [ laporanProfilLine() ],
+        [],
+        [ "No","Nama Berkas/Link","Jenis" ]
+      ];
+      globalFiles.forEach((f,i)=> aoa.push([ i+1, f.filename, f.mimeType==="link"?"Link":"File" ]));
+      addSheet("Materi - Umum", aoa, [{wch:4},{wch:50},{wch:10}]);
+    }
+
+    XLSX.writeFile(wb, `Aktivitas-${item.tahunAjaran}-Semester${item.semester}.xlsx`.replace(/\s+/g,"-"));
+    toast("File Excel berhasil diunduh","ok");
+  }).catch(()=>{
+    toast("Gagal menyiapkan file Excel","danger");
+  });
 }
 
 /* ---- Materi Ajar pada periode ini ditampilkan berdasarkan dokumen & link yang dilampirkan
@@ -8847,9 +9023,16 @@ function buildCbtHtmlFile(tes, soalList){
     }
     return o;
   });
+  // Data siswa (untuk dropdown Kelas & Nama Lengkap di halaman ujian) - NIS tidak ditampilkan ke siswa,
+  // tapi tetap disertakan di data agar laporan hasil ujian tetap mencatat NIS secara otomatis.
+  const siswaUrut = DB.get(DB.keys.siswa, []).slice().sort((a,b)=> naturalCompare(a.kelas,b.kelas) || naturalCompare(a.nama,b.nama));
+  const siswaPublik2 = siswaUrut.map(s=>({ id:s.id, nama:s.nama, nis:s.nis||"", kelas:s.kelas||"-" }));
+  const kelasPublik = []; siswaPublik2.forEach(s=>{ if(kelasPublik.indexOf(s.kelas)===-1) kelasPublik.push(s.kelas); });
+
   const dataJson = JSON.stringify({
     testId: tes.id, judul: tes.judul, durasiMenit: tes.durasiMenit||0,
-    acak: !!tes.acak, maks: parseInt(tes.maksPelanggaran,10)||0, endpoint: cbtNormUrl(cfg.endpointUrl), soal: soalPublik
+    acak: !!tes.acak, maks: parseInt(tes.maksPelanggaran,10)||0, endpoint: cbtNormUrl(cfg.endpointUrl), soal: soalPublik,
+    siswa: siswaPublik2, kelasList: kelasPublik
   }).replace(/</g,"\\u003c");
   return `<!DOCTYPE html>
 <html lang="id">
@@ -8865,7 +9048,9 @@ function buildCbtHtmlFile(tes, soalList){
   h1{font-size:19px; margin:0 0 4px;}
   .muted{color:#6b8577; font-size:12.5px;}
   label{display:block; font-size:12.5px; font-weight:700; margin-bottom:5px;}
-  input[type=text]{width:100%; padding:9px 10px; border:1.5px solid #cfe3d6; border-radius:9px; font-size:14px; margin-bottom:12px;}
+  input[type=text], select{width:100%; padding:9px 10px; border:1.5px solid #cfe3d6; border-radius:9px; font-size:14px; margin-bottom:12px; font-family:inherit; background:#fff; color:#1b2a22;}
+  select:disabled{color:#9aabA2; background:#f3f6f4;}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
   .btn{display:inline-block; border:none; border-radius:9px; padding:11px 18px; font-size:14px; font-weight:700; cursor:pointer;}
   .btn-primary{background:#1f7a4d; color:#fff; width:100%;}
   .soal{margin-bottom:16px;}
@@ -8896,9 +9081,10 @@ function buildCbtHtmlFile(tes, soalList){
   <div id="identitasPane" class="card">
     <h1 id="judulTes"></h1>
     <p class="muted" id="infoTes"></p>
-    <label>Nama Lengkap</label><input type="text" id="inNama" placeholder="Nama lengkap">
-    <label>NIS</label><input type="text" id="inNis" placeholder="NIS">
-    <label>Kelas</label><input type="text" id="inKelas" placeholder="Contoh: X-1">
+    <label>Kelas</label>
+    <select id="inKelas"><option value="">-- Pilih Kelas --</option></select>
+    <label>Nama Lengkap</label>
+    <select id="inNama"><option value="">-- Pilih Kelas dahulu --</option></select>
     <button class="btn btn-primary" id="mulaiBtn">Mulai Ujian</button>
     <div class="err" id="identErr"></div>
   </div>
@@ -8925,12 +9111,38 @@ let identitas = null;
 document.getElementById("judulTes").textContent = CFG.judul || "Ujian Online";
 document.getElementById("infoTes").textContent = (CFG.soal.length)+" soal" + (CFG.durasiMenit?(" • "+CFG.durasiMenit+" menit"):"");
 
+var selKelas = document.getElementById("inKelas");
+var selNama = document.getElementById("inNama");
+var SISWA_LIST = CFG.siswa || [];
+var KELAS_LIST = CFG.kelasList || [];
+
+KELAS_LIST.forEach(function(k){
+  var o = document.createElement("option"); o.value = k; o.textContent = k; selKelas.appendChild(o);
+});
+
+function isiPilihanNama(kelas){
+  selNama.innerHTML = "";
+  var filtered = SISWA_LIST.filter(function(s){ return s.kelas === kelas; });
+  var opt0 = document.createElement("option"); opt0.value = "";
+  opt0.textContent = !kelas ? "-- Pilih Kelas dahulu --" : (filtered.length ? "-- Pilih Nama --" : "Tidak ada siswa di kelas ini");
+  selNama.appendChild(opt0);
+  filtered.forEach(function(s){
+    var o = document.createElement("option"); o.value = s.id; o.textContent = s.nama; selNama.appendChild(o);
+  });
+}
+isiPilihanNama("");
+selKelas.onchange = function(){ isiPilihanNama(selKelas.value); };
+
+if(!SISWA_LIST.length){
+  document.getElementById("identErr").textContent = "Belum ada data siswa dari guru untuk ujian ini. Hubungi guru Anda.";
+  document.getElementById("mulaiBtn").disabled = true;
+}
+
 document.getElementById("mulaiBtn").onclick = function(){
-  const nama = document.getElementById("inNama").value.trim();
-  const nis = document.getElementById("inNis").value.trim();
-  const kelas = document.getElementById("inKelas").value.trim();
-  if(!nama || !nis){ document.getElementById("identErr").textContent = "Nama dan NIS wajib diisi."; return; }
-  identitas = { nama:nama, nis:nis, kelas:kelas };
+  var kelas = selKelas.value;
+  var siswa = SISWA_LIST.filter(function(s){ return s.id === selNama.value; })[0];
+  if(!kelas || !siswa){ document.getElementById("identErr").textContent = "Pilih kelas dan nama lengkap terlebih dahulu."; return; }
+  identitas = { nama: siswa.nama, nis: siswa.nis || "", kelas: kelas };
   document.getElementById("identitasPane").style.display = "none";
   tampilkanSoal();
   mulaiPantau();
@@ -9538,7 +9750,14 @@ function renderUjianCBT(root){
         </div>
       </div>
       <div class="doc-shell">
-        <div class="doc-shell-head"><span class="doc-shell-ic">${svgIcon("star")}</span><div><h4>Hasil Tersimpan</h4></div></div>
+        <div class="doc-shell-head" style="justify-content:space-between; flex-wrap:wrap; gap:10px;">
+          <div style="display:flex; align-items:center; gap:12px;"><span class="doc-shell-ic">${svgIcon("star")}</span><div><h4>Hasil Tersimpan</h4></div></div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <select id="cbtHasilFilterKelas" style="width:auto; min-width:150px;"><option value="">Semua Kelas</option></select>
+            <button class="btn btn-ghost btn-sm" id="cbtHasilDlExcelBtn" style="width:auto;">⭳ Excel</button>
+            <button class="btn btn-gold btn-sm" id="cbtHasilDlPdfBtn" style="width:auto;">⭳ PDF</button>
+          </div>
+        </div>
         <div class="doc-shell-body pad0"><div class="pn-tablewrap"><table class="pn-table">
           <thead><tr><th>Tes</th><th>Nama</th><th>Kelas</th><th>Skor</th><th>Benar/Total</th><th>Waktu</th><th>Pelanggaran</th><th></th></tr></thead>
           <tbody id="cbtHasilTbody"></tbody>
@@ -9946,6 +10165,13 @@ function renderUjianCBT(root){
 
   /* ---------- tab: Hasil Ujian ---------- */
   const hasilTbody = root.querySelector("#cbtHasilTbody");
+  const hasilFilterKelas = root.querySelector("#cbtHasilFilterKelas");
+  hasilFilterKelas.innerHTML += getKelasList().map(k=>`<option value="${esc(k)}">${esc(k)}</option>`).join("");
+  hasilFilterKelas.onchange = drawHasil;
+  function getHasilFiltered(){
+    const list = DB.get(DB.keys.ujianHasil, []).sort((a,b)=> (b.waktu||"").localeCompare(a.waktu||""));
+    return hasilFilterKelas.value ? list.filter(h=> h.kelas===hasilFilterKelas.value) : list;
+  }
   function parseCsvSimple(text){
     const lines = text.replace(/\r/g,"").split("\n").filter(l=>l.trim());
     if(!lines.length) return [];
@@ -9997,7 +10223,7 @@ function renderUjianCBT(root){
     reader.readAsText(file);
   };
   function drawHasil(){
-    const list = DB.get(DB.keys.ujianHasil, []).sort((a,b)=> (b.waktu||"").localeCompare(a.waktu||""));
+    const list = getHasilFiltered();
     hasilTbody.innerHTML = list.length ? list.map(h=>`
       <tr>
         <td>${esc(h.testJudul)}</td>
@@ -10012,7 +10238,7 @@ function renderUjianCBT(root){
           <button class="icon-btn del" data-del-hasil="${h.id}" title="Hapus">🗑</button>
         </div></td>
       </tr>
-    `).join("") : `<tr class="empty-row"><td colspan="8">Belum ada hasil. Ambil data dari server di atas.</td></tr>`;
+    `).join("") : `<tr class="empty-row"><td colspan="8">${hasilFilterKelas.value ? `Tidak ada hasil untuk kelas ${esc(hasilFilterKelas.value)}.` : "Belum ada hasil. Ambil data dari server di atas."}</td></tr>`;
     hasilTbody.querySelectorAll("[data-kirim-nilai]").forEach(b=> b.onclick = ()=>{
       const h = DB.get(DB.keys.ujianHasil, []).find(x=>x.id===b.dataset.kirimNilai);
       if(!h || !h.siswaId) return;
@@ -10027,6 +10253,41 @@ function renderUjianCBT(root){
       });
     });
   }
+
+  /* ---- Unduh Hasil Ujian: PDF (cetak) & Excel (.xlsx), mengikuti filter kelas aktif ---- */
+  const profil = DB.get(DB.keys.profil, {});
+  function downloadHasilPdf(){
+    const list = getHasilFiltered();
+    const subtitle = laporanProfilLine() + (hasilFilterKelas.value ? ` · Kelas ${esc(hasilFilterKelas.value)}` : "");
+    printSimpleReport({
+      title: "Hasil Ujian Online (CBT)",
+      subtitle,
+      columns: ["No","Tes","Nama","Kelas","Skor","Benar/Total","Waktu","Pelanggaran"],
+      rows: list.map((h,idx)=> [ idx+1, esc(h.testJudul), esc(h.nama), esc(h.kelas)||"-", h.skor, `${h.benar}/${h.total}`, esc((h.waktu||"").slice(0,16)), h.pelanggaran>0?`${h.pelanggaran}×`:"-" ]),
+      emptyMsg: "Belum ada hasil untuk diunduh"
+    });
+  }
+  function downloadHasilExcel(){
+    const list = getHasilFiltered();
+    if(!list.length){ toast("Belum ada hasil untuk diunduh"); return; }
+    const aoa = [
+      ["Hasil Ujian Online (CBT)", hasilFilterKelas.value ? `Kelas ${hasilFilterKelas.value}` : "Semua Kelas"],
+      [profil.sekolah||"", ""],
+      ["Mata Pelajaran", profil.mapel||"-"],
+      ["Guru", profil.nama||"-"],
+      [],
+      ["No","Tes","Nama","Kelas","Skor","Benar","Total","Waktu","Pelanggaran"]
+    ];
+    list.forEach((h,idx)=> aoa.push([ idx+1, h.testJudul, h.nama, h.kelas||"-", h.skor, h.benar, h.total, (h.waktu||"").slice(0,16), h.pelanggaran||0 ]));
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = [{wch:4},{wch:24},{wch:22},{wch:10},{wch:8},{wch:8},{wch:8},{wch:16},{wch:11}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Hasil Ujian");
+    XLSX.writeFile(wb, `Hasil-Ujian-${(hasilFilterKelas.value||"Semua-Kelas").replace(/\s+/g,"-")}.xlsx`);
+    toast("File Excel berhasil diunduh");
+  }
+  root.querySelector("#cbtHasilDlPdfBtn").onclick = downloadHasilPdf;
+  root.querySelector("#cbtHasilDlExcelBtn").onclick = downloadHasilExcel;
 
   /* ---------- pemantauan langsung ---------- */
   const pantauSel = root.querySelector("#pantauTes");
