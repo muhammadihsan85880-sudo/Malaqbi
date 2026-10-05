@@ -8730,6 +8730,7 @@ const CBT_GAS_CODE = `/** MALAQBI CBT - Google Apps Script Web App
 const SHEET_KUNCI = "Kunci";
 const SHEET_HASIL = "Hasil";
 const SHEET_ESSAY = "Essay";
+const SHEET_JAWABAN = "Jawaban";
 
 const SHEET_PANTAU = "Pantau";
 const SHEET_HALAMAN = "Halaman";
@@ -8775,6 +8776,28 @@ function bacaHalaman(testId){
   const html = rows.map(function(r){ return r[2]; }).join("");
   try{ if(html && html.length < 95000) cache.put("hal_" + testId, html, 21600); }catch(err){}
   return html;
+}
+
+/* Jawaban lengkap tiap siswa (semua tipe soal) agar guru bisa melihat detailnya di aplikasi */
+function sameNis(a, b){
+  return String(a == null ? "" : a).replace(/^0+/, "") === String(b == null ? "" : b).replace(/^0+/, "");
+}
+function simpanJawaban(ss, data, jwbAll){
+  let sh = ss.getSheetByName(SHEET_JAWABAN);
+  if(!sh){
+    sh = ss.insertSheet(SHEET_JAWABAN);
+    sh.appendRow(["Waktu","TestID","NIS","Nama","Kelas","JawabanJSON"]);
+  }
+  let j = JSON.stringify(jwbAll || {});
+  if(j.length > 45000){
+    const ringkas = {};
+    Object.keys(jwbAll).forEach(function(k){
+      const v = jwbAll[k];
+      ringkas[k] = (typeof v === "string") ? v.substr(0, 1500) : v;
+    });
+    j = JSON.stringify(ringkas);
+  }
+  sh.appendRow([new Date(), data.testId, String(data.nis || ""), data.nama, data.kelas, j.substr(0, 49000)]);
 }
 
 /* Status aktif/nonaktif ujian disimpan di Script Properties (kunci: off_ID-TES) */
@@ -8946,12 +8969,32 @@ function doPost(e){
     const ss = SpreadsheetApp.getActiveSpreadsheet();
 
     if(data.action === "ping"){
-      return respond({ ok:true, pesan:"Server CBT aktif", versi:4 });
+      return respond({ ok:true, pesan:"Server CBT aktif", versi:5 });
     }
 
     if(data.action === "status"){
       aturAktif(data.testId, data.aktif !== false);
       return respond({ ok:true, aktif: data.aktif !== false });
+    }
+
+    if(data.action === "jawaban"){
+      const tokenSimpan = PropertiesService.getScriptProperties().getProperty("token_guru");
+      if(!tokenSimpan) return respond({ ok:false, pesan:"Akses guru belum diaktifkan. Buka tab Buat Tes & Link lalu klik Perbarui Link & Kunci pada salah satu tes, kemudian coba lagi." });
+      if(String(data.token || "") !== tokenSimpan) return respond({ ok:false, pesan:"Akses ditolak: perangkat ini bukan perangkat guru yang memasang server." });
+      const jsh = ss.getSheetByName(SHEET_JAWABAN);
+      if(jsh && jsh.getLastRow() >= 2){
+        const baris = jsh.getRange(2, 1, jsh.getLastRow() - 1, 6).getValues();
+        for(let i = baris.length - 1; i >= 0; i--){
+          const b = baris[i];
+          if(String(b[1]) !== String(data.testId)) continue;
+          const cocok = data.nis ? sameNis(b[2], data.nis) : (String(b[3]).toLowerCase() === String(data.nama || "").toLowerCase());
+          if(!cocok) continue;
+          let jwb = null;
+          try{ jwb = JSON.parse(b[5]); }catch(err){ jwb = null; }
+          return respond({ ok:true, jawaban: jwb, waktu: b[0] });
+        }
+      }
+      return respond({ ok:true, jawaban:null });
     }
 
     if(data.action === "mulai" || data.action === "hb"){
@@ -8996,6 +9039,10 @@ function doPost(e){
       if(data.halaman) simpanHalaman(ss, data.testId, data.halaman);
       try{ CacheService.getScriptCache().remove("kunci_" + data.testId); }catch(err){}
       if(data.aktif !== undefined) aturAktif(data.testId, data.aktif !== false);
+      try{
+        const spTok = PropertiesService.getScriptProperties();
+        if(data.token && !spTok.getProperty("token_guru")) spTok.setProperty("token_guru", String(data.token));
+      }catch(err){}
       return respond({ ok:true, pesan:"Kunci jawaban tersimpan di server", linkSiap: !!data.halaman });
     }
 
@@ -9042,8 +9089,13 @@ function doPost(e){
         hasilSheet.getRange(1, 9).setValue("Pelanggaran");
       }
       hasilSheet.appendRow([new Date(), data.testId, data.nama, data.nis, data.kelas, skor, benar, total, pel]);
+      simpanJawaban(ss, data, jwbAll);
 
-      return respond({ ok:true, skor:skor, benar:benar, total:total, essay:essayList.length, pelanggaran:pel });
+      const resp = { ok:true, skor:skor, benar:benar, total:total, essay:essayList.length, pelanggaran:pel };
+      /* Kunci jawaban hanya diikutsertakan jika guru mengizinkan pembahasan untuk tes ini
+         (dikirim siswa lewat field "pembahasan"); essay tidak disertakan karena tidak punya kunci baku. */
+      if(data.pembahasan) resp.kunci = soalKunci.filter(function(s){ return (s.tipe||"pg") !== "essay"; });
+      return respond(resp);
     }
 
     return respond({ ok:false, pesan:"Aksi tidak dikenal" });
@@ -9111,7 +9163,8 @@ function buildCbtHtmlFile(tes, soalList){
 
   const dataJson = JSON.stringify({
     testId: tes.id, judul: tes.judul, durasiMenit: tes.durasiMenit||0,
-    acak: !!tes.acak, maks: parseInt(tes.maksPelanggaran,10)||0, logo: CBT_LOGO_SMALL, endpoint: cbtNormUrl(cfg.endpointUrl), soal: soalPublik,
+    acak: !!tes.acak, maks: parseInt(tes.maksPelanggaran,10)||0, pembahasan: tes.tampilkanPembahasan!==false,
+    logo: CBT_LOGO_SMALL, endpoint: cbtNormUrl(cfg.endpointUrl), soal: soalPublik,
     siswa: siswaPublik2, kelasList: kelasPublik
   }).replace(/</g,"\\u003c");
   return `<!DOCTYPE html>
@@ -9576,7 +9629,7 @@ function kumpulkan(){
 }
 var waktuSelesai = null;
 function kirimJawaban(){
-  var payload = { action:"submit", testId:CFG.testId, nama:identitas.nama, nis:identitas.nis, kelas:identitas.kelas, jawaban:jawaban, pelanggaran:pelanggaran, log:logPel };
+  var payload = { action:"submit", testId:CFG.testId, nama:identitas.nama, nis:identitas.nis, kelas:identitas.kelas, jawaban:jawaban, pelanggaran:pelanggaran, log:logPel, pembahasan: !!CFG.pembahasan };
   if(!CFG.endpoint){ tampilkanGagal("Server belum dikonfigurasi oleh guru."); return; }
   tampilkanMengirim();
   fetch(CFG.endpoint, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(payload) })
@@ -9629,11 +9682,83 @@ function tampilkanSukses(res){
   html += '<div class="stat' + (pelanggaran > 0 ? ' warn' : '') + '"><b>' + pelanggaran + 'x</b><span>Keluar halaman</span></div>';
   html += '</div>';
   if(pelanggaran > 0) html += '<div class="alert a2">Tercatat ' + pelanggaran + ' kali keluar dari halaman ujian dan sudah dilaporkan kepada guru.</div>';
-  html += '<div class="ractions"><button type="button" class="btn btn-line" id="cetakBtn">🖨 Cetak / Simpan Bukti</button></div>';
+  html += '<div class="ractions"><button type="button" class="btn btn-line" id="cetakBtn">🖨 Cetak / Simpan Bukti</button>';
+  if(CFG.pembahasan && res.kunci) html += '<button type="button" class="btn btn-primary" id="pembahasanBtn" style="background:#163c29;">📋 Lihat Pembahasan Jawaban</button>';
+  html += '</div>';
+  html += '<div id="pembahasanBox" style="display:none; text-align:left; margin-top:14px;"></div>';
   html += '<div class="foot">Terima kasih. Anda boleh menutup halaman ini.</div></div>';
   box.innerHTML = html;
   document.getElementById("cetakBtn").onclick = function(){ window.print(); };
+  if(CFG.pembahasan && res.kunci){
+    document.getElementById("pembahasanBtn").onclick = function(){
+      var kotak = document.getElementById("pembahasanBox");
+      var tombol = document.getElementById("pembahasanBtn");
+      if(kotak.style.display === "none"){
+        if(!kotak.dataset.diisi){ kotak.innerHTML = htmlPembahasan(res.kunci); kotak.dataset.diisi = "1"; }
+        kotak.style.display = "block"; tombol.textContent = "📋 Sembunyikan Pembahasan";
+      } else {
+        kotak.style.display = "none"; tombol.textContent = "📋 Lihat Pembahasan Jawaban";
+      }
+    };
+  }
   window.scrollTo(0, 0);
+}
+function normBahas(x){ return String(x==null?"":x).toLowerCase().trim().split(" ").filter(function(p){return p;}).join(" "); }
+function htmlPembahasan(kunciArr){
+  var kMap = {}; kunciArr.forEach(function(k){ kMap[k.id] = k; });
+  var LABEL = { pg:"Pilihan Ganda", pgk:"PG Kompleks", bs:"Benar-Salah", jodoh:"Menjodohkan", isian:"Isian Singkat", essay:"Esai" };
+  var kartu = soalTampil.map(function(s, idx){
+    var k = kMap[s.id]; var t = s.tipe || "pg"; var j = jawaban[s.id]; var ada = adaJawaban(j);
+    var isi = "", status = "Tidak dijawab", warna = "#6b7a72", bg = "#eef1ef";
+    if(t === "essay"){
+      status = ada ? "Menunggu dinilai guru" : "Tidak dijawab"; warna = ada ? "#8a6a10" : "#6b7a72"; bg = ada ? "#fff4d6" : "#eef1ef";
+      isi = '<div style="padding:10px 12px; border:1.5px solid #e3ede7; border-radius:10px; background:#fafcfb; font-size:13px; white-space:pre-wrap;">' + (ada ? escapeHtml(String(j)) : '<i style="color:#6b7a72;">tidak dijawab</i>') + '</div>';
+    } else if(t === "pg" || t === "pgk"){
+      var kArr = Array.isArray(k.kunci) ? k.kunci : [k.kunci];
+      var pArr = Array.isArray(j) ? j : (j ? [j] : []);
+      var benarSoal = ada && kArr.slice().sort().join(",") === pArr.slice().sort().join(",");
+      status = !ada ? "Tidak dijawab" : (benarSoal ? "Benar" : "Salah"); warna = !ada ? "#6b7a72" : (benarSoal ? "#14663f" : "#b3364f"); bg = !ada ? "#eef1ef" : (benarSoal ? "#e4f6ee" : "#fde8ec");
+      isi = (s.opsi||[]).map(function(o){
+        var isKunci = kArr.indexOf(o.key) > -1, dipilih = pArr.indexOf(o.key) > -1;
+        var bd = isKunci ? "#8fd8ac" : (dipilih ? "#f0b7c3" : "#e3ede7");
+        var bgc = isKunci ? "#eefaf3" : (dipilih ? "#fff3f5" : "#fff");
+        var tag = dipilih ? ('<span style="font-size:10px; font-weight:800; padding:2px 7px; border-radius:999px; background:' + (isKunci?"#14663f":"#b3364f") + '; color:#fff;">Jawaban Anda</span>') : "";
+        if(isKunci) tag += ' <span style="font-size:10px; font-weight:800; color:#14663f;">✓ Kunci</span>';
+        return '<div style="display:flex; justify-content:space-between; gap:8px; padding:7px 10px; border:1.5px solid '+bd+'; background:'+bgc+'; border-radius:9px; margin-bottom:5px; font-size:12.5px;"><span><b>'+o.key+'.</b> '+escapeHtml(o.teks)+'</span><span style="white-space:nowrap;">'+tag+'</span></div>';
+      }).join("");
+    } else if(t === "bs"){
+      var benarBs = ada && j === k.kunci;
+      status = !ada ? "Tidak dijawab" : (benarBs ? "Benar" : "Salah"); warna = !ada ? "#6b7a72" : (benarBs ? "#14663f" : "#b3364f"); bg = !ada ? "#eef1ef" : (benarBs ? "#e4f6ee" : "#fde8ec");
+      isi = ["Benar","Salah"].map(function(v){
+        var isKunci = v === k.kunci, dipilih = v === j;
+        var bd = isKunci ? "#8fd8ac" : (dipilih ? "#f0b7c3" : "#e3ede7");
+        return '<div style="padding:7px 10px; border:1.5px solid '+bd+'; border-radius:9px; margin-bottom:5px; font-size:12.5px;">'+v+(dipilih?' — jawaban Anda':'')+(isKunci?' ✓':'')+'</div>';
+      }).join("");
+    } else if(t === "jodoh"){
+      var kananTeks = {}; (s.kanan||[]).forEach(function(kn){ kananTeks[kn.id] = kn.teks; });
+      var kBenar = k.kunci || {}; var semuaBenar = true, adaJwbJodoh = false;
+      isi = (s.kiri||[]).map(function(ki){
+        var pilihan = (j && typeof j === "object") ? j[ki.id] : "";
+        if(pilihan) adaJwbJodoh = true;
+        var benarP = pilihan === kBenar[ki.id];
+        if(!benarP) semuaBenar = false;
+        return '<div style="padding:8px 10px; border:1.5px solid '+(!pilihan?"#e3ede7":(benarP?"#8fd8ac":"#f0b7c3"))+'; border-radius:9px; margin-bottom:5px; font-size:12.5px;"><b>'+escapeHtml(ki.teks)+'</b><br>Jawaban Anda: '+(pilihan?'<span style="color:'+(benarP?"#14663f":"#b3364f")+';">'+escapeHtml(kananTeks[pilihan]||"-")+(benarP?" ✓":" ✕")+'</span>':'<i>tidak dijawab</i>')+(benarP?'':'<br><span style="color:#14663f;">Kunci: '+escapeHtml(kananTeks[kBenar[ki.id]]||"-")+'</span>')+'</div>';
+      }).join("");
+      ada = adaJwbJodoh;
+      status = !ada ? "Tidak dijawab" : (semuaBenar ? "Benar" : "Sebagian/Salah"); warna = !ada ? "#6b7a72" : (semuaBenar ? "#14663f" : "#b3364f"); bg = !ada ? "#eef1ef" : (semuaBenar ? "#e4f6ee" : "#fde8ec");
+    } else if(t === "isian"){
+      var benarIsian = ada && (k.kunci||[]).some(function(kk){ return normBahas(kk) === normBahas(j); });
+      status = !ada ? "Tidak dijawab" : (benarIsian ? "Benar" : "Salah"); warna = !ada ? "#6b7a72" : (benarIsian ? "#14663f" : "#b3364f"); bg = !ada ? "#eef1ef" : (benarIsian ? "#e4f6ee" : "#fde8ec");
+      isi = '<div style="padding:9px 11px; border:1.5px solid '+(!ada?"#e3ede7":(benarIsian?"#8fd8ac":"#f0b7c3"))+'; border-radius:9px; font-size:12.5px; margin-bottom:5px;">Jawaban Anda: '+(ada?'<b>'+escapeHtml(String(j))+'</b>':'<i>tidak dijawab</i>')+'</div>'
+        + '<div style="font-size:12px; color:#14663f;">Jawaban yang benar: '+(k.kunci||[]).map(function(kk){return '<b>'+escapeHtml(kk)+'</b>';}).join(", ")+'</div>';
+    }
+    return '<div style="border:1.5px solid #dce7e0; border-radius:12px; padding:12px; margin-bottom:10px;">'
+      + '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:7px; flex-wrap:wrap;">'
+      + '<span style="font-weight:800; font-size:12.5px;">Soal '+(idx+1)+' <span style="font-weight:600; color:#6b8577;">('+(LABEL[t]||t)+')</span></span>'
+      + '<span style="font-size:11px; font-weight:800; padding:3px 9px; border-radius:999px; background:'+bg+'; color:'+warna+';">'+status+'</span></div>'
+      + '<div style="font-size:13.5px; font-weight:600; margin-bottom:8px;">'+escapeHtml(s.teks)+'</div>' + isi + '</div>';
+  }).join("");
+  return '<h3 style="font-size:14.5px; margin:0 0 10px;">Pembahasan Jawaban</h3>' + kartu;
 }
 function tampilkanGagal(pesan){
   var box = document.getElementById("hasilBox");
@@ -9787,6 +9912,187 @@ function bukaPreviewSoal(sd, cb){
     var label = function(){ bp.textContent = cb.checked ? "✕ Batalkan pilihan soal ini" : "✓ Pilih soal ini"; };
     label();
     bp.onclick = function(){ cb.checked = !cb.checked; cb.dispatchEvent(new Event("change", { bubbles:true })); label(); };
+  }
+}
+
+/* ===== Detail jawaban siswa (pop up dari Hasil Tersimpan) ===== */
+function tokenGuru(){
+  var cfg = DB.get(DB.keys.ujianConfig, {});
+  if(!cfg.tokenGuru){
+    var a = "";
+    for(var i = 0; i < 3; i++) a += Math.random().toString(36).slice(2, 10);
+    cfg.tokenGuru = a;
+    DB.set(DB.keys.ujianConfig, cfg);
+  }
+  return cfg.tokenGuru;
+}
+function normTeks(x){ return String(x == null ? "" : x).toLowerCase().trim().split(" ").filter(function(p){ return p; }).join(" "); }
+function adaJwb(j){
+  if(j === undefined || j === null) return false;
+  if(Array.isArray(j)) return j.length > 0;
+  if(typeof j === "object") return Object.keys(j).length > 0;
+  return String(j).trim() !== "";
+}
+/* sp = hasil soalKunciPayload(); sama persis dengan penilaian di server */
+function nilaiSoalKlien(sp, jwb){
+  var t = sp.tipe || "pg";
+  if(t === "pg" || t === "bs") return (jwb !== undefined && jwb === sp.kunci) ? 1 : 0;
+  if(t === "pgk"){
+    if(!Array.isArray(jwb) || !Array.isArray(sp.kunci)) return 0;
+    var a = jwb.slice().sort().join(","), b = sp.kunci.slice().sort().join(",");
+    return (a && a === b) ? 1 : 0;
+  }
+  if(t === "isian"){
+    var j = normTeks(jwb); if(!j) return 0;
+    return (sp.kunci || []).some(function(k){ return normTeks(k) === j; }) ? 1 : 0;
+  }
+  if(t === "jodoh"){
+    var ks = Object.keys(sp.kunci || {});
+    if(!ks.length || !jwb) return 0;
+    var ok = 0; ks.forEach(function(k){ if(jwb[k] === sp.kunci[k]) ok++; });
+    return ok / ks.length;
+  }
+  return 0;
+}
+function bukaDetailJawaban(h){
+  var lama = document.getElementById("detailJwbOv"); if(lama) lama.remove();
+  var nl = function(x){ return esc(x || "").split("\n").join("<br>"); };
+  var ov = document.createElement("div");
+  ov.id = "detailJwbOv";
+  ov.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; z-index:200; background:rgba(10,22,16,.62); display:flex; align-items:center; justify-content:center; padding:14px;";
+  var esc2 = function(e){ if(e.key === "Escape") tutup(); };
+  var tutup = function(){ ov.remove(); document.removeEventListener("keydown", esc2); };
+  document.addEventListener("keydown", esc2);
+  ov.addEventListener("click", function(e){ if(e.target === ov) tutup(); });
+  var kepala = '<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:12px;"><div>'
+    + '<div style="font-size:11px; font-weight:800; color:#6b8577; letter-spacing:.05em;">HASIL JAWABAN SISWA</div>'
+    + '<div style="font-size:17px; font-weight:800; margin-top:2px;">' + esc(h.nama) + '</div>'
+    + '<div style="font-size:12.5px; color:#6b8577;">' + (h.nis ? "NIS " + esc(h.nis) + " • " : "") + "Kelas " + esc(h.kelas || "-") + " • " + esc(h.testJudul || "") + '</div></div>'
+    + '<button type="button" id="djX" style="border:none; background:#eef3f0; border-radius:8px; width:32px; height:32px; font-size:16px; cursor:pointer; flex:0 0 auto;">✕</button></div>';
+  var kotak = document.createElement("div");
+  kotak.style.cssText = "background:#fff; width:100%; max-width:640px; max-height:90vh; overflow:auto; border-radius:18px; padding:18px; box-shadow:0 30px 70px -24px rgba(8,20,14,.55);";
+  ov.appendChild(kotak); document.body.appendChild(ov);
+  var pasangKepala = function(isi){
+    kotak.innerHTML = kepala + isi;
+    document.getElementById("djX").onclick = tutup;
+  };
+  var pesan = function(teks, warna){
+    pasangKepala('<div style="background:' + (warna || "#fff7e0") + '; border:1.5px solid #ecd9a0; color:#6b5313; border-radius:12px; padding:12px 14px; font-size:13px; line-height:1.55;">' + teks + '</div>');
+  };
+
+  var tes = DB.get(DB.keys.ujianTes, []).find(function(t){ return t.id === h.testId; });
+  if(!tes){ pesan("Tes untuk hasil ini tidak ditemukan di perangkat ini, sehingga soalnya tidak bisa ditampilkan."); return; }
+  var bank = DB.get(DB.keys.ujianSoal, []);
+  var soalTes = (tes.soalIds || []).map(function(id){ return bank.find(function(s){ return s.id === id; }); }).filter(Boolean);
+  var cfg = DB.get(DB.keys.ujianConfig, {});
+  var url = cbtNormUrl(cfg.endpointUrl);
+  if(!url){ pesan("Endpoint server belum diatur di tab Pengaturan Server."); return; }
+  pasangKepala('<div style="padding:26px 0; text-align:center; color:#6b8577; font-size:13px;">Memuat jawaban siswa...</div>');
+
+  fetch(url, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body: JSON.stringify({ action:"jawaban", testId:h.testId, nis:h.nis || "", nama:h.nama || "", token:tokenGuru() }) })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if(!res || !res.ok){
+        var m = (res && res.pesan) || "Gagal mengambil jawaban.";
+        if(/tidak dikenal/i.test(m)) m = "Server Google Apps Script Anda masih memakai kode versi lama. Tempel kode terbaru di Pengaturan Server → Lihat Kode, deploy versi baru, lalu coba lagi.";
+        pesan(esc(m)); return;
+      }
+      if(!res.jawaban){
+        pesan("Jawaban siswa ini tidak tersimpan di server. Hanya ujian yang dikumpulkan <b>setelah</b> kode server diperbarui yang jawabannya tersimpan.");
+        return;
+      }
+      render(res.jawaban);
+    })
+    .catch(function(){ pesan("Tidak dapat terhubung ke server. Periksa koneksi internet."); });
+
+  function render(jw){
+    var totalPoin = 0, dapatNonEssay = 0, totalNonEssay = 0, nBenar = 0, nSalah = 0, nKosong = 0, nEssay = 0;
+    var kartu = soalTes.map(function(s, idx){
+      var sp = soalKunciPayload(s), t = soalTipe(s), poin = soalPoin(s);
+      var j = jw[s.id], ada = adaJwb(j);
+      var f = 0, status, warna, bg;
+      if(t === "essay"){
+        nEssay++;
+        status = ada ? "Dinilai manual" : "Tidak dijawab"; warna = ada ? "#8a6a10" : "#6b7a72"; bg = ada ? "#fff4d6" : "#eef1ef";
+        if(!ada) nKosong++;
+      } else {
+        totalNonEssay += poin;
+        f = ada ? nilaiSoalKlien(sp, j) : 0;
+        dapatNonEssay += f * poin;
+        if(!ada){ status = "Tidak dijawab"; warna = "#6b7a72"; bg = "#eef1ef"; nKosong++; }
+        else if(f >= 1){ status = "Benar"; warna = "#14663f"; bg = "#e4f6ee"; nBenar++; }
+        else if(f > 0){ status = "Sebagian benar"; warna = "#8a6a10"; bg = "#fff4d6"; nSalah++; }
+        else { status = "Salah"; warna = "#b3364f"; bg = "#fde8ec"; nSalah++; }
+      }
+      var poinTxt = (t === "essay") ? (poin + " poin") : ((Math.round(f * poin * 100) / 100) + " / " + poin + " poin");
+      var isi = "";
+      var pilih = function(label, teks, gambar, benar, dipilih){
+        var salah = dipilih && !benar;
+        var bd = benar ? "#8fd8ac" : (salah ? "#f0b7c3" : "#e3ede7");
+        var bgc = benar ? "#eefaf3" : (salah ? "#fff3f5" : "#fff");
+        var tag = "";
+        if(dipilih) tag += '<span style="font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:999px; background:' + (benar ? "#14663f" : "#b3364f") + '; color:#fff; white-space:nowrap;">Jawaban siswa</span> ';
+        if(benar) tag += '<span style="font-size:10.5px; font-weight:800; color:#14663f; white-space:nowrap;">✓ Kunci</span>';
+        return '<div style="display:flex; gap:9px; align-items:flex-start; padding:8px 10px; border:1.5px solid ' + bd + '; background:' + bgc + '; border-radius:10px; margin-bottom:6px;">'
+          + '<strong style="min-width:18px;">' + label + '</strong><div style="flex:1; font-size:13px;">' + nl(teks)
+          + (gambar ? '<img src="' + gambar + '" alt="" style="display:block; max-width:100%; max-height:140px; border-radius:8px; margin-top:5px;">' : "")
+          + '</div><div style="display:flex; flex-direction:column; gap:3px; align-items:flex-end;">' + tag + '</div></div>';
+      };
+      if(t === "pg" || t === "pgk"){
+        var kArr = Array.isArray(sp.kunci) ? sp.kunci : [sp.kunci];
+        var pArr = Array.isArray(j) ? j : (j ? [j] : []);
+        isi = (s.opsi || []).filter(function(o){ return o.teks || o.gambar; }).map(function(o){
+          return pilih(o.key + ".", o.teks, o.gambar, kArr.indexOf(o.key) > -1, pArr.indexOf(o.key) > -1);
+        }).join("");
+      } else if(t === "bs"){
+        isi = ["Benar", "Salah"].map(function(v){ return pilih("•", v, "", sp.kunci === v, j === v); }).join("");
+      } else if(t === "jodoh"){
+        var kananTeks = {}; (s.pairs || []).forEach(function(p){ kananTeks[p.kananId] = p.kanan; });
+        isi = (s.pairs || []).map(function(p){
+          var pilihan = (j && typeof j === "object") ? j[p.id] : "";
+          var benar = pilihan === p.kananId;
+          var bd = !pilihan ? "#e3ede7" : (benar ? "#8fd8ac" : "#f0b7c3");
+          var bgc = !pilihan ? "#fff" : (benar ? "#eefaf3" : "#fff3f5");
+          return '<div style="padding:8px 10px; border:1.5px solid ' + bd + '; background:' + bgc + '; border-radius:10px; margin-bottom:6px; font-size:13px;">'
+            + '<div style="font-weight:700;">' + nl(p.kiri) + '</div>'
+            + '<div style="margin-top:3px;">Jawaban siswa: ' + (pilihan ? '<b style="color:' + (benar ? "#14663f" : "#b3364f") + ';">' + nl(kananTeks[pilihan] || "-") + (benar ? " ✓" : " ✕") + '</b>' : '<i style="color:#6b7a72;">tidak dijawab</i>') + '</div>'
+            + (benar ? "" : '<div style="margin-top:2px; color:#14663f;">Kunci: <b>' + nl(p.kanan) + '</b></div>') + '</div>';
+        }).join("");
+      } else if(t === "isian"){
+        isi = '<div style="padding:9px 11px; border:1.5px solid ' + (!ada ? "#e3ede7" : (f >= 1 ? "#8fd8ac" : "#f0b7c3")) + '; border-radius:10px; background:' + (!ada ? "#fff" : (f >= 1 ? "#eefaf3" : "#fff3f5")) + '; font-size:13px; margin-bottom:6px;">Jawaban siswa: '
+          + (ada ? '<b>' + nl(String(j)) + '</b>' : '<i style="color:#6b7a72;">tidak dijawab</i>') + '</div>'
+          + '<div style="font-size:12.5px; color:#14663f;">Jawaban yang dianggap benar: ' + (s.kunciList || []).map(function(k){ return '<b>' + esc(k) + '</b>'; }).join(", ") + '</div>';
+      } else {
+        isi = '<div style="padding:10px 12px; border:1.5px solid #e3ede7; border-radius:10px; background:#fafcfb; font-size:13px; line-height:1.55; margin-bottom:6px; white-space:pre-wrap;">'
+          + (ada ? esc(String(j)) : '<i style="color:#6b7a72;">tidak dijawab</i>') + '</div>'
+          + (s.pedoman ? '<div style="font-size:12.5px; color:#6b5313; background:#fff7e0; border:1.5px solid #ecd9a0; border-radius:10px; padding:8px 11px;"><b>Pedoman:</b> ' + nl(s.pedoman) + '</div>' : "");
+      }
+      var gambarQ = s.gambar ? '<img src="' + s.gambar + '" alt="" style="display:block; max-width:100%; max-height:240px; border-radius:10px; margin:8px 0;">' : "";
+      return '<div class="dj-kartu" data-benar="' + (t !== "essay" && ada && f >= 1 ? "1" : "0") + '" style="border:1.5px solid #dce7e0; border-radius:14px; padding:13px; margin-bottom:11px;">'
+        + '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">'
+        + '<div style="display:flex; gap:6px; align-items:center;"><span style="font-weight:800; font-size:13px;">Soal ' + (idx + 1) + '</span><span class="cg-kelas">' + esc(SOAL_TIPE[t].pendek) + '</span></div>'
+        + '<div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11.5px; color:#6b8577; font-weight:700;">' + poinTxt + '</span>'
+        + '<span style="font-size:11.5px; font-weight:800; padding:3px 10px; border-radius:999px; background:' + bg + '; color:' + warna + ';">' + status + '</span></div></div>'
+        + '<div style="font-size:14px; font-weight:600; line-height:1.5;">' + nl(s.teks) + '</div>' + gambarQ
+        + '<div style="margin-top:9px;">' + isi + '</div></div>';
+    }).join("");
+
+    var skorHitung = totalNonEssay ? Math.round(dapatNonEssay / totalNonEssay * 100) : 0;
+    var beda = totalNonEssay && Math.abs(skorHitung - Number(h.skor || 0)) > 0.5;
+    var stat = function(n, label, warna){ return '<div style="flex:1; min-width:80px; background:#f5f9f6; border:1.5px solid #e3ede7; border-radius:11px; padding:8px 6px; text-align:center;"><div style="font-size:18px; font-weight:800; color:' + warna + ';">' + n + '</div><div style="font-size:11px; color:#6b8577; font-weight:700;">' + label + '</div></div>'; };
+    var ringkasan = '<div style="display:flex; gap:7px; flex-wrap:wrap; margin-bottom:10px;">'
+      + stat(h.skor, "Skor", "#14663f") + stat(nBenar, "Benar", "#14663f") + stat(nSalah, "Salah", "#b3364f") + stat(nKosong, "Kosong", "#6b7a72") + (nEssay ? stat(nEssay, "Essay", "#8a6a10") : "") + '</div>'
+      + (h.pelanggaran > 0 ? '<div style="background:#fde8ec; border:1.5px solid #f0b7c3; color:#8f2a40; border-radius:10px; padding:7px 11px; font-size:12.5px; margin-bottom:10px;">⚠ Tercatat keluar halaman ujian ' + h.pelanggaran + ' kali.</div>' : "")
+      + (beda ? '<div style="background:#fff7e0; border:1.5px solid #ecd9a0; color:#6b5313; border-radius:10px; padding:7px 11px; font-size:12px; margin-bottom:10px;">Soal atau kunci di Bank Soal berubah setelah ujian ini, jadi koreksi di bawah memakai kunci saat ini (skor saat ujian: ' + h.skor + ', skor kunci saat ini: ' + skorHitung + ').</div>' : "")
+      + '<label style="display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; margin:0 0 10px; cursor:pointer;"><input type="checkbox" id="djSalah" style="width:auto; margin:0;"> Tampilkan hanya soal yang salah / tidak dijawab</label>';
+    pasangKepala(ringkasan + (kartu || '<div style="font-size:13px; color:#6b8577;">Tes ini tidak memiliki soal yang dapat ditampilkan.</div>')
+      + '<button type="button" class="btn btn-ghost btn-sm" id="djTutup" style="width:100%; margin-top:4px;">Tutup</button>');
+    document.getElementById("djTutup").onclick = tutup;
+    document.getElementById("djSalah").onchange = function(){
+      var on = this.checked;
+      kotak.querySelectorAll(".dj-kartu").forEach(function(k){ k.style.display = (on && k.dataset.benar === "1") ? "none" : ""; });
+    };
   }
 }
 
@@ -10215,7 +10521,7 @@ function renderUjianCBT(root){
             <button class="btn btn-gold btn-sm" id="cbtHasilDlPdfBtn" style="width:auto;">⭳ PDF</button>
           </div>
         </div>
-        <div class="doc-shell-body pad0"><div class="pn-tablewrap"><table class="pn-table">
+        <div class="doc-shell-body pad0"><div style="font-size:11.5px; color:var(--ink-soft); padding:8px 14px 0;">Ketuk nama siswa untuk melihat jawaban lengkapnya.</div><div class="pn-tablewrap"><table class="pn-table">
           <thead><tr><th>Tes</th><th>Nama</th><th>Kelas</th><th>Skor</th><th>Benar/Total</th><th>Waktu</th><th>Pelanggaran</th><th></th></tr></thead>
           <tbody id="cbtHasilTbody"></tbody>
         </table></div></div>
@@ -10577,7 +10883,7 @@ function renderUjianCBT(root){
     if(!soalTes.length){ toast("Tes ini belum memiliki soal"); return; }
     toast("Membuat link ujian...");
     fetch(cbtNormUrl(cfgNow.endpointUrl), { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"},
-      body: JSON.stringify({ action:"kunci", testId:t.id, judul:t.judul, aktif:(t.aktif!==false), soal: soalTes.map(soalKunciPayload), halaman: buildCbtHtmlFile(t, soalTes) }) })
+      body: JSON.stringify({ action:"kunci", testId:t.id, judul:t.judul, aktif:(t.aktif!==false), token:tokenGuru(), soal: soalTes.map(soalKunciPayload), halaman: buildCbtHtmlFile(t, soalTes) }) })
       .then(r=>r.json()).then(res=>{
         if(res && res.ok){
           const arr = DB.get(DB.keys.ujianTes, []);
@@ -10607,6 +10913,9 @@ function renderUjianCBT(root){
       </div>
       <div class="field"><label><input type="checkbox" id="t_acak" style="width:auto; margin-right:6px;"${edit&&edit.acak?" checked":""}>Acak urutan soal untuk tiap siswa</label></div>
       <div class="field"><label>Kumpulkan otomatis setelah ... kali keluar tab</label><input type="text" id="t_maks" placeholder="Contoh: 3 (kosongkan = hanya dicatat sebagai curang)" value="${edit&&edit.maksPelanggaran?edit.maksPelanggaran:""}"></div>
+      <div class="field"><label><input type="checkbox" id="t_pembahasan" style="width:auto; margin-right:6px;"${(!edit || edit.tampilkanPembahasan!==false)?" checked":""}>Izinkan siswa melihat pembahasan (benar/salah per soal) setelah mengumpulkan</label>
+        <p style="font-size:11.5px; color:var(--ink-soft); margin:4px 0 0;">Matikan untuk ujian yang dipakai berulang di beberapa sesi/kelas pada hari yang sama, agar siswa yang mengerjakan lebih dulu tidak bisa membocorkan kunci jawaban.</p>
+      </div>
       <div class="field"><label>Pilih Soal dari Bank Soal</label>
         <div class="kb-bar" id="t_kelasBar" style="margin-bottom:8px;"></div>
         <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:6px;">
@@ -10630,7 +10939,8 @@ function renderUjianCBT(root){
           judul, kelas: document.getElementById("t_kelas").value,
           durasiMenit: parseInt(document.getElementById("t_durasi").value,10) || 0,
           acak: document.getElementById("t_acak").checked, soalIds,
-          maksPelanggaran: parseInt(document.getElementById("t_maks").value,10) || 0
+          maksPelanggaran: parseInt(document.getElementById("t_maks").value,10) || 0,
+          tampilkanPembahasan: document.getElementById("t_pembahasan").checked
         });
         const sudahTayang = !!arrE[ix].linkSiap;
         arrE[ix].perluPerbarui = sudahTayang;
@@ -10650,6 +10960,7 @@ function renderUjianCBT(root){
         id: uid(), judul, kelas: document.getElementById("t_kelas").value,
         durasiMenit: parseInt(document.getElementById("t_durasi").value,10) || 0,
         acak: document.getElementById("t_acak").checked, soalIds, maksPelanggaran: parseInt(document.getElementById("t_maks").value,10) || 0,
+        tampilkanPembahasan: document.getElementById("t_pembahasan").checked,
         dibuat: new Date().toISOString(), kunciTerkirim: false
       };
       const arr = DB.get(DB.keys.ujianTes, []);
@@ -10781,7 +11092,7 @@ function renderUjianCBT(root){
     hasilTbody.innerHTML = list.length ? list.map(h=>`
       <tr>
         <td>${esc(h.testJudul)}</td>
-        <td>${esc(h.nama)}${h.siswaId?"":' <span title="Tidak cocok dengan Data Siswa" style="color:var(--warn);">⚠</span>'}</td>
+        <td><a href="#" class="hasil-nama" data-detail="${h.id}" title="Lihat jawaban siswa" style="color:#14663f; font-weight:700; text-decoration:underline dotted; text-underline-offset:3px;">${esc(h.nama)}</a>${h.siswaId?"":' <span title="Tidak cocok dengan Data Siswa" style="color:var(--warn);">⚠</span>'}</td>
         <td>${esc(h.kelas)||"-"}</td>
         <td><strong>${h.skor}</strong></td>
         <td>${h.benar}/${h.total}</td>
@@ -10793,6 +11104,11 @@ function renderUjianCBT(root){
         </div></td>
       </tr>
     `).join("") : `<tr class="empty-row"><td colspan="8">${hasilFilterKelas.value ? `Tidak ada hasil untuk kelas ${esc(hasilFilterKelas.value)}.` : "Belum ada hasil. Ambil data dari server di atas."}</td></tr>`;
+    hasilTbody.querySelectorAll("[data-detail]").forEach(a=> a.onclick = (e)=>{
+      e.preventDefault();
+      const rec = DB.get(DB.keys.ujianHasil, []).find(x=>x.id===a.dataset.detail);
+      if(rec) bukaDetailJawaban(rec);
+    });
     hasilTbody.querySelectorAll("[data-kirim-nilai]").forEach(b=> b.onclick = ()=>{
       const h = DB.get(DB.keys.ujianHasil, []).find(x=>x.id===b.dataset.kirimNilai);
       if(!h || !h.siswaId) return;
