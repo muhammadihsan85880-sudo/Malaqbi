@@ -1455,6 +1455,7 @@
   }
   .field input::placeholder, .field textarea::placeholder{ color:#8fa99a; }
   .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .field-row3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
 
   .btn{
     appearance:none; border:none; cursor:pointer; font-family:inherit;
@@ -1485,6 +1486,7 @@
     .modal-body{ padding:16px 18px 4px; }
     .modal-foot{ padding:12px 18px; }
     .field-row{ grid-template-columns:1fr; gap:0; }
+    .field-row3{ grid-template-columns:1fr; gap:0; }
   }
 
   .field-ttd-row{ display:grid; grid-template-columns:1fr 260px; gap:16px; align-items:start; }
@@ -10098,6 +10100,8 @@ function bukaDetailJawaban(h){
 
 const SOAL_KELAS = ["X","XI","XII"];
 function soalKelas(s){ return (s && SOAL_KELAS.indexOf(s.kelas)>-1) ? s.kelas : ""; }
+const SOAL_PAKET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+function soalPaket(s){ return (s && SOAL_PAKET.indexOf(s.paket)>-1) ? s.paket : ""; }
 /* Poin per soal: menggantikan fitur Tag/Bab lama. Soal tanpa field "poin" (data lama)
    dianggap bernilai 1 poin agar kompatibel mundur. */
 function soalPoin(s){ const n = Number(s && s.poin); return (n>0) ? n : 1; }
@@ -10463,8 +10467,9 @@ function renderUjianCBT(root){
       <div class="doc-shell">
         <div class="doc-shell-head"><span class="doc-shell-ic">${svgIcon("table")}</span><div><h4>Daftar Soal</h4></div></div>
         <div class="kb-bar" id="cbtKelasBar" style="padding:12px 16px 6px;"></div>
+        <div class="kb-bar" id="cbtPaketBar" style="padding:0 16px 10px;"></div>
         <div class="doc-shell-body pad0"><div class="pn-tablewrap"><table class="pn-table">
-          <thead><tr><th>Tipe</th><th>Soal</th><th>Kunci</th><th>Kelas</th><th>Poin</th><th></th></tr></thead>
+          <thead><tr><th>Tipe</th><th>Soal</th><th>Kunci</th><th>Kelas</th><th>Paket</th><th>Poin</th><th></th></tr></thead>
           <tbody id="cbtSoalTbody"></tbody>
         </table></div></div>
       </div>
@@ -10516,6 +10521,7 @@ function renderUjianCBT(root){
         <div class="doc-shell-head" style="justify-content:space-between; flex-wrap:wrap; gap:10px;">
           <div style="display:flex; align-items:center; gap:12px;"><span class="doc-shell-ic">${svgIcon("star")}</span><div><h4>Hasil Tersimpan</h4></div></div>
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <select id="cbtHasilFilterTes" style="width:auto; min-width:170px;"><option value="">Semua Tes</option></select>
             <select id="cbtHasilFilterKelas" style="width:auto; min-width:150px;"><option value="">Semua Kelas</option></select>
             <button class="btn btn-ghost btn-sm" id="cbtHasilDlExcelBtn" style="width:auto;">⭳ Excel</button>
             <button class="btn btn-gold btn-sm" id="cbtHasilDlPdfBtn" style="width:auto;">⭳ PDF</button>
@@ -10575,11 +10581,18 @@ function renderUjianCBT(root){
   /* ---------- tab: Bank Soal ---------- */
   const soalTbody = root.querySelector("#cbtSoalTbody");
   let filterKelas = "semua";   /* semua | X | XI | XII | none */
+  let filterPaket = "semua";   /* semua | A..Z | none */
   const kelasBar = root.querySelector("#cbtKelasBar");
+  const paketBar = root.querySelector("#cbtPaketBar");
   function cocokKelas(s, k){
     if(k==="semua") return true;
     if(k==="none") return !soalKelas(s);
     return soalKelas(s)===k;
+  }
+  function cocokPaket(s, p){
+    if(p==="semua") return true;
+    if(p==="none") return !soalPaket(s);
+    return soalPaket(s)===p;
   }
   function drawKelasBar(all){
     const chip = (k, label)=>{
@@ -10591,23 +10604,36 @@ function renderUjianCBT(root){
       + (nNone ? chip("none","Belum berkelas") : "");
     kelasBar.querySelectorAll("[data-kb]").forEach(b=> b.onclick = ()=>{ filterKelas = b.dataset.kb; drawSoal(); });
   }
+  function drawPaketBar(all){
+    const dipakai = SOAL_PAKET.filter(p=> all.some(s=>soalPaket(s)===p));
+    const nNone = all.filter(s=>!soalPaket(s)).length;
+    if(!dipakai.length && !nNone){ paketBar.innerHTML = ""; return; }
+    const chip = (p, label)=>{
+      const n = all.filter(s=>cocokPaket(s,p)).length;
+      return `<button type="button" class="kb-chip ${filterPaket===p?"on":""}" data-pk="${p}">${label}<small>${n}</small></button>`;
+    };
+    paketBar.innerHTML = chip("semua","Semua Paket") + dipakai.map(p=>chip(p,"Paket "+p)).join("") + (nNone ? chip("none","Tanpa Paket") : "");
+    paketBar.querySelectorAll("[data-pk]").forEach(b=> b.onclick = ()=>{ filterPaket = b.dataset.pk; drawSoal(); });
+  }
   function drawSoal(){
     const all = DB.get(DB.keys.ujianSoal, []);
-    const list = all.filter(s=>cocokKelas(s, filterKelas));
+    const list = all.filter(s=>cocokKelas(s, filterKelas) && cocokPaket(s, filterPaket));
     drawKelasBar(all);
+    drawPaketBar(all);
     soalTbody.innerHTML = list.length ? list.map(s=>`
       <tr>
         <td><span class="cg-kelas">${esc(SOAL_TIPE[soalTipe(s)].pendek)}</span></td>
         <td><div class="doc-desc">${(s.gambar||(s.opsi||[]).some(o=>o.gambar))?"🖼 ":""}${(s.teks||"").trim()?esc((s.teks||"").slice(0,90))+((s.teks||"").length>90?"…":""):"(soal bergambar)"}</div></td>
         <td><span class="cg-kelas">${esc(ringkasKunci(s))}</span></td>
         <td>${soalKelas(s)?`<span class="cg-kelas">${soalKelas(s)}</span>`:`<span style="color:var(--ink-soft); font-size:12px;">—</span>`}</td>
+        <td>${soalPaket(s)?`<span class="cg-kelas">${soalPaket(s)}</span>`:`<span style="color:var(--ink-soft); font-size:12px;">—</span>`}</td>
         <td><span class="cg-kelas">${soalPoin(s)}</span></td>
         <td><div class="row-actions">
           <button class="icon-btn" data-edit="${s.id}" title="Edit">✎</button>
           <button class="icon-btn del" data-del="${s.id}" title="Hapus">🗑</button>
         </div></td>
       </tr>
-    `).join("") : `<tr class="empty-row"><td colspan="6">${all.length ? "Belum ada soal untuk pilihan kelas ini." : "Belum ada soal. Klik \"Tambah Soal\" atau \"Unggah Word\" untuk memulai."}</td></tr>`;
+    `).join("") : `<tr class="empty-row"><td colspan="7">${all.length ? "Belum ada soal untuk filter ini." : "Belum ada soal. Klik \"Tambah Soal\" atau \"Unggah Word\" untuk memulai."}</td></tr>`;
     soalTbody.querySelectorAll("[data-edit]").forEach(b=> b.onclick = ()=> openSoalForm(b.dataset.edit));
     soalTbody.querySelectorAll("[data-del]").forEach(b=> b.onclick = ()=>{
       confirmDelete("Hapus soal ini dari bank soal?", ()=>{
@@ -10657,9 +10683,10 @@ function renderUjianCBT(root){
       <div class="field"><label id="s_teks_lbl">${LABEL_TEKS[item.tipe]}</label><textarea id="s_teks">${esc(item.teks)}</textarea></div>
       <div class="field"><label>Gambar Soal (opsional)</label><div id="s_img_q"></div></div>
       <div id="s_dyn"></div>
-      <div class="field-row">
+      <div class="field-row3">
         <div class="field"><label>Kelas</label><select id="s_kelas"><option value="">Belum ditentukan</option>${SOAL_KELAS.map(k=>`<option value="${k}" ${soalKelas(item)===k?"selected":""}>Kelas ${k}</option>`).join("")}</select></div>
         <div class="field"><label>Poin</label><input type="number" id="s_poin" min="1" step="1" value="${soalPoin(item)}"></div>
+        <div class="field"><label>Paket Soal</label><select id="s_paket"><option value="">(Tanpa Paket)</option>${SOAL_PAKET.map(k=>`<option value="${k}" ${soalPaket(item)===k?"selected":""}>Paket ${k}</option>`).join("")}</select></div>
       </div>
     `, ()=>{
       const tipe = document.getElementById("s_tipe").value;
@@ -10667,7 +10694,7 @@ function renderUjianCBT(root){
       if(!teks && !imgQ){ toast("Isi teks soal atau unggah gambar soal"); return false; }
       const poinInput = parseFloat(document.getElementById("s_poin").value);
       if(!(poinInput>0)){ toast("Poin harus lebih dari 0"); return false; }
-      const u = { id:item.id, tipe, teks, poin:poinInput, kelas:document.getElementById("s_kelas").value };
+      const u = { id:item.id, tipe, teks, poin:poinInput, kelas:document.getElementById("s_kelas").value, paket:document.getElementById("s_paket").value };
       if(imgQ) u.gambar = imgQ;
       if(tipe==="pg" || tipe==="pgk"){
         const opsi = ["A","B","C","D","E"].map(k=>{ const o = { key:k, teks:document.getElementById("s_opsi_"+k).value.trim() }; if(imgOpsi[k]) o.gambar = imgOpsi[k]; return o; });
@@ -10917,13 +10944,14 @@ function renderUjianCBT(root){
         <p style="font-size:11.5px; color:var(--ink-soft); margin:4px 0 0;">Matikan untuk ujian yang dipakai berulang di beberapa sesi/kelas pada hari yang sama, agar siswa yang mengerjakan lebih dulu tidak bisa membocorkan kunci jawaban.</p>
       </div>
       <div class="field"><label>Pilih Soal dari Bank Soal</label>
-        <div class="kb-bar" id="t_kelasBar" style="margin-bottom:8px;"></div>
+        <div class="kb-bar" id="t_kelasBar" style="margin-bottom:6px;"></div>
+        <div class="kb-bar" id="t_paketBar" style="margin-bottom:8px;"></div>
         <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:6px;">
           <span id="t_pilihInfo" style="font-size:12px; color:var(--ink-soft);"></span>
           <button type="button" class="btn btn-ghost btn-sm" id="t_pilihSemua" style="width:auto;">Pilih semua yang tampil</button>
         </div>
         <div style="max-height:220px; overflow-y:auto; border:1.5px solid var(--line); border-radius:10px; padding:8px;">
-          ${soalAll.map(s=>`<label class="t_soal_row" data-kelas="${soalKelas(s)}" style="display:flex; gap:8px; align-items:flex-start; padding:6px 4px; font-size:12.5px;"><input type="checkbox" class="t_soal_chk" value="${s.id}"${edit&&(edit.soalIds||[]).indexOf(s.id)>-1?" checked":""} style="margin-top:3px;"><span class="t_prev" data-sid="${s.id}" style="cursor:pointer;" title="Ketuk untuk melihat pratinjau soal"><strong>[${esc(SOAL_TIPE[soalTipe(s)].pendek)}]</strong>${soalKelas(s)?` <span class="cg-kelas" style="padding:1px 7px; font-size:11px;">${soalKelas(s)}</span>`:""} ${(s.gambar||(s.opsi||[]).some(o=>o.gambar))?"🖼 ":""}${(s.teks||"").trim()?esc((s.teks||"").slice(0,80))+((s.teks||"").length>80?"…":""):"(soal bergambar)"} <span style="color:#1f7a4d; font-size:11.5px; font-weight:700; white-space:nowrap;">👁 Pratinjau</span></span></label>`).join("")}
+          ${soalAll.map(s=>`<label class="t_soal_row" data-kelas="${soalKelas(s)}" data-paket="${soalPaket(s)}" style="display:flex; gap:8px; align-items:flex-start; padding:6px 4px; font-size:12.5px;"><input type="checkbox" class="t_soal_chk" value="${s.id}"${edit&&(edit.soalIds||[]).indexOf(s.id)>-1?" checked":""} style="margin-top:3px;"><span class="t_prev" data-sid="${s.id}" style="cursor:pointer;" title="Ketuk untuk melihat pratinjau soal"><strong>[${esc(SOAL_TIPE[soalTipe(s)].pendek)}]</strong>${soalKelas(s)?` <span class="cg-kelas" style="padding:1px 7px; font-size:11px;">${soalKelas(s)}</span>`:""}${soalPaket(s)?` <span class="cg-kelas" style="padding:1px 7px; font-size:11px;">Paket ${soalPaket(s)}</span>`:""} ${(s.gambar||(s.opsi||[]).some(o=>o.gambar))?"🖼 ":""}${(s.teks||"").trim()?esc((s.teks||"").slice(0,80))+((s.teks||"").length>80?"…":""):"(soal bergambar)"} <span style="color:#1f7a4d; font-size:11.5px; font-weight:700; white-space:nowrap;">👁 Pratinjau</span></span></label>`).join("")}
         </div>
       </div>
     `, ()=>{
@@ -10972,18 +11000,29 @@ function renderUjianCBT(root){
         toast("Tes tersimpan. Atur endpoint server di tab Pengaturan Server, lalu klik Publikasikan Tes");
       }
     }, edit ? "Simpan Perubahan" : "Simpan");
-    /* filter & tarik soal berdasarkan kelas */
+    /* filter & tarik soal berdasarkan kelas + paket */
     (function(){
       const bar = document.getElementById("t_kelasBar");
+      const pbar = document.getElementById("t_paketBar");
       const rows = Array.from(document.querySelectorAll(".t_soal_row"));
       const selKelas = document.getElementById("t_kelas");
       const info = document.getElementById("t_pilihInfo");
       let aktif = "semua";
+      let aktifPaket = "semua";
       const cocok = (r,k)=> k==="semua" || (k==="none" ? !r.dataset.kelas : r.dataset.kelas===k);
+      const cocokP = (r,p)=> p==="semua" || (p==="none" ? !r.dataset.paket : r.dataset.paket===p);
+      const tampak = r=> cocok(r,aktif) && cocokP(r,aktifPaket);
       function gambarBar(){
         const chip = (k,label)=> `<button type="button" class="kb-chip ${aktif===k?"on":""}" data-k="${k}">${label}<small>${rows.filter(r=>cocok(r,k)).length}</small></button>`;
         const nNone = rows.filter(r=>!r.dataset.kelas).length;
         bar.innerHTML = chip("semua","Semua") + chip("X","Kelas X") + chip("XI","Kelas XI") + chip("XII","Kelas XII") + (nNone ? chip("none","Belum berkelas") : "");
+      }
+      function gambarPaketBar(){
+        const dipakai = SOAL_PAKET.filter(p=> rows.some(r=>r.dataset.paket===p));
+        const nNone = rows.filter(r=>!r.dataset.paket).length;
+        if(!dipakai.length && !nNone){ pbar.innerHTML = ""; return; }
+        const chip = (p,label)=> `<button type="button" class="kb-chip ${aktifPaket===p?"on":""}" data-p="${p}">${label}<small>${rows.filter(r=>cocokP(r,p)).length}</small></button>`;
+        pbar.innerHTML = chip("semua","Semua Paket") + dipakai.map(p=>chip(p,"Paket "+p)).join("") + (nNone ? chip("none","Tanpa Paket") : "");
       }
       function ringkas(){
         const dipilih = rows.filter(r=>r.querySelector(".t_soal_chk").checked).length;
@@ -10991,10 +11030,11 @@ function renderUjianCBT(root){
         info.textContent = dipilih + " soal dipilih • " + tampil + " soal tampil • ketuk soal untuk pratinjau";
       }
       function terapkan(){
-        rows.forEach(r=>{ r.style.display = cocok(r,aktif) ? "flex" : "none"; });
-        gambarBar(); ringkas();
+        rows.forEach(r=>{ r.style.display = tampak(r) ? "flex" : "none"; });
+        gambarBar(); gambarPaketBar(); ringkas();
       }
       bar.onclick = e=>{ const b = e.target.closest("[data-k]"); if(!b) return; aktif = b.dataset.k; terapkan(); };
+      pbar.onclick = e=>{ const b = e.target.closest("[data-p]"); if(!b) return; aktifPaket = b.dataset.p; terapkan(); };
       /* memilih Kelas Tujuan (mis. XI-3) otomatis memfilter soal Kelas XI */
       selKelas.addEventListener("change", ()=>{ aktif = tingkatDariKelas(selKelas.value) || "semua"; terapkan(); });
       document.getElementById("t_pilihSemua").onclick = ()=>{
@@ -11030,11 +11070,26 @@ function renderUjianCBT(root){
   };
   const hasilTbody = root.querySelector("#cbtHasilTbody");
   const hasilFilterKelas = root.querySelector("#cbtHasilFilterKelas");
+  const hasilFilterTes = root.querySelector("#cbtHasilFilterTes");
   hasilFilterKelas.innerHTML += getKelasList().map(k=>`<option value="${esc(k)}">${esc(k)}</option>`).join("");
+  function isiFilterTes(){
+    const terpilih = hasilFilterTes.value;
+    const tesAll = DB.get(DB.keys.ujianTes, []);
+    const idTerpakai = new Set(DB.get(DB.keys.ujianHasil, []).map(h=>h.testId));
+    const daftar = tesAll.filter(t=> idTerpakai.has(t.id));
+    /* Jika ada hasil dengan testId yang tesnya sudah dihapus dari Bank Tes, tetap tampilkan agar bisa difilter */
+    idTerpakai.forEach(id=>{ if(!daftar.find(t=>t.id===id)){ const h = DB.get(DB.keys.ujianHasil, []).find(x=>x.testId===id); if(h) daftar.push({ id, judul:h.testJudul||"(tes tidak dikenal)" }); } });
+    hasilFilterTes.innerHTML = `<option value="">Semua Tes</option>` + daftar.map(t=>`<option value="${esc(t.id)}">${esc(t.judul)}</option>`).join("");
+    if(daftar.find(t=>t.id===terpilih)) hasilFilterTes.value = terpilih;
+  }
+  isiFilterTes();
   hasilFilterKelas.onchange = drawHasil;
+  hasilFilterTes.onchange = drawHasil;
   function getHasilFiltered(){
-    const list = DB.get(DB.keys.ujianHasil, []).sort((a,b)=> (b.waktu||"").localeCompare(a.waktu||""));
-    return hasilFilterKelas.value ? list.filter(h=> h.kelas===hasilFilterKelas.value) : list;
+    let list = DB.get(DB.keys.ujianHasil, []).sort((a,b)=> (b.waktu||"").localeCompare(a.waktu||""));
+    if(hasilFilterKelas.value) list = list.filter(h=> h.kelas===hasilFilterKelas.value);
+    if(hasilFilterTes.value) list = list.filter(h=> h.testId===hasilFilterTes.value);
+    return list;
   }
   function parseCsvSimple(text){
     const lines = text.replace(/\r/g,"").split("\n").filter(l=>l.trim());
@@ -11088,7 +11143,9 @@ function renderUjianCBT(root){
     reader.readAsText(file);
   };
   function drawHasil(){
+    isiFilterTes();
     const list = getHasilFiltered();
+    const kosongKeterangan = [hasilFilterTes.value ? `tes "${esc(hasilFilterTes.options[hasilFilterTes.selectedIndex].text)}"` : "", hasilFilterKelas.value ? `kelas ${esc(hasilFilterKelas.value)}` : ""].filter(Boolean).join(" dan ");
     hasilTbody.innerHTML = list.length ? list.map(h=>`
       <tr>
         <td>${esc(h.testJudul)}</td>
@@ -11103,7 +11160,7 @@ function renderUjianCBT(root){
           <button class="icon-btn del" data-del-hasil="${h.id}" title="Hapus">🗑</button>
         </div></td>
       </tr>
-    `).join("") : `<tr class="empty-row"><td colspan="8">${hasilFilterKelas.value ? `Tidak ada hasil untuk kelas ${esc(hasilFilterKelas.value)}.` : "Belum ada hasil. Ambil data dari server di atas."}</td></tr>`;
+    `).join("") : `<tr class="empty-row"><td colspan="8">${kosongKeterangan ? `Tidak ada hasil untuk ${kosongKeterangan}.` : "Belum ada hasil. Ambil data dari server di atas."}</td></tr>`;
     hasilTbody.querySelectorAll("[data-detail]").forEach(a=> a.onclick = (e)=>{
       e.preventDefault();
       const rec = DB.get(DB.keys.ujianHasil, []).find(x=>x.id===a.dataset.detail);
