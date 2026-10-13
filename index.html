@@ -2224,6 +2224,19 @@
   .na-rank small{ font-size:11px; font-weight:600; color:var(--ink-soft); }
   .na-tie{ cursor:help; font-size:12px; color:#b8901d; }
   .na-note{ margin:12px 2px 0; font-size:12px; line-height:1.55; color:var(--ink-soft); }
+
+  /* ---------- Guru Wali: tab Kegiatan ---------- */
+  .kg-peserta{ display:flex; flex-wrap:wrap; gap:5px; margin-top:8px; }
+  .kg-chip{ display:inline-block; padding:2px 9px; border-radius:999px; background:#f1f6f3; border:1px solid #e0ebe5; font-size:11.5px; font-weight:600; color:#2f4a3c; }
+  .kg-more{ background:#fff7dc; border-color:#f0e2b0; color:#7a5c10; }
+  .kg-fotos{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .kg-foto{ width:96px; height:70px; object-fit:cover; border-radius:10px; border:1.5px solid var(--line); cursor:zoom-in; }
+  .kg-pick{ max-height:220px; overflow:auto; border:1.5px solid var(--line); border-radius:12px; }
+  .kg-pick label{ display:flex; align-items:center; gap:10px; padding:8px 12px; border-bottom:1px solid #eef3f0; margin:0; cursor:pointer; font-size:13px; }
+  .kg-pick input{ width:auto; flex:none; margin:0; }
+  .kg-prev{ position:relative; display:inline-block; }
+  .kg-prev img{ width:86px; height:64px; object-fit:cover; border-radius:9px; border:1.5px solid var(--line); display:block; }
+  .kg-prev button{ position:absolute; top:-7px; right:-7px; width:22px; height:22px; border-radius:50%; border:none; background:#b3364f; color:#fff; font-size:14px; line-height:1; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -2526,7 +2539,7 @@ const DB = {
     absensi:"lms_absensi", jurnal:"lms_jurnal", catatan:"lms_catatan", asesmen:"lms_asesmen",
     penilaian:"lms_penilaian", penilaianKolom:"lms_penilaian_kolom", penilaianSetting:"lms_penilaian_setting",
     perangkatAjar:"lms_perangkat_ajar", waliKelas:"lms_wali_kelas",
-    peringkatSetting:"lms_peringkat_setting", catatanWali:"lms_catatan_wali", guruWali:"lms_guru_wali", catatanGuruWali:"lms_catatan_guru_wali", strukturKelas:"lms_struktur_kelas", kelompokPiket:"lms_kelompok_piket",
+    peringkatSetting:"lms_peringkat_setting", catatanWali:"lms_catatan_wali", guruWali:"lms_guru_wali", catatanGuruWali:"lms_catatan_guru_wali", kegiatanGuruWali:"lms_kegiatan_guru_wali", strukturKelas:"lms_struktur_kelas", kelompokPiket:"lms_kelompok_piket",
     jadwalPiket:"lms_jadwal_piket", jadwalPelajaran:"lms_jadwal_pelajaran",
     programKerjaWali:"lms_program_kerja_wali", kalenderProgram:"lms_kalender_program",
     agenda:"lms_agenda", jadwalMengajar:"lms_jadwal_mengajar",
@@ -6812,6 +6825,26 @@ function renderCatatanWali(root){
   });
 }
 
+/* Kegiatan Guru Wali: bentuk pertemuan dengan murid binaan */
+const KG_BENTUK = {
+  individu: { label:"Pertemuan Individu",          ikon:"🧍", warna:"#14663f", bg:"#e4f6ee", garis:"#1f9d62" },
+  kelompok: { label:"Pertemuan Kelompok",          ikon:"👥", warna:"#2a5c99", bg:"#e7f0fb", garis:"#4b86c9" },
+  klasikal: { label:"Pertemuan Seluruh Binaan",    ikon:"🏫", warna:"#7a5c10", bg:"#fdf3d0", garis:"#d4a72c" },
+  ortu:     { label:"Pertemuan dengan Orang Tua",  ikon:"👨‍👩‍👧", warna:"#8a3f9e", bg:"#f5e9fa", garis:"#b86fcf" },
+  rumah:    { label:"Kunjungan Rumah",             ikon:"🏠", warna:"#a35a1b", bg:"#fbeedd", garis:"#d98a3d" },
+  daring:   { label:"Pertemuan Daring",            ikon:"💬", warna:"#1c6f7a", bg:"#e2f4f6", garis:"#3fa7b5" },
+  lainnya:  { label:"Kegiatan Lainnya",            ikon:"📌", warna:"#52615a", bg:"#eef1ef", garis:"#9bb0a4" }
+};
+function kgHariIni(){
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function kgJam(k){
+  const f = function(t){ return String(t || "").replace(":", "."); };
+  if(!k.jamMulai) return "";
+  return f(k.jamMulai) + (k.jamSelesai ? " – " + f(k.jamSelesai) : "") + " WITA";
+}
+
 /* Modul catatan siswa yang dipakai bersama oleh Catatan Wali Kelas dan Guru Wali */
 function renderCatatanModul(root, cfg){
   const wali = { nama:cfg.guru || "", nip:cfg.nip || "" };
@@ -6851,11 +6884,12 @@ function renderCatatanModul(root, cfg){
     <div style="display:flex; gap:8px; flex-wrap:wrap;">${cfg.binaan ? '<button class="btn btn-ghost btn-sm" id="cwTambahMurid" style="background:rgba(255,255,255,.14); color:#fff; border-color:rgba(255,255,255,.4);">＋ Tambah Murid</button>' : ""}<button class="btn btn-gold btn-sm" id="cwTambah">＋ Tambah Catatan</button></div>
   </div></div>
   <div class="wk-stats" id="cwStats"></div>
-  <div class="cw-tabs">${cfg.binaan ? '<button class="cw-tab active" data-cwtab="binaan">Murid Binaan</button>' : ""}<button class="cw-tab${cfg.binaan ? "" : " active"}" data-cwtab="catatan">Catatan</button><button class="cw-tab" data-cwtab="rekap">Rekap</button></div>
+  <div class="cw-tabs">${cfg.binaan ? '<button class="cw-tab active" data-cwtab="binaan">Murid Binaan</button>' : ""}<button class="cw-tab${cfg.binaan ? "" : " active"}" data-cwtab="catatan">Catatan</button><button class="cw-tab" data-cwtab="rekap">Rekap</button>${cfg.binaan ? '<button class="cw-tab" data-cwtab="kegiatan">Kegiatan</button>' : ""}</div>
   <div id="cwBody"></div>`;
   const body = root.querySelector("#cwBody");
 
   function stats(){
+    if(cfg.binaan && tab === "kegiatan"){ statsKegiatan(); return; }
     const all = getAll().filter(cfg.inScope);
     const n = function(j){ return all.filter(function(c){ return c.jenis === j; }).length; };
     root.querySelector("#cwStats").innerHTML =
@@ -6867,8 +6901,12 @@ function renderCatatanModul(root, cfg){
     root.querySelector("#cwSiswaChip").textContent = "👥 " + siswaKelas.length + " siswa";
   }
   root.querySelectorAll("[data-cwtab]").forEach(function(b){ b.onclick = function(){ tab = b.dataset.cwtab; root.querySelectorAll("[data-cwtab]").forEach(function(x){ x.classList.toggle("active", x === b); }); gambar(); }; });
-  root.querySelector("#cwTambah").onclick = function(){ formCatatan(null); };
-  function gambar(){ siswaKelas = cfg.getSiswa(); stats(); if(tab === "binaan") tabBinaan(); else if(tab === "catatan") tabCatatan(); else tabRekap(); }
+  root.querySelector("#cwTambah").onclick = function(){ if(cfg.binaan && tab === "kegiatan") formKegiatan(null); else formCatatan(null); };
+  function gambar(){
+    siswaKelas = cfg.getSiswa(); stats();
+    root.querySelector("#cwTambah").textContent = (cfg.binaan && tab === "kegiatan") ? "＋ Tambah Kegiatan" : "＋ Tambah Catatan";
+    if(tab === "binaan") tabBinaan(); else if(tab === "catatan") tabCatatan(); else if(tab === "kegiatan") tabKegiatan(); else tabRekap();
+  }
   function opsiSiswa(pilih, semua){ return (semua ? '<option value="">Semua siswa</option>' : '<option value="">-- Pilih siswa --</option>') + siswaKelas.map(function(s){ return '<option value="' + s.id + '"' + (s.id === pilih ? " selected" : "") + '>' + esc(s.nama) + '</option>'; }).join(""); }
   function poinTxt(p){ return (p > 0 ? "+" : "") + p; }
 
@@ -7075,6 +7113,166 @@ function renderCatatanModul(root, cfg){
     document.getElementById("gwKelas").onchange = function(){ fk = this.value; isi(); };
     document.getElementById("gwCari").oninput = function(){ fq = this.value; isi(); };
     isi();
+  }
+  /* ---------- Tab Kegiatan (khusus Guru Wali): pertemuan dengan murid binaan ---------- */
+  const kg = { bulan:"", bentuk:"", cari:"" };
+  const kgGet = function(){ const d = DB.get(DB.keys.kegiatanGuruWali, []); return Array.isArray(d) ? d : []; };
+  /* nama peserta: pakai data siswa terkini, cadangan nama yang tersimpan saat kegiatan dibuat */
+  function kgPeserta(k){
+    const semua = DB.get(DB.keys.siswa, []);
+    return (k.peserta || []).map(function(p){ const s = semua.find(function(x){ return x.id === p.id; }); return s ? s.nama : (p.nama || "(siswa dihapus)"); });
+  }
+  function kgTerfilter(){
+    return kgGet().filter(function(k){
+      if(kg.bulan && (k.tanggal || "").slice(0, 7) !== kg.bulan) return false;
+      if(kg.bentuk && k.bentuk !== kg.bentuk) return false;
+      if(kg.cari){
+        const q = kg.cari.toLowerCase();
+        if((k.topik + " " + (k.tempat || "") + " " + (k.uraian || "") + " " + (k.tindakLanjut || "") + " " + kgPeserta(k).join(" ")).toLowerCase().indexOf(q) < 0) return false;
+      }
+      return true;
+    }).sort(function(a, b){ return (b.tanggal || "").localeCompare(a.tanggal || "") || (b.dibuat || "").localeCompare(a.dibuat || ""); });
+  }
+  function statsKegiatan(){
+    const all = kgGet(), bulanIni = kgHariIni().slice(0, 7);
+    const binaanIds = cfg.binaanIds(), ikut = {};
+    all.forEach(function(k){ (k.peserta || []).forEach(function(p){ ikut[p.id] = true; }); });
+    const belum = binaanIds.filter(function(id){ return !ikut[id]; }).length;
+    const partisipasi = all.reduce(function(a, k){ return a + (k.peserta || []).length; }, 0);
+    root.querySelector("#cwStats").innerHTML =
+      '<div class="wk-stat"><div class="wk-stat-value">' + all.length + '</div><div class="wk-stat-label">Total Kegiatan</div></div>'
+      + '<div class="wk-stat"><div class="wk-stat-value" style="color:#14663f;">' + all.filter(function(k){ return (k.tanggal || "").slice(0, 7) === bulanIni; }).length + '</div><div class="wk-stat-label">Kegiatan Bulan Ini</div></div>'
+      + '<div class="wk-stat"><div class="wk-stat-value" style="color:#2a5c99;">' + partisipasi + '</div><div class="wk-stat-label">Total Partisipasi Murid</div></div>'
+      + '<div class="wk-stat"><div class="wk-stat-value" style="color:' + (belum ? "#b3364f" : "#14663f") + ';">' + belum + '</div><div class="wk-stat-label">Murid Belum Dibina</div></div>';
+    root.querySelector("#cwTotalChip").textContent = "🗓 " + all.length + " kegiatan";
+    root.querySelector("#cwSiswaChip").textContent = "👥 " + siswaKelas.length + " siswa";
+  }
+  function kartuKegiatan(k){
+    const b = KG_BENTUK[k.bentuk] || KG_BENTUK.lainnya, nama = kgPeserta(k), jam = kgJam(k);
+    return '<div class="cw-item" style="border-left-color:' + b.garis + ';"><div class="cw-item-top"><div>'
+      + '<div class="cw-nama">' + esc(k.topik) + '</div>'
+      + '<div class="cw-meta">' + esc(formatTanggalPanjangISO(k.tanggal)) + (jam ? ' · ' + esc(jam) : "") + (k.tempat ? ' · 📍 ' + esc(k.tempat) : "") + '</div></div>'
+      + '<div class="row-actions"><button class="icon-btn" data-kg-edit="' + k.id + '" title="Ubah">✎</button><button class="icon-btn del" data-kg-del="' + k.id + '" title="Hapus">🗑</button></div></div>'
+      + '<div class="cw-chips"><span class="cw-badge" style="background:' + b.bg + '; color:' + b.warna + ';">' + b.ikon + ' ' + esc(b.label) + '</span>'
+      + '<span class="cw-badge" style="background:#f3f5f4; color:#52615a;">👥 ' + nama.length + ' murid</span></div>'
+      + '<div class="kg-peserta">' + nama.slice(0, 8).map(function(n){ return '<span class="kg-chip">' + esc(n) + '</span>'; }).join("") + (nama.length > 8 ? '<span class="kg-chip kg-more">+' + (nama.length - 8) + ' lainnya</span>' : "") + '</div>'
+      + (k.uraian ? '<div class="cw-judul">Hasil / Uraian Pertemuan</div><div class="cw-uraian">' + esc(k.uraian) + '</div>' : "")
+      + (k.tindakLanjut ? '<div class="cw-tl"><strong>Tindak lanjut:</strong> ' + esc(k.tindakLanjut) + '</div>' : "")
+      + ((k.foto || []).length ? '<div class="kg-fotos">' + k.foto.map(function(f, i){ return '<img class="kg-foto" src="' + f + '" alt="Dokumentasi" data-kg-foto="' + k.id + '|' + i + '">'; }).join("") + '</div>' : "")
+      + '</div>';
+  }
+  function tabKegiatan(){
+    if(!siswaKelas.length){ body.innerHTML = '<div class="card"><p style="margin:0; font-size:13.5px;">' + cfg.kosong + '</p></div>'; return; }
+    const list = kgTerfilter(), ada = kgGet().length > 0;
+    body.innerHTML =
+      '<div class="card" style="margin-bottom:14px;"><div class="cw-filter">'
+      + '<div class="field" style="margin:0;"><label>Bulan</label><input type="month" id="kgFBulan" value="' + kg.bulan + '"></div>'
+      + '<div class="field" style="margin:0;"><label>Bentuk</label><select id="kgFBentuk"><option value="">Semua bentuk</option>' + Object.keys(KG_BENTUK).map(function(k){ return '<option value="' + k + '"' + (kg.bentuk === k ? " selected" : "") + '>' + KG_BENTUK[k].label + '</option>'; }).join("") + '</select></div>'
+      + '<div class="field" style="margin:0;"><label>Cari</label><input type="text" id="kgFCari" placeholder="Topik, tempat, nama murid..." value="' + esc(kg.cari) + '"></div>'
+      + '<div style="display:flex; gap:8px; flex-wrap:wrap;"><button class="btn btn-gold btn-sm" id="kgPdf" style="width:auto;">⭳ Unduh PDF</button></div></div></div>'
+      + (list.length ? list.map(kartuKegiatan).join("")
+        : '<div class="card"><p style="margin:0; font-size:13.5px; line-height:1.6;">' + (ada ? "Tidak ada kegiatan untuk filter ini." : "Belum ada kegiatan. Klik <b>＋ Tambah Kegiatan</b> untuk mencatat pertemuan Guru Wali dengan murid binaan — lengkap dengan peserta, hasil pertemuan, dan foto dokumentasi.") + '</p></div>');
+    body.querySelector("#kgFBulan").onchange = function(){ kg.bulan = this.value; tabKegiatan(); };
+    body.querySelector("#kgFBentuk").onchange = function(){ kg.bentuk = this.value; tabKegiatan(); };
+    body.querySelector("#kgFCari").oninput = function(){ kg.cari = this.value; const pos = this.selectionStart; tabKegiatan(); const el = body.querySelector("#kgFCari"); el.focus(); try{ el.setSelectionRange(pos, pos); }catch(e){} };
+    body.querySelector("#kgPdf").onclick = unduhKegiatan;
+    body.querySelectorAll("[data-kg-edit]").forEach(function(b){ b.onclick = function(){ formKegiatan(b.dataset.kgEdit); }; });
+    body.querySelectorAll("[data-kg-del]").forEach(function(b){ b.onclick = function(){
+      confirmDelete("Hapus kegiatan ini?", function(){ DB.set(DB.keys.kegiatanGuruWali, kgGet().filter(function(x){ return x.id !== b.dataset.kgDel; })); gambar(); });
+    }; });
+    body.querySelectorAll("[data-kg-foto]").forEach(function(im){ im.onclick = function(){
+      openModal("Dokumentasi Kegiatan", '<img src="' + im.src + '" alt="Dokumentasi" style="width:100%; border-radius:12px; display:block;">', function(){}, "Tutup");
+    }; });
+  }
+  function formKegiatan(id){
+    const lama = kgGet().find(function(x){ return x.id === id; }) || null;
+    const k = lama || { id:uid(), tanggal:kgHariIni(), jamMulai:"", jamSelesai:"", tempat:"", bentuk:"individu", topik:"", peserta:[], uraian:"", tindakLanjut:"", foto:[] };
+    const pilih = {}; (k.peserta || []).forEach(function(p){ pilih[p.id] = true; });
+    /* peserta lama yang sudah dilepas dari binaan tetap ditampilkan agar tidak hilang saat diubah */
+    const idBinaan = {}; siswaKelas.forEach(function(s){ idBinaan[s.id] = true; });
+    const daftar = siswaKelas.map(function(s){ return { id:s.id, nama:s.nama, kelas:s.kelas, lepas:false }; })
+      .concat((k.peserta || []).filter(function(p){ return !idBinaan[p.id]; }).map(function(p){ return { id:p.id, nama:p.nama, kelas:p.kelas, lepas:true }; }));
+    let foto = (k.foto || []).slice();
+    const MAKS_FOTO = 3;
+    openModal(lama ? "Ubah Kegiatan Guru Wali" : "Tambah Kegiatan Guru Wali",
+      '<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px;">'
+      + '<div class="field"><label>Tanggal</label><input type="date" id="kgF_tgl" value="' + esc(k.tanggal) + '"></div>'
+      + '<div class="field"><label>Jam Mulai</label><input type="time" id="kgF_jm" value="' + esc(k.jamMulai) + '"></div>'
+      + '<div class="field"><label>Jam Selesai</label><input type="time" id="kgF_js" value="' + esc(k.jamSelesai) + '"></div></div>'
+      + '<div class="field-row"><div class="field"><label>Bentuk Pertemuan</label><select id="kgF_bentuk">' + Object.keys(KG_BENTUK).map(function(x){ return '<option value="' + x + '"' + (k.bentuk === x ? " selected" : "") + '>' + KG_BENTUK[x].ikon + ' ' + KG_BENTUK[x].label + '</option>'; }).join("") + '</select></div>'
+      + '<div class="field"><label>Tempat</label><input type="text" id="kgF_tempat" value="' + esc(k.tempat) + '" placeholder="Contoh: Ruang Guru / Rumah murid"></div></div>'
+      + '<div class="field"><label>Topik / Agenda Pertemuan</label><input type="text" id="kgF_topik" value="' + esc(k.topik) + '" placeholder="Contoh: Pembinaan motivasi belajar semester genap"></div>'
+      + '<div class="field"><label>Murid yang Hadir <span id="kgF_cnt" style="font-weight:600; color:var(--ink-soft);"></span></label>'
+      + '<div style="display:flex; gap:8px; margin-bottom:6px;"><button type="button" class="btn btn-ghost btn-sm" id="kgF_semua" style="width:auto;">Pilih semua / kosongkan</button></div>'
+      + '<div class="kg-pick" id="kgF_list">' + daftar.map(function(d){ return '<label><input type="checkbox" data-kg-pick="' + d.id + '"' + (pilih[d.id] ? " checked" : "") + '><span>' + esc(d.nama) + ' <small style="color:var(--ink-soft);">' + esc(d.kelas || "") + (d.lepas ? " · bukan binaan lagi" : "") + '</small></span></label>'; }).join("") + '</div></div>'
+      + '<div class="field"><label>Hasil / Uraian Pertemuan (opsional)</label><textarea id="kgF_uraian" placeholder="Ringkasan pembahasan dan hasil pertemuan">' + esc(k.uraian) + '</textarea></div>'
+      + '<div class="field"><label>Tindak Lanjut (opsional)</label><textarea id="kgF_tl" style="min-height:64px;" placeholder="Contoh: Pemantauan mingguan, koordinasi dengan wali kelas">' + esc(k.tindakLanjut) + '</textarea></div>'
+      + '<div class="field"><label>Foto Dokumentasi (maks. ' + MAKS_FOTO + ')</label>'
+      + '<label class="btn btn-ghost btn-sm" for="kgF_foto" style="width:auto; display:inline-block; cursor:pointer;">📷 Tambah Foto</label>'
+      + '<input type="file" id="kgF_foto" accept="image/*" multiple style="display:none;"><div id="kgF_prev" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;"></div></div>',
+      function(){
+        const tgl = document.getElementById("kgF_tgl").value, topik = document.getElementById("kgF_topik").value.trim();
+        if(!tgl){ toast("Tanggal wajib diisi", "danger"); return false; }
+        if(!topik){ toast("Topik pertemuan wajib diisi", "danger"); return false; }
+        const ids = Object.keys(pilih).filter(function(x){ return pilih[x]; });
+        if(!ids.length){ toast("Pilih minimal satu murid yang hadir", "danger"); return false; }
+        const baru = {
+          id:k.id, tanggal:tgl, jamMulai:document.getElementById("kgF_jm").value, jamSelesai:document.getElementById("kgF_js").value,
+          tempat:document.getElementById("kgF_tempat").value.trim(), bentuk:document.getElementById("kgF_bentuk").value, topik:topik,
+          peserta:ids.map(function(x){ const d = daftar.find(function(y){ return y.id === x; }); return { id:x, nama:d ? d.nama : "", kelas:d ? d.kelas : "" }; }),
+          uraian:document.getElementById("kgF_uraian").value.trim(), tindakLanjut:document.getElementById("kgF_tl").value.trim(),
+          foto:foto.slice(), dibuat: lama && lama.dibuat ? lama.dibuat : new Date().toISOString()
+        };
+        const arr = kgGet(), idx = arr.findIndex(function(x){ return x.id === k.id; });
+        if(idx > -1) arr[idx] = baru; else arr.push(baru);
+        try{ DB.set(DB.keys.kegiatanGuruWali, arr); }
+        catch(e){ toast("Penyimpanan penuh — kurangi jumlah atau ukuran foto", "danger"); return false; }
+        toast("Kegiatan tersimpan", "ok");
+        gambar();
+      }, "Simpan");
+    const cnt = function(){ document.getElementById("kgF_cnt").textContent = "(" + Object.keys(pilih).filter(function(x){ return pilih[x]; }).length + " dipilih)"; };
+    document.querySelectorAll("[data-kg-pick]").forEach(function(c){ c.onchange = function(){ pilih[c.dataset.kgPick] = c.checked; cnt(); }; });
+    document.getElementById("kgF_semua").onclick = function(){
+      const semua = daftar.every(function(d){ return pilih[d.id]; });
+      daftar.forEach(function(d){ pilih[d.id] = !semua; });
+      document.querySelectorAll("[data-kg-pick]").forEach(function(c){ c.checked = !semua; });
+      cnt();
+    };
+    function gambarFoto(){
+      const prev = document.getElementById("kgF_prev");
+      prev.innerHTML = foto.map(function(f, i){ return '<span class="kg-prev"><img src="' + f + '" alt="Foto ' + (i + 1) + '"><button type="button" data-kg-hapusfoto="' + i + '" title="Hapus foto">×</button></span>'; }).join("");
+      prev.querySelectorAll("[data-kg-hapusfoto]").forEach(function(b){ b.onclick = function(){ foto.splice(+b.dataset.kgHapusfoto, 1); gambarFoto(); }; });
+    }
+    document.getElementById("kgF_foto").onchange = async function(e){
+      const files = Array.from(e.target.files || []); e.target.value = "";
+      for(const f of files){
+        if(foto.length >= MAKS_FOTO){ toast("Maksimal " + MAKS_FOTO + " foto per kegiatan"); break; }
+        try{ foto.push(await resizeImageFile(f, 1000, 0.72)); }catch(err){ toast("Foto gagal dimuat: " + (err && err.message ? err.message : "format tidak didukung"), "danger"); }
+      }
+      gambarFoto();
+    };
+    cnt(); gambarFoto();
+  }
+  function unduhKegiatan(){
+    const d = kgTerfilter().slice().sort(function(a, b){ return (a.tanggal || "").localeCompare(b.tanggal || "") || (a.jamMulai || "").localeCompare(b.jamMulai || ""); });
+    const BLN = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+    const periode = kg.bulan ? BLN[(+kg.bulan.slice(5, 7)) - 1] + " " + kg.bulan.slice(0, 4) : "Semua periode";
+    const foto = d.filter(function(k){ return (k.foto || []).length; }).map(function(k){
+      return '<div style="margin-bottom:14px; page-break-inside:avoid;"><div style="font-size:12px; font-weight:700; margin-bottom:5px;">' + esc(formatTanggalPanjangISO(k.tanggal)) + ' — ' + esc(k.topik) + '</div>'
+        + '<div style="display:flex; gap:8px; flex-wrap:wrap;">' + k.foto.map(function(f){ return '<img src="' + f + '" style="width:31%; max-height:170px; object-fit:cover; border:1px solid #999;">'; }).join("") + '</div></div>';
+    }).join("");
+    printSimpleReport({
+      title:"Laporan Kegiatan Guru Wali",
+      subtitle:"Guru Wali: " + esc(wali.nama || "-") + (wali.nip ? " · NIP " + esc(wali.nip) : "") + " · Periode: " + esc(periode) + " · Murid binaan: " + siswaKelas.length + " siswa",
+      columns:["No","Tanggal & Waktu","Bentuk","Topik & Tempat","Murid yang Hadir","Hasil / Uraian","Tindak Lanjut"],
+      rows:d.map(function(k, i){
+        const nama = kgPeserta(k), jam = kgJam(k), b = KG_BENTUK[k.bentuk] || KG_BENTUK.lainnya;
+        return [i + 1, esc(formatTanggalPanjangISO(k.tanggal)) + (jam ? "<br>" + esc(jam) : ""), esc(b.label),
+          "<strong>" + esc(k.topik) + "</strong>" + (k.tempat ? "<br>" + esc(k.tempat) : ""),
+          "<strong>" + nama.length + " murid</strong><br>" + esc(nama.join(", ")), esc(k.uraian || "-"), esc(k.tindakLanjut || "-")];
+      }),
+      extraHtml:foto, note:"Total " + d.length + " kegiatan.", emptyMsg:"Belum ada kegiatan untuk diunduh"
+    });
   }
   if(cfg.binaan) root.querySelector("#cwTambahMurid").onclick = pilihMurid;
   gambar();
