@@ -10836,7 +10836,7 @@ function doPost(e){
     const ss = SpreadsheetApp.getActiveSpreadsheet();
 
     if(data.action === "ping"){
-      return respond({ ok:true, pesan:"Server CBT aktif", versi:7 });
+      return respond({ ok:true, pesan:"Server CBT aktif", versi:8 });
     }
 
     if(data.action === "status"){
@@ -10997,6 +10997,25 @@ function doPost(e){
     }
 
     if(data.action === "submit"){
+      /* Dikunci agar kiriman ganda (mis. sendBeacon + fetch) diproses satu per satu */
+      const lockSubmit = LockService.getScriptLock();
+      try{ lockSubmit.waitLock(25000); }catch(errLock){ return respond({ ok:false, pesan:"Server sedang sibuk, mencoba lagi" }); }
+      try{ return prosesSubmit(ss, data); } finally { lockSubmit.releaseLock(); }
+    }
+
+    return respond({ ok:false, pesan:"Aksi tidak dikenal" });
+  }catch(err){
+    return respond({ ok:false, pesan:String(err) });
+  }
+}
+
+
+/* Pengumpulan jawaban. Dengan submitId yang sama, hasil sebelumnya dikembalikan lagi (aman diulang saat jaringan putus). */
+function prosesSubmit(ss, data){
+  const cacheSub = CacheService.getScriptCache();
+  if(data.submitId){
+    try{ const c = cacheSub.get("sub_" + data.submitId); if(c) return respond(JSON.parse(c)); }catch(errC){}
+  }
       if(ujianNonaktif(data.testId)) return respond({ ok:false, pesan:"Ujian sedang dinonaktifkan oleh guru" });
       const kunciSheet = ss.getSheetByName(SHEET_KUNCI);
       if(!kunciSheet) return respond({ ok:false, pesan:"Kunci jawaban tes ini belum tersedia di server" });
@@ -11052,13 +11071,8 @@ function doPost(e){
       simpanJawaban(ss, data, jwbAll);
 
       const resp = { ok:true, skor:skor, benar:benar, total:total, essay:essayList.length, pelanggaran:pel };
+      if(data.submitId){ try{ cacheSub.put("sub_" + data.submitId, JSON.stringify(resp), 21600); }catch(errC){} }
       return respond(resp);
-    }
-
-    return respond({ ok:false, pesan:"Aksi tidak dikenal" });
-  }catch(err){
-    return respond({ ok:false, pesan:String(err) });
-  }
 }
 
 function respond(obj){
@@ -11688,19 +11702,50 @@ function kumpulkan(){
   kirimJawaban();
 }
 var waktuSelesai = null;
+var submitId = null, kirimBerjalan = false, percobaan = 0, hasilFinal = false, beaconTerkirim = false, timerUlang = null;
+var JEDA_ULANG = [1500, 3000, 5000, 8000, 12000, 20000];
+function kunciPending(){ return "cbtPending_" + CFG.testId; }
+function buatPayload(){ return { action:"submit", submitId:submitId, testId:CFG.testId, nama:identitas.nama, nis:identitas.nis, kelas:identitas.kelas, jawaban:jawaban, pelanggaran:pelanggaran, log:logPel }; }
+function simpanPending(){
+  try{ localStorage.setItem(kunciPending(), JSON.stringify({ submitId:submitId, waktu:new Date().toISOString(), mulai:waktuMulai ? waktuMulai.toISOString() : null, otomatis:otomatis, waktuHabis:waktuHabis, payload:buatPayload() })); }catch(e){}
+}
+function hapusPending(){ try{ localStorage.removeItem(kunciPending()); }catch(e){} }
 function kirimJawaban(){
-  var payload = { action:"submit", testId:CFG.testId, nama:identitas.nama, nis:identitas.nis, kelas:identitas.kelas, jawaban:jawaban, pelanggaran:pelanggaran, log:logPel };
+  if(hasilFinal) return;
+  if(!submitId){ submitId = "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); simpanPending(); }
   if(!CFG.endpoint){ tampilkanGagal("Server belum dikonfigurasi oleh guru."); return; }
   tampilkanMengirim();
-  fetch(CFG.endpoint, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(payload) })
+  jalankanKirim();
+}
+function jadwalUlang(ms){ clearTimeout(timerUlang); timerUlang = setTimeout(jalankanKirim, ms); }
+function jalankanKirim(){
+  if(hasilFinal || kirimBerjalan) return;
+  var body = JSON.stringify(buatPayload()), kecil = body.length < 60000;
+  /* Halaman sedang di latar belakang (siswa pindah tab / aplikasi): antrekan lewat sendBeacon supaya tidak terputus,
+     lalu diverifikasi otomatis begitu halaman aktif lagi. Server mengenali submitId yang sama, jadi tidak ada data ganda. */
+  if(document.visibilityState === "hidden" && navigator.sendBeacon && kecil){
+    if(!beaconTerkirim){ try{ navigator.sendBeacon(CFG.endpoint, new Blob([body], { type:"text/plain;charset=UTF-8" })); beaconTerkirim = true; }catch(e){} }
+    return;
+  }
+  kirimBerjalan = true; percobaan++;
+  tampilkanMengirim();
+  fetch(CFG.endpoint, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:body, keepalive:kecil })
     .then(function(r){ return r.json(); })
     .then(function(res){
-      if(res && res.ok){ tampilkanSukses(res); }
-      else if(res && res.kode === "sudah_selesai"){ document.getElementById("hasilBox").style.display = "none"; tampilIzin(""); }
+      kirimBerjalan = false;
+      if(res && res.ok){ hasilFinal = true; hapusPending(); tampilkanSukses(res); }
+      else if(res && res.kode === "sudah_selesai"){ hasilFinal = true; hapusPending(); document.getElementById("hasilBox").style.display = "none"; tampilIzin(""); }
+      else if(res && /sibuk/i.test(res.pesan || "") && percobaan < 6){ jadwalUlang(JEDA_ULANG[Math.min(percobaan - 1, JEDA_ULANG.length - 1)]); }
       else{ tampilkanGagal((res && res.pesan) || "Gagal mengirim jawaban."); }
     })
-    .catch(function(){ tampilkanGagal("Tidak dapat terhubung ke server. Periksa koneksi internet."); });
+    .catch(function(){
+      kirimBerjalan = false;
+      if(percobaan < 6){ jadwalUlang(JEDA_ULANG[Math.min(percobaan - 1, JEDA_ULANG.length - 1)]); }
+      else{ tampilkanGagal("Tidak dapat terhubung ke server. Periksa koneksi internet."); }
+    });
 }
+document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "visible" && sudahKirim && !hasilFinal){ clearTimeout(timerUlang); jalankanKirim(); } });
+window.addEventListener("online", function(){ if(sudahKirim && !hasilFinal){ clearTimeout(timerUlang); percobaan = Math.min(percobaan, 3); jalankanKirim(); } });
 function jam2(n){ return (n < 10 ? "0" : "") + n; }
 function teksDurasi(ms){
   var d = Math.max(0, Math.round(ms / 1000)), m = Math.floor(d / 60), dt = d % 60;
@@ -11715,7 +11760,7 @@ function kartuIdentitas(){
 function tampilkanMengirim(){
   var box = document.getElementById("hasilBox");
   box.style.display = "block";
-  box.innerHTML = kepalaHasil("⏳", "Mengirim jawaban...", "Mohon tunggu, jangan tutup halaman ini.", false);
+  box.innerHTML = kepalaHasil("⏳", "Mengirim jawaban...", (otomatis ? "Batas pindah halaman terlampaui, ujian dikumpulkan otomatis. " : "") + (percobaan > 1 ? "Koneksi terputus, mencoba lagi otomatis (percobaan " + percobaan + "). " : "") + "Mohon tunggu, jangan tutup halaman ini.", false);
   window.scrollTo(0, 0);
 }
 function tampilkanSukses(res){
@@ -11758,7 +11803,7 @@ function tampilkanGagal(pesan){
   html += '<div class="ractions"><button type="button" class="btn btn-primary" id="kirimUlangBtn">↻ Kirim Ulang</button><button type="button" class="btn btn-line" id="unduhCadanganBtn">⭳ Unduh Cadangan</button></div></div>';
   box.innerHTML = html;
   window.scrollTo(0, 0);
-  document.getElementById("kirimUlangBtn").onclick = function(){ kirimJawaban(); };
+  document.getElementById("kirimUlangBtn").onclick = function(){ percobaan = 0; kirimJawaban(); };
   document.getElementById("unduhCadanganBtn").onclick = function(){
     var data = { testId:CFG.testId, judul:CFG.judul, identitas:identitas, jawaban:jawaban, pelanggaran:pelanggaran, waktu:new Date().toISOString() };
     var blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
@@ -11768,6 +11813,22 @@ function tampilkanGagal(pesan){
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
   };
 }
+/* Pulihkan pengiriman yang belum selesai (mis. tab ditutup atau dimuat ulang saat jaringan putus) */
+(function(){
+  var pend = null;
+  try{ pend = JSON.parse(localStorage.getItem(kunciPending()) || "null"); }catch(e){}
+  if(!pend || !pend.payload || !pend.submitId) return;
+  if(Date.now() - new Date(pend.waktu).getTime() > 12 * 3600 * 1000){ hapusPending(); return; }
+  var pl = pend.payload;
+  identitas = { nama:pl.nama, nis:pl.nis, kelas:pl.kelas };
+  Object.keys(pl.jawaban || {}).forEach(function(k){ jawaban[k] = pl.jawaban[k]; });
+  pelanggaran = pl.pelanggaran || 0; logPel = pl.log || [];
+  otomatis = !!pend.otomatis; waktuHabis = !!pend.waktuHabis;
+  waktuMulai = pend.mulai ? new Date(pend.mulai) : null; waktuSelesai = new Date(pend.waktu);
+  submitId = pend.submitId; sudahKirim = true;
+  document.getElementById("identitasPane").style.display = "none";
+  kirimJawaban();
+})();
 <\/script>
 </body>
 </html>`;
