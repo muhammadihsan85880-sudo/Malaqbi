@@ -2237,6 +2237,27 @@
   .kg-prev{ position:relative; display:inline-block; }
   .kg-prev img{ width:86px; height:64px; object-fit:cover; border-radius:9px; border:1.5px solid var(--line); display:block; }
   .kg-prev button{ position:absolute; top:-7px; right:-7px; width:22px; height:22px; border-radius:50%; border:none; background:#b3364f; color:#fff; font-size:14px; line-height:1; cursor:pointer; }
+
+  /* ---------- Agenda Harian: tandai libur ---------- */
+  .ag-saveset{ margin-left:auto; display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+  .ag-saveset .ag-btn-save{ margin-left:0; }
+  .ag-btn-libur{ border-color:#e6c35a; background:#fffaf0; color:#7a5c10; }
+  .ag-btn-libur:hover{ background:#fdf1cf; border-color:#d4a72c; }
+  .ag-btn-libur.on{ background:#fde8ec; border-color:#e59aa9; color:#a3283f; }
+  .ag-libur-emoji{ font-size:15px; line-height:1; }
+  .ag-libur-banner{ display:flex; align-items:center; gap:14px; margin:0 0 14px; padding:13px 16px; border-radius:14px; background:linear-gradient(135deg,#fff7e0,#fdecc0); border:1.5px solid #e6c35a; }
+  .ag-libur-ic{ font-size:26px; line-height:1; }
+  .ag-libur-t{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .ag-libur-t strong{ font-size:14.5px; color:#5c4410; }
+  .ag-libur-t small{ font-size:12px; color:#7a5c10; line-height:1.45; }
+  .ag-table tr.libur td{ opacity:.5; }
+  .notif-item.libur{ background:#fff7e0; border-color:#e6c35a; }
+  @media (max-width:640px){ .ag-saveset{ width:100%; } .ag-saveset .ag-btn{ flex:1 1 150px; justify-content:center; } }
+
+  /* ---------- Tambahan Penilaian: info total poin ---------- */
+  .poin-info{ margin-top:7px; font-size:12px; line-height:1.5; color:var(--ink-soft); }
+  .poin-info b{ color:var(--violet-deep); }
+  .cgv2-total-chip{ display:inline-block; padding:2px 9px; border-radius:999px; background:#eef5f1; border:1px solid #d6e6dc; font-size:11px; font-weight:700; color:#2f4a3c; }
 </style>
 </head>
 <body>
@@ -2363,6 +2384,13 @@
       var label = tgl;
       try{ label = hariFromISO(tgl) + ", " + fmtDate(tgl); }catch(e){}
       $("lgnAgDate").textContent = label;
+      var lb = null; try{ lb = agendaLiburInfo(tgl); }catch(e){}
+      if(lb){
+        $("lgnAgList").innerHTML = ""; $("lgnAgSum").textContent = "";
+        var em = $("lgnAgEmpty"); em.hidden = false;
+        em.textContent = "Libur — " + lb.alasan + (lb.keterangan ? " (" + lb.keterangan + ")" : "") + ". Tidak ada agenda pada tanggal ini.";
+        return;
+      }
       var rows = rowsFor(tgl), ul = $("lgnAgList"), empty = $("lgnAgEmpty");
       if(!rows.length){
         ul.innerHTML = ""; $("lgnAgSum").textContent = "";
@@ -2543,7 +2571,7 @@ const DB = {
     jadwalPiket:"lms_jadwal_piket", jadwalPelajaran:"lms_jadwal_pelajaran",
     programKerjaWali:"lms_program_kerja_wali", kalenderProgram:"lms_kalender_program",
     agenda:"lms_agenda", jadwalMengajar:"lms_jadwal_mengajar",
-    agendaRutin:"lms_agenda_rutin", agendaRutinStatus:"lms_agenda_rutin_status",
+    agendaRutin:"lms_agenda_rutin", agendaRutinStatus:"lms_agenda_rutin_status", agendaLibur:"lms_agenda_libur",
     jadwalGuruFoto:"lms_jadwal_guru_foto",
     ujianSoal:"lms_ujian_soal", ujianTes:"lms_ujian_tes",
     ujianConfig:"lms_ujian_config", ujianHasil:"lms_ujian_hasil",
@@ -4259,6 +4287,23 @@ function renderDashboard(root){
 /* ============================================================
    AGENDA HARIAN
    ============================================================ */
+/* ---- Status libur guru (tidak masuk kerja/sekolah): { "YYYY-MM-DD": { alasan, keterangan, dibuat } } ---- */
+const AG_ALASAN_LIBUR = ["Sakit","Izin","Cuti","Dinas Luar / Tugas","Libur Sekolah","Lainnya"];
+function agendaLiburAll(){
+  const d = DB.get(DB.keys.agendaLibur, {});
+  return (d && typeof d === "object" && !Array.isArray(d)) ? d : {};
+}
+function agendaLiburInfo(tanggal){ return agendaLiburAll()[tanggal] || null; }
+function agendaLiburTandai(daftarTanggal, alasan, keterangan){
+  const m = agendaLiburAll();
+  daftarTanggal.forEach(function(t){ m[t] = { alasan:alasan, keterangan:keterangan || "", dibuat:new Date().toISOString() }; });
+  DB.set(DB.keys.agendaLibur, m);
+}
+function agendaLiburBatal(daftarTanggal){
+  const m = agendaLiburAll();
+  daftarTanggal.forEach(function(t){ delete m[t]; });
+  DB.set(DB.keys.agendaLibur, m);
+}
 function renderAgendaHarian(root){
   const HARI_LIST = ["Senin","Selasa","Rabu","Kamis","Jumat"];
   let mode = "tanggal";      // "tanggal" = per hari terpilih, "semua" = semua tanggal (riwayat)
@@ -4290,9 +4335,13 @@ function renderAgendaHarian(root){
           <button type="button" class="ag-btn" id="genFromJadwalBtn">${svgIcon("refresh")}<span>Muat Ulang dari Jadwal</span></button>
           <button type="button" class="ag-btn" id="editJadwalBtn">${svgIcon("sliders")}<span>Atur Jadwal Agenda</span></button>
         </div>
-        <button type="button" class="ag-btn ag-btn-save" id="simpanAgendaBtn">${svgIcon("download")}<span>Simpan Agenda Harian</span></button>
+        <div class="ag-saveset">
+          <button type="button" class="ag-btn ag-btn-libur" id="agendaLiburBtn"><span class="ag-libur-emoji">🏖</span><span id="agendaLiburLabel">Tandai Sebagai Libur</span></button>
+          <button type="button" class="ag-btn ag-btn-save" id="simpanAgendaBtn">${svgIcon("download")}<span>Simpan Agenda Harian</span></button>
+        </div>
       </div>
       <div class="ag-body">
+        <div id="agendaLiburBanner"></div>
         <div class="ag-tablewrap"><table class="ag-table">
           <thead><tr id="agendaHeadRow">
             <th style="width:38px;"></th><th>Waktu</th><th>Kegiatan</th><th>Deskripsi</th><th></th>
@@ -4308,6 +4357,10 @@ function renderAgendaHarian(root){
   const headRow = root.querySelector("#agendaHeadRow");
   const tbody = root.querySelector("#agendaTbody");
   const statsHolder = root.querySelector("#agendaStats");
+  const liburBtn = root.querySelector("#agendaLiburBtn");
+  const liburBanner = root.querySelector("#agendaLiburBanner");
+  const liburAktif = function(){ return mode === "tanggal" ? agendaLiburInfo(tglAktif) : null; };
+  const segarkanNotif = function(){ try{ updateNotifBadge(); }catch(e){} };
 
   /* ---- dated entries (mis. hasil "Buat dari Jadwal Agenda") — tetap terikat 1 tanggal tertentu ---- */
   function getDated(){ return DB.get(DB.keys.agenda, []); }
@@ -4367,6 +4420,16 @@ function renderAgendaHarian(root){
   }
 
   function drawStats(){
+    const libur = liburAktif();
+    if(libur){
+      const n = currentRows().filter(a=>!a.kalender).length;
+      statsHolder.innerHTML = `
+        <div class="ag-stat gold"><span class="ag-stat-ic" style="font-size:18px;">🏖</span><div class="ag-stat-t"><strong>Libur</strong><small>Hari ${esc(hariAktif)}</small><span>${esc(libur.alasan)}</span></div></div>
+        <div class="ag-stat"><span class="ag-stat-ic">${svgIcon("agenda")}</span><div class="ag-stat-t"><strong>${n}</strong><small>Agenda Terdaftar</small><span>Tidak dihitung saat libur</span></div></div>
+        <div class="ag-stat ok"><span class="ag-stat-ic">${svgIcon("checkcircle")}</span><div class="ag-stat-t"><strong>-</strong><small>Selesai</small><span>Hari libur</span></div></div>
+        <div class="ag-stat warn"><span class="ag-stat-ic">${svgIcon("target")}</span><div class="ag-stat-t"><strong>-</strong><small>Progres</small><span>Tidak diukur</span></div></div>`;
+      return;
+    }
     const scoped = currentRows().filter(a=>!a.kalender);
     const selesai = scoped.filter(a=>a.selesai).length;
     const belum = scoped.length - selesai;
@@ -4379,7 +4442,20 @@ function renderAgendaHarian(root){
     `;
   }
 
+  function drawLibur(){
+    const info = liburAktif();
+    liburBtn.classList.toggle("on", !!info);
+    root.querySelector("#agendaLiburLabel").textContent = info ? "Batalkan Status Libur" : "Tandai Sebagai Libur";
+    liburBanner.innerHTML = info ? `
+      <div class="ag-libur-banner"><span class="ag-libur-ic">🏖</span>
+        <div class="ag-libur-t"><strong>Libur — ${esc(info.alasan)}</strong><small>${esc(hariFromISO(tglAktif))}, ${esc(fmtDate(tglAktif))}${info.keterangan ? " · " + esc(info.keterangan) : ""}</small>
+        <small>Agenda hari ini tidak dihitung sebagai agenda tertunda dan tidak dibuat otomatis dari jadwal.</small></div>
+      </div>` : "";
+  }
+
   function draw(){
+    drawLibur();
+    const liburHariIni = !!liburAktif();
     headRow.innerHTML = mode==="semua"
       ? `<th style="width:38px;"></th><th>Tanggal</th><th>Waktu</th><th>Kegiatan</th><th>Deskripsi</th><th></th>`
       : `<th style="width:38px;"></th><th>Waktu</th><th>Kegiatan</th><th>Deskripsi</th><th></th>`;
@@ -4389,8 +4465,8 @@ function renderAgendaHarian(root){
 
     const colspan = mode==="semua" ? 6 : 5;
     tbody.innerHTML = list.length ? list.map(a=>`
-      <tr class="${a.selesai?"done":""}">
-        <td class="c"><input type="checkbox" class="ag-chk" data-toggle="${a.key}" ${a.selesai?"checked":""}></td>
+      <tr class="${a.selesai?"done":""}${liburHariIni?" libur":""}">
+        <td class="c"><input type="checkbox" class="ag-chk" data-toggle="${a.key}" ${a.selesai?"checked":""} ${liburHariIni?"disabled":""}></td>
         ${mode==="semua" ? `<td class="ag-tgl">${esc(fmtDate(a.tanggal))}</td>` : ``}
         <td>${a.waktu ? `<span class="ag-waktu">${esc(a.waktu)}</span>` : "-"}</td>
         <td><span class="ag-judul${a.selesai?" done":""}">${esc(a.judul)}</span>${a.type==="recurring" ? `<span class="ag-rutin">Rutin</span>` : (a.kalender ? `<span class="ag-rutin" style="background:#e4f4eb; color:#14663f;">Kalender</span>` : ``)}</td>
@@ -4400,7 +4476,7 @@ function renderAgendaHarian(root){
           <button class="icon-btn del" data-del="${a.key}" title="Hapus">🗑</button>
         </div></td>
       </tr>
-    `).join("") : `<tr class="empty-row"><td colspan="${colspan}">Belum ada agenda ${mode==="tanggal" ? "untuk tanggal ini" : "yang tersimpan"}.</td></tr>`;
+    `).join("") : `<tr class="empty-row"><td colspan="${colspan}">${liburHariIni ? "Hari libur — tidak ada agenda yang perlu dikerjakan." : "Belum ada agenda " + (mode==="tanggal" ? "untuk tanggal ini" : "yang tersimpan") + "."}</td></tr>`;
 
     const byKey = {}; list.forEach(r=> byKey[r.key]=r);
 
@@ -4572,6 +4648,38 @@ function renderAgendaHarian(root){
     }
   }
 
+  /* ---- Tandai / batalkan hari libur (guru tidak masuk kerja atau sekolah) ---- */
+  function bukaFormLibur(){
+    const labelHari = hariFromISO(tglAktif) + ", " + fmtDate(tglAktif);
+    const info = agendaLiburInfo(tglAktif);
+    if(info){
+      openModal("Batalkan Status Libur",
+        `<p style="font-size:13.5px; line-height:1.65; margin:0;">Hapus status libur untuk <strong>${esc(labelHari)}</strong> (${esc(info.alasan)})? Agenda dari Jadwal Agenda Mingguan untuk hari ini akan dimuat kembali.</p>`,
+        ()=>{
+          agendaLiburBatal([tglAktif]);
+          generateAgendaFromJadwal(tglAktif, true);
+          toast("Status libur dibatalkan", "ok");
+          draw(); drawStats(); segarkanNotif();
+        }, "Ya, Batalkan");
+      return;
+    }
+    openModal("Tandai Sebagai Libur",
+      `<p style="font-size:13px; line-height:1.6; margin:0 0 12px;">Gunakan jika Bapak/Ibu tidak masuk kerja atau sekolah pada <strong>${esc(labelHari)}</strong>. Agenda hari libur tidak dihitung sebagai agenda tertunda.</p>
+       <div class="field"><label>Alasan</label><select id="agL_alasan">${AG_ALASAN_LIBUR.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join("")}</select></div>
+       <div class="field"><label>Keterangan (opsional)</label><textarea id="agL_ket" style="min-height:64px;" placeholder="Contoh: Sakit demam, surat dokter menyusul"></textarea></div>
+       <div class="field"><label>Libur sampai tanggal (opsional, untuk lebih dari satu hari)</label><input type="date" id="agL_sampai" min="${esc(tglAktif)}"><small style="color:var(--ink-soft); font-size:11.5px;">Hanya hari Senin–Jumat dalam rentang yang ditandai.</small></div>`,
+      ()=>{
+        const sampai = document.getElementById("agL_sampai").value || tglAktif;
+        if(sampai < tglAktif){ toast("Tanggal akhir tidak boleh sebelum tanggal mulai", "danger"); return false; }
+        if((Date.parse(sampai) - Date.parse(tglAktif)) / 86400000 > 120){ toast("Rentang libur maksimal 120 hari", "danger"); return false; }
+        const daftar = kpHariDalamRentang(tglAktif, sampai);
+        agendaLiburTandai(daftar, document.getElementById("agL_alasan").value, document.getElementById("agL_ket").value.trim());
+        toast(daftar.length > 1 ? daftar.length + " hari ditandai libur" : "Hari ini ditandai libur", "ok");
+        draw(); drawStats(); segarkanNotif();
+      }, "Tandai Libur");
+  }
+  liburBtn.onclick = bukaFormLibur;
+
   const profil = DB.get(DB.keys.profil, {});
 
   hariInput.onchange = ()=>{
@@ -4587,6 +4695,7 @@ function renderAgendaHarian(root){
     hariInput.closest(".ag-field").style.display = mode==="semua" ? "none" : "";
     root.querySelector("#genFromJadwalBtn").style.display = mode==="semua" ? "none" : "";
     root.querySelector("#simpanAgendaBtn").style.display = mode==="semua" ? "none" : "";
+    liburBtn.style.display = mode==="semua" ? "none" : "";
     drawStats();
     draw();
   };
@@ -4607,6 +4716,11 @@ function renderAgendaHarian(root){
 
 /* ---- Buat agenda otomatis dari Jadwal Mengajar Mingguan sesuai hari dari tanggal terpilih ---- */
 function generateAgendaFromJadwal(tanggalTarget, silent, verbose){
+  if(agendaLiburInfo(tanggalTarget)){
+    if(!silent || verbose) toast(`${fmtDate(tanggalTarget)} ditandai libur — agenda dari jadwal tidak dibuat`);
+    if(!silent) navigate("agenda");
+    return;
+  }
   const hari = hariFromISO(tanggalTarget);
   const jadwal = DB.get(DB.keys.jadwalMengajar, {});
   const slotHari = (jadwal[hari] || []).filter(s => (s.kelas||"").trim() || (s.kegiatan||"").trim());
@@ -8978,6 +9092,7 @@ function renderCatatan(root){
                 <span class="cgv2-badge">${esc(c.kelas)||"-"}</span>
                 <strong>${esc(c.siswaNama)||"-"}</strong>
                 ${poinPill(c.poin)}
+                ${c.sesudah!==undefined ? `<span class="cgv2-total-chip">total ${Number(c.sebelum)||0} → ${Number(c.sesudah)||0}</span>` : ""}
               </div>
               <div class="cgv2-timeline-desc">${esc(c.isi)||"-"}</div>
             </div>
@@ -9258,14 +9373,14 @@ function renderCatatan(root){
     });
   }
 
-  /* Ambil poin riwayat TERAKHIR (tanggal paling baru) yang pernah diberikan ke seorang siswa
-     pada Tambahan Penilaian — dipakai untuk mengisi otomatis kolom "Poin" saat memilih kelas
-     dan siswa di form ini, supaya guru tinggal menyesuaikan bila perlu. */
-  function getLastPoinForSiswa(siswaId){
-    const arr = DB.get(DB.keys.catatan, []).filter(c=> (c.tipe||"catatan")==="poin" && c.siswaId===siswaId);
-    if(!arr.length) return null;
-    arr.sort((a,b)=> (a.tanggal||"").localeCompare(b.tanggal||""));
-    return arr[arr.length-1].poin;
+  /* TOTAL poin tambahan penilaian yang sudah diperoleh seorang siswa (jumlah seluruh riwayatnya).
+     Dipakai untuk mengisi otomatis kolom "Poin" saat siswa dipilih: guru melihat nilai yang sudah
+     diperoleh dan cukup mengubahnya ke nilai baru (mis. 2 → 3). Yang dicatat hanya selisihnya,
+     sehingga total siswa menjadi 3 — bukan 2 + 3 = 5. */
+  function getTotalPoinForSiswa(siswaId){
+    return DB.get(DB.keys.catatan, [])
+      .filter(c=> (c.tipe||"catatan")==="poin" && c.siswaId===siswaId)
+      .reduce((a,c)=> a + (Number(c.poin)||0), 0);
   }
   function siswaPilihHtml(kelas, currentSiswaId, wajib){
     if(!kelas) return `<select id="c_siswa" style="width:100%; padding:10px; border-radius:8px; border:1.5px solid var(--line); color:var(--ink-soft);"><option value="">-- Pilih kelas terlebih dahulu --</option></select>`;
@@ -9295,12 +9410,13 @@ function renderCatatan(root){
         <div class="field"><label>Kelas${isPoin?"":" (opsional)"}</label>${kelasSelectHtml("c_kelas", item.kelas)}</div>
       </div>
       ${isPoin
-        ? `<div class="field"><label>Poin yang Diberikan</label>
+        ? `<div class="field"><label>${existing ? "Poin pada Entri Ini" : "Poin Total Siswa (nilai yang diperoleh)"}</label>
             <div class="poin-stepper">
               <button type="button" class="btn btn-ghost" id="c_poin_dec" title="Kurangi poin">▼</button>
-              <input type="number" id="c_poin" value="${item.poin||0}" placeholder="Contoh: 10 (boleh minus untuk pengurangan)">
+              <input type="number" id="c_poin" value="${item.poin||0}" placeholder="Contoh: 3 (boleh minus)">
               <button type="button" class="btn btn-ghost" id="c_poin_inc" title="Tambah poin">▲</button>
             </div>
+            <div class="poin-info" id="c_poin_info"></div>
           </div>`
         : `<div class="field"><label>Judul</label><input type="text" id="c_judul" value="${esc(item.judul)}"></div>`}
       <div class="field"><label>${isPoin?"Keterangan / Alasan (opsional)":"Isi Catatan"}</label><textarea id="c_isi" style="min-height:110px;">${esc(item.isi)}</textarea></div>
@@ -9313,10 +9429,21 @@ function renderCatatan(root){
       const siswaObj = siswaId ? DB.get(DB.keys.siswa, []).find(s=>s.id===siswaId) : null;
       if(isPoin && !siswaId){ toast("Pilih siswa yang akan diberikan poin"); return false; }
 
-      let judul, poin;
+      let judul, poin, sebelum, sesudah;
       if(isPoin){
-        poin = Number(document.getElementById("c_poin").value) || 0;
-        judul = `${poin>0?"+":""}${poin} Poin — ${siswaObj?siswaObj.nama:""}`;
+        const nilai = Number(document.getElementById("c_poin").value) || 0;
+        if(existing){
+          /* ubah entri lama: poin entri itu sendiri yang diganti; keterangan "sebelum → sesudah" dipertahankan hanya bila poin tidak berubah */
+          poin = nilai;
+          if(nilai === (Number(existing.poin)||0)){ sebelum = existing.sebelum; sesudah = existing.sesudah; }
+        }else{
+          /* entri baru: kolom berisi TOTAL poin yang diinginkan; yang disimpan hanya selisihnya terhadap total saat ini */
+          const totalSekarang = getTotalPoinForSiswa(siswaId);
+          poin = nilai - totalSekarang;
+          if(poin === 0){ toast("Poin tidak berubah — total siswa tetap " + totalSekarang); return false; }
+          sebelum = totalSekarang; sesudah = nilai;
+        }
+        judul = `${poin>0?"+":""}${poin} Poin — ${siswaObj?siswaObj.nama:""}` + (sesudah!==undefined ? ` (total ${sebelum} → ${sesudah})` : "");
       }else{
         judul = document.getElementById("c_judul").value.trim();
         if(!judul){ toast("Judul wajib diisi"); return false; }
@@ -9328,6 +9455,7 @@ function renderCatatan(root){
         judul, isi:document.getElementById("c_isi").value.trim(),
         siswaId, siswaNama: siswaObj ? siswaObj.nama : "",
         tipe, poin };
+      if(isPoin && sesudah !== undefined){ updated.sebelum = sebelum; updated.sesudah = sesudah; }
       const arr = DB.get(DB.keys.catatan, []);
       const idx = arr.findIndex(x=>x.id===item.id);
       if(idx>-1) arr[idx]=updated; else arr.push(updated);
@@ -9335,27 +9463,44 @@ function renderCatatan(root){
       toast(isPoin ? "Tambahan penilaian tersimpan" : "Catatan tersimpan");
       draw();
     });
+    /* Keterangan di bawah kolom Poin: total yang sudah diperoleh dan hasil perubahan */
+    function perbaruiInfoPoin(){
+      if(!isPoin) return;
+      const info = document.getElementById("c_poin_info"), sel = document.getElementById("c_siswa");
+      if(!info) return;
+      const sid = sel ? sel.value : "";
+      if(!sid){ info.innerHTML = "Pilih kelas dan siswa — poin yang sudah diperoleh akan tampil otomatis."; return; }
+      const total = getTotalPoinForSiswa(sid), nilai = Number(document.getElementById("c_poin").value) || 0;
+      if(existing){ info.innerHTML = `Total poin siswa saat ini: <b>${total}</b> (sudah termasuk entri ini).`; return; }
+      const d = nilai - total;
+      info.innerHTML = `Poin yang sudah diperoleh: <b>${total}</b> → menjadi <b>${nilai}</b> · ` +
+        (d === 0 ? "belum ada perubahan" : `selisih <b>${d>0?"+":""}${d}</b> akan dicatat, total siswa menjadi <b>${nilai}</b>`);
+    }
     document.getElementById("c_kelas").onchange = (e)=>{
       document.getElementById("c_siswaHolder").innerHTML = siswaPilihHtml(e.target.value, "", isPoin);
+      if(isPoin && !existing) document.getElementById("c_poin").value = 0;
       wireSiswaSelectChange();
+      perbaruiInfoPoin();
     };
     if(isPoin){
       const poinInput = document.getElementById("c_poin");
-      document.getElementById("c_poin_inc").onclick = ()=>{ poinInput.value = (Number(poinInput.value)||0) + 1; };
-      document.getElementById("c_poin_dec").onclick = ()=>{ poinInput.value = (Number(poinInput.value)||0) - 1; };
+      document.getElementById("c_poin_inc").onclick = ()=>{ poinInput.value = (Number(poinInput.value)||0) + 1; perbaruiInfoPoin(); };
+      document.getElementById("c_poin_dec").onclick = ()=>{ poinInput.value = (Number(poinInput.value)||0) - 1; perbaruiInfoPoin(); };
+      poinInput.oninput = perbaruiInfoPoin;
     }
-    /* Saat siswa dipilih (setelah kelas dipilih) pada form Tambahan Penilaian, kolom Poin
-       otomatis diisi dengan riwayat poin terakhir milik siswa tersebut. */
+    /* Saat siswa dipilih (setelah kelas dipilih) pada entri baru, kolom Poin otomatis menampilkan
+       TOTAL poin yang sudah diperoleh siswa tersebut. */
     function wireSiswaSelectChange(){
       if(!isPoin) return;
       const siswaSel = document.getElementById("c_siswa");
       if(!siswaSel) return;
       siswaSel.onchange = (e)=>{
-        const riwayat = e.target.value ? getLastPoinForSiswa(e.target.value) : null;
-        document.getElementById("c_poin").value = riwayat!==null ? riwayat : 0;
+        if(!existing) document.getElementById("c_poin").value = e.target.value ? getTotalPoinForSiswa(e.target.value) : 0;
+        perbaruiInfoPoin();
       };
     }
     wireSiswaSelectChange();
+    perbaruiInfoPoin();
   }
 
   function downloadCatatanPdf(){
@@ -9366,7 +9511,7 @@ function renderCatatan(root){
         title: "Tambahan Penilaian",
         subtitle,
         columns: ["No","Tanggal","Kelas","Siswa","Poin","Keterangan"],
-        rows: list.map((c,idx)=>[ idx+1, esc(fmtDate(c.tanggal)), esc(c.kelas)||"-", esc(c.siswaNama)||"-", (Number(c.poin)||0), esc(c.isi)||"-" ])
+        rows: list.map((c,idx)=>[ idx+1, esc(fmtDate(c.tanggal)), esc(c.kelas)||"-", esc(c.siswaNama)||"-", (Number(c.poin)||0), (esc(c.isi) + (c.sesudah!==undefined ? " [total " + (Number(c.sebelum)||0) + " → " + (Number(c.sesudah)||0) + "]" : "")).trim() || "-" ])
       });
     }else if(activeTab==="asesmen"){
       printSimpleReport({
@@ -10425,6 +10570,7 @@ const SHEET_KUNCI = "Kunci";
 const SHEET_HASIL = "Hasil";
 const SHEET_ESSAY = "Essay";
 const SHEET_JAWABAN = "Jawaban";
+const SHEET_SISWA = "Siswa";
 
 const SHEET_PANTAU = "Pantau";
 const SHEET_HALAMAN = "Halaman";
@@ -10525,11 +10671,30 @@ function sheetPantau(ss){
   let sh = ss.getSheetByName(SHEET_PANTAU);
   if(!sh){
     sh = ss.insertSheet(SHEET_PANTAU);
-    sh.appendRow(["TestID","NIS","Nama","Kelas","Status","Pelanggaran","LogPelanggaran","MulaiPada","TerakhirAktif","Terjawab","SkorSementara","TotalSoal"]);
-  } else if(sh.getRange(1, 10).getValue() !== "Terjawab"){
-    sh.getRange(1, 10, 1, 3).setValues([["Terjawab","SkorSementara","TotalSoal"]]);
+    sh.appendRow(["TestID","NIS","Nama","Kelas","Status","Pelanggaran","LogPelanggaran","MulaiPada","TerakhirAktif","Terjawab","SkorSementara","TotalSoal","Izin","Percobaan","DiajukanPada"]);
+  } else {
+    if(sh.getRange(1, 10).getValue() !== "Terjawab") sh.getRange(1, 10, 1, 3).setValues([["Terjawab","SkorSementara","TotalSoal"]]);
+    if(sh.getRange(1, 13).getValue() !== "Izin") sh.getRange(1, 13, 1, 3).setValues([["Izin","Percobaan","DiajukanPada"]]);
   }
   return sh;
+}
+
+/* Cari baris siswa pada sheet Pantau (kunci: TestID + NIS; bila NIS kosong, pakai nama). Mengembalikan nomor baris atau -1 */
+function cariBarisPantau(sh, testId, nis, nama){
+  const last = sh.getLastRow();
+  if(last < 2) return -1;
+  const rows = sh.getRange(2, 1, last - 1, 3).getValues();
+  const n = String(nis == null ? "" : nis);
+  const nm = String(nama == null ? "" : nama).toLowerCase();
+  for(let i = 0; i < rows.length; i++){
+    if(String(rows[i][0]) !== String(testId)) continue;
+    if(n !== ""){
+      if(sameNis(rows[i][1], n)) return i + 2;
+    } else if(String(rows[i][1]) === "" && String(rows[i][2]).toLowerCase() === nm){
+      return i + 2;
+    }
+  }
+  return -1;
 }
 
 /* ---- kunci jawaban (untuk nilai sementara di Pemantauan Langsung) ---- */
@@ -10584,7 +10749,9 @@ function bacaLog(v){
   }
 }
 
-/* Satu baris per siswa per tes. mode: mulai | hb | selesai */
+/* Satu baris per siswa per tes. mode: mulai | hb | selesai
+   Siswa yang sudah Selesai TIDAK bisa mulai lagi kecuali guru memberi izin (kolom Izin = Disetujui).
+   Izin bersifat sekali pakai: begitu siswa mulai, baris direset untuk percobaan berikutnya. */
 function catatPantau(ss, d, mode){
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
@@ -10594,35 +10761,41 @@ function catatPantau(ss, d, mode){
     const logBaru = Array.isArray(d.log) ? d.log.slice(-50) : [];
     const pelBaru = Number(d.pelanggaran) || 0;
     const prog = (d.jawaban && typeof d.jawaban === "object") ? hitungProgres(ss, d.testId, d.jawaban) : null;
-    const last = sh.getLastRow();
-    let row = -1;
-    if(last >= 2){
-      const ids = sh.getRange(2, 1, last - 1, 2).getValues();
-      for(let i = 0; i < ids.length; i++){
-        if(String(ids[i][0]) === String(d.testId) && String(ids[i][1]) === String(d.nis)){ row = i + 2; break; }
-      }
-    }
+    const row = cariBarisPantau(sh, d.testId, d.nis, d.nama);
     if(row < 0){
       const st = mode === "selesai" ? "Selesai" : "Mengerjakan";
       sh.appendRow([d.testId, String(d.nis), d.nama, d.kelas, st, pelBaru, JSON.stringify(logBaru), now, now,
-        prog ? prog.terjawab : "", prog ? prog.skor : "", prog ? prog.totalSoal : ""]);
-      return { status: st, pelanggaran: pelBaru, log: logBaru };
+        prog ? prog.terjawab : "", prog ? prog.skor : "", prog ? prog.totalSoal : "", "", 1, ""]);
+      return { status: st, pelanggaran: pelBaru, log: logBaru, percobaan: 1 };
     }
-    const cur = sh.getRange(row, 1, 1, 12).getValues()[0];
+    const cur = sh.getRange(row, 1, 1, 15).getValues()[0];
+    const izin = String(cur[12] || "");
+    const percobaan = Number(cur[13]) || 1;
     let pel = Math.max(Number(cur[5]) || 0, pelBaru);
     let log = bacaLog(cur[6]);
     if(logBaru.length > log.length) log = logBaru;
-    if(cur[4] === "Selesai" && mode !== "selesai"){
-      return { status: "Selesai", pelanggaran: pel, log: log };
+
+    if(cur[4] === "Selesai"){
+      if(mode === "mulai"){
+        if(izin !== "Disetujui"){
+          return { status: "Selesai", perluIzin: true, izin: izin, percobaan: percobaan, pelanggaran: pel, log: log };
+        }
+        /* izin disetujui guru: mulai percobaan baru (data pantau direset, izin dipakai) */
+        sh.getRange(row, 1, 1, 15).setValues([[cur[0], cur[1], d.nama || cur[2], d.kelas || cur[3], "Mengerjakan", 0, "[]", now, now, "", "", "", "", percobaan + 1, ""]]);
+        return { status: "Mengerjakan", pelanggaran: 0, log: [], percobaan: percobaan + 1 };
+      }
+      if(mode === "selesai") return { status: "Selesai", sudahSelesai: true, pelanggaran: pel, log: log, percobaan: percobaan };
+      return { status: "Selesai", pelanggaran: pel, log: log, percobaan: percobaan };
     }
+
     if(mode === "mulai" && cur[4] === "Mengerjakan"){
       pel = pel + 1;
       log.push({ w: now.toISOString(), a: "Membuka ulang / memuat ulang halaman ujian" });
     }
     const st2 = mode === "selesai" ? "Selesai" : "Mengerjakan";
-    sh.getRange(row, 1, 1, 12).setValues([[cur[0], cur[1], d.nama || cur[2], d.kelas || cur[3], st2, pel, JSON.stringify(log), cur[7], now,
-      prog ? prog.terjawab : cur[9], prog ? prog.skor : cur[10], prog ? prog.totalSoal : cur[11]]]);
-    return { status: st2, pelanggaran: pel, log: log };
+    sh.getRange(row, 1, 1, 15).setValues([[cur[0], cur[1], d.nama || cur[2], d.kelas || cur[3], st2, pel, JSON.stringify(log), cur[7], now,
+      prog ? prog.terjawab : cur[9], prog ? prog.skor : cur[10], prog ? prog.totalSoal : cur[11], cur[12], percobaan, cur[14]]]);
+    return { status: st2, pelanggaran: pel, log: log, percobaan: percobaan };
   } finally {
     lock.releaseLock();
   }
@@ -10663,12 +10836,39 @@ function doPost(e){
     const ss = SpreadsheetApp.getActiveSpreadsheet();
 
     if(data.action === "ping"){
-      return respond({ ok:true, pesan:"Server CBT aktif", versi:5 });
+      return respond({ ok:true, pesan:"Server CBT aktif", versi:7 });
     }
 
     if(data.action === "status"){
       aturAktif(data.testId, data.aktif !== false);
       return respond({ ok:true, aktif: data.aktif !== false });
+    }
+
+    /* Daftar siswa untuk pilihan Kelas & Nama di halaman awal ujian (disinkronkan dari Data Siswa guru) */
+    if(data.action === "siswa"){
+      const ssh = ss.getSheetByName(SHEET_SISWA);
+      if(!ssh || ssh.getLastRow() < 2) return respond({ ok:true, siswa:null });
+      const sv = ssh.getRange(2, 1, ssh.getLastRow() - 1, 4).getValues();
+      return respond({ ok:true, siswa: sv.map(function(r){ return { id:String(r[0]), nama:String(r[1]), nis:String(r[2] || ""), kelas:String(r[3] || "") }; }) });
+    }
+
+    if(data.action === "siswa_simpan"){
+      const tokSiswa = PropertiesService.getScriptProperties().getProperty("token_guru");
+      if(!tokSiswa){
+        if(!data.token) return respond({ ok:false, pesan:"Akses guru belum diaktifkan. Klik Perbarui Link & Kunci pada salah satu tes terlebih dahulu." });
+        PropertiesService.getScriptProperties().setProperty("token_guru", String(data.token));
+      } else if(String(data.token || "") !== tokSiswa){
+        return respond({ ok:false, pesan:"Akses ditolak: perangkat ini bukan perangkat guru yang memasang server." });
+      }
+      const daftar = data.siswa || [];
+      let ssh2 = ss.getSheetByName(SHEET_SISWA);
+      if(!ssh2){ ssh2 = ss.insertSheet(SHEET_SISWA); ssh2.appendRow(["Id","Nama","NIS","Kelas"]); }
+      if(ssh2.getLastRow() >= 2) ssh2.getRange(2, 1, ssh2.getLastRow() - 1, 4).clearContent();
+      if(daftar.length){
+        const baris = daftar.map(function(x){ return [String(x.id), String(x.nama), String(x.nis || ""), String(x.kelas || "")]; });
+        ssh2.getRange(2, 1, baris.length, 4).setNumberFormat("@").setValues(baris);
+      }
+      return respond({ ok:true, jumlah:daftar.length });
     }
 
     if(data.action === "jawaban"){
@@ -10694,15 +10894,19 @@ function doPost(e){
     if(data.action === "mulai" || data.action === "hb"){
       if(ujianNonaktif(data.testId)) return respond({ ok:false, pesan:"Ujian sedang dinonaktifkan oleh guru" });
       const r = catatPantau(ss, data, data.action);
-      return respond({ ok:true, status:r.status });
+      if(r.perluIzin){
+        return respond({ ok:false, kode:"perlu_izin", izin:r.izin, percobaan:r.percobaan, pesan:"Anda sudah menyelesaikan tes ini. Untuk mengerjakan lagi diperlukan izin dari guru." });
+      }
+      return respond({ ok:true, status:r.status, percobaan:r.percobaan });
     }
 
     if(data.action === "pantau"){
-      const psh = ss.getSheetByName(SHEET_PANTAU);
+      let psh = ss.getSheetByName(SHEET_PANTAU);
+      if(psh) psh = sheetPantau(ss);
       const sekarang = new Date();
       const daftar = [];
       if(psh && psh.getLastRow() >= 2){
-        const rows = psh.getRange(2, 1, psh.getLastRow() - 1, 12).getValues();
+        const rows = psh.getRange(2, 1, psh.getLastRow() - 1, 15).getValues();
         rows.forEach(function(r){
           if(String(r[0]) !== String(data.testId)) return;
           daftar.push({
@@ -10711,11 +10915,63 @@ function doPost(e){
             terjawab: (r[9] === "" || r[9] == null) ? null : Number(r[9]),
             skorSementara: (r[10] === "" || r[10] == null) ? null : Number(r[10]),
             totalSoal: (r[11] === "" || r[11] == null) ? null : Number(r[11]),
+            izin: String(r[12] || ""),
+            percobaan: Number(r[13]) || 1,
+            diajukanDetik: r[14] ? Math.max(0, Math.round((sekarang.getTime() - new Date(r[14]).getTime()) / 1000)) : null,
             detikLalu: Math.max(0, Math.round((sekarang.getTime() - new Date(r[8]).getTime()) / 1000))
           });
         });
       }
       return respond({ ok:true, siswa:daftar });
+    }
+
+    /* Siswa yang sudah selesai mengajukan izin untuk mengerjakan tes yang sama lagi */
+    if(data.action === "minta_ulang"){
+      if(ujianNonaktif(data.testId)) return respond({ ok:false, pesan:"Ujian sedang dinonaktifkan oleh guru" });
+      const lk = LockService.getScriptLock();
+      lk.waitLock(10000);
+      try{
+        const psh2 = sheetPantau(ss);
+        const row2 = cariBarisPantau(psh2, data.testId, data.nis, data.nama);
+        if(row2 < 0) return respond({ ok:false, pesan:"Data pengerjaan Anda belum ditemukan di server" });
+        const cur2 = psh2.getRange(row2, 1, 1, 15).getValues()[0];
+        if(cur2[4] !== "Selesai") return respond({ ok:true, izin:"Boleh" });
+        const izin2 = String(cur2[12] || "");
+        if(izin2 === "Disetujui" || izin2 === "Menunggu") return respond({ ok:true, izin:izin2 });
+        psh2.getRange(row2, 13).setValue("Menunggu");
+        psh2.getRange(row2, 15).setValue(new Date());
+        return respond({ ok:true, izin:"Menunggu" });
+      } finally {
+        lk.releaseLock();
+      }
+    }
+
+    /* Siswa memeriksa apakah permintaannya sudah dijawab guru */
+    if(data.action === "cek_izin"){
+      const psh3 = ss.getSheetByName(SHEET_PANTAU);
+      if(!psh3) return respond({ ok:true, selesai:false, izin:"" });
+      const row3 = cariBarisPantau(psh3, data.testId, data.nis, data.nama);
+      if(row3 < 0) return respond({ ok:true, selesai:false, izin:"" });
+      const cur3 = psh3.getRange(row3, 1, 1, 15).getValues()[0];
+      return respond({ ok:true, selesai: cur3[4] === "Selesai", izin: String(cur3[12] || ""), percobaan: Number(cur3[13]) || 1 });
+    }
+
+    /* Guru memutuskan permintaan: setuju | tolak | cabut (hanya perangkat guru yang memasang server) */
+    if(data.action === "izin_putus"){
+      const tokenIzin = PropertiesService.getScriptProperties().getProperty("token_guru");
+      if(!tokenIzin || String(data.token || "") !== tokenIzin) return respond({ ok:false, pesan:"Akses ditolak: perangkat ini bukan perangkat guru yang memasang server." });
+      const lk2 = LockService.getScriptLock();
+      lk2.waitLock(10000);
+      try{
+        const psh4 = sheetPantau(ss);
+        const row4 = cariBarisPantau(psh4, data.testId, data.nis, data.nama);
+        if(row4 < 0) return respond({ ok:false, pesan:"Data siswa tidak ditemukan di sheet Pantau" });
+        const putusan = data.putusan === "setuju" ? "Disetujui" : (data.putusan === "tolak" ? "Ditolak" : "");
+        psh4.getRange(row4, 13).setValue(putusan);
+        return respond({ ok:true, izin:putusan });
+      } finally {
+        lk2.releaseLock();
+      }
     }
 
     if(data.action === "kunci"){
@@ -10749,6 +11005,15 @@ function doPost(e){
       for(let i=1;i<rows.length;i++){ if(rows[i][0] === data.testId){ soalKunci = JSON.parse(rows[i][2]); break; } }
       if(!soalKunci) return respond({ ok:false, pesan:"Kunci jawaban tes ini belum tersedia di server" });
 
+      /* Satu percobaan hanya boleh dikumpulkan sekali. Mengulang butuh izin guru. */
+      const pshCek = ss.getSheetByName(SHEET_PANTAU);
+      if(pshCek){
+        const rowCek = cariBarisPantau(pshCek, data.testId, data.nis, data.nama);
+        if(rowCek > 0 && pshCek.getRange(rowCek, 5).getValue() === "Selesai"){
+          return respond({ ok:false, kode:"sudah_selesai", pesan:"Jawaban Anda sudah tercatat di server. Untuk mengerjakan lagi, ajukan izin kepada guru." });
+        }
+      }
+
       const jwbAll = data.jawaban || {};
       let benar = 0, total = 0;
       const essayList = [];
@@ -10778,17 +11043,15 @@ function doPost(e){
       let hasilSheet = ss.getSheetByName(SHEET_HASIL);
       if(!hasilSheet){
         hasilSheet = ss.insertSheet(SHEET_HASIL);
-        hasilSheet.appendRow(["Waktu","TestID","Nama","NIS","Kelas","Skor","Benar","Total","Pelanggaran"]);
-      } else if(hasilSheet.getRange(1, 9).getValue() !== "Pelanggaran"){
-        hasilSheet.getRange(1, 9).setValue("Pelanggaran");
+        hasilSheet.appendRow(["Waktu","TestID","Nama","NIS","Kelas","Skor","Benar","Total","Pelanggaran","Percobaan"]);
+      } else {
+        if(hasilSheet.getRange(1, 9).getValue() !== "Pelanggaran") hasilSheet.getRange(1, 9).setValue("Pelanggaran");
+        if(hasilSheet.getRange(1, 10).getValue() !== "Percobaan") hasilSheet.getRange(1, 10).setValue("Percobaan");
       }
-      hasilSheet.appendRow([new Date(), data.testId, data.nama, data.nis, data.kelas, skor, benar, total, pel]);
+      hasilSheet.appendRow([new Date(), data.testId, data.nama, data.nis, data.kelas, skor, benar, total, pel, pantau.percobaan || 1]);
       simpanJawaban(ss, data, jwbAll);
 
       const resp = { ok:true, skor:skor, benar:benar, total:total, essay:essayList.length, pelanggaran:pel };
-      /* Kunci jawaban hanya diikutsertakan jika guru mengizinkan pembahasan untuk tes ini
-         (dikirim siswa lewat field "pembahasan"); essay tidak disertakan karena tidak punya kunci baku. */
-      if(data.pembahasan) resp.kunci = soalKunci.filter(function(s){ return (s.tipe||"pg") !== "essay"; });
       return respond(resp);
     }
 
@@ -10857,7 +11120,7 @@ function buildCbtHtmlFile(tes, soalList){
 
   const dataJson = JSON.stringify({
     testId: tes.id, judul: tes.judul, durasiMenit: tes.durasiMenit||0,
-    acak: !!tes.acak, maks: parseInt(tes.maksPelanggaran,10)||0, pembahasan: tes.tampilkanPembahasan!==false,
+    acak: !!tes.acak, maks: parseInt(tes.maksPelanggaran,10)||0,
     logo: CBT_LOGO_SMALL, endpoint: cbtNormUrl(cfg.endpointUrl), soal: soalPublik,
     siswa: siswaPublik2, kelasList: kelasPublik
   }).replace(/</g,"\\u003c");
@@ -11086,17 +11349,121 @@ if(!SISWA_LIST.length){
   inSetuju.disabled = true;
 }
 
+/* Perbarui daftar Kelas & Nama dari Data Siswa guru yang tersimpan di server (versi terbaru) */
+function muatSiswaTerbaru(){
+  if(!CFG.endpoint) return;
+  fetch(CFG.endpoint, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify({ action:"siswa", testId:CFG.testId }) })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if(!res || !res.ok || !res.siswa || !res.siswa.length) return;
+      var kelasLama = selKelas.value, namaLama = selNama.value;
+      SISWA_LIST = res.siswa.slice().sort(function(a, b){ return String(a.kelas).localeCompare(String(b.kelas), "id", { numeric:true }) || String(a.nama).localeCompare(String(b.nama), "id"); });
+      KELAS_LIST = []; SISWA_LIST.forEach(function(s){ if(KELAS_LIST.indexOf(s.kelas) === -1) KELAS_LIST.push(s.kelas); });
+      selKelas.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+      KELAS_LIST.forEach(function(k){ var o = document.createElement("option"); o.value = k; o.textContent = k; selKelas.appendChild(o); });
+      if(kelasLama && KELAS_LIST.indexOf(kelasLama) > -1){ selKelas.value = kelasLama; isiPilihanNama(kelasLama); if(namaLama) selNama.value = namaLama; } else { isiPilihanNama(""); }
+      inSetuju.disabled = false;
+      segarkanMulai();
+    }).catch(function(){});
+}
+muatSiswaTerbaru();
+
 document.getElementById("mulaiBtn").onclick = function(){
   var kelas = selKelas.value;
   var siswa = SISWA_LIST.filter(function(s){ return s.id === selNama.value; })[0];
   if(!kelas || !siswa){ document.getElementById("identErr").textContent = "Pilih kelas dan nama lengkap terlebih dahulu."; return; }
   if(!inSetuju.checked){ document.getElementById("identErr").textContent = "Centang pernyataan tata tertib terlebih dahulu."; return; }
   identitas = { nama: siswa.nama, nis: siswa.nis || "", kelas: kelas };
+  mintaMulai();
+};
+
+/* ---- Mulai ujian: server memeriksa dulu. Siswa yang sudah selesai harus mendapat izin guru untuk mengulang ---- */
+var izinTimer = null;
+function kirimKeServer(body){
+  return fetch(CFG.endpoint, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(body) })
+    .then(function(r){ return r.json(); });
+}
+function badanIdentitas(aksi){
+  return { action:aksi, testId:CFG.testId, nama:identitas.nama, nis:identitas.nis, kelas:identitas.kelas };
+}
+function mulaiTesSekarang(){
+  clearInterval(izinTimer);
   waktuMulai = new Date();
+  document.getElementById("hasilBox").style.display = "none";
   document.getElementById("identitasPane").style.display = "none";
   tampilkanSoal();
   mulaiPantau();
-};
+}
+var sedangMulai = false;
+function mintaMulai(){
+  if(sedangMulai) return;
+  sedangMulai = true;
+  if(!CFG.endpoint){ mulaiTesSekarang(); return; }
+  var btn = document.getElementById("mulaiBtn"), err = document.getElementById("identErr");
+  btn.disabled = true; btn.textContent = "Memeriksa...";
+  err.textContent = "";
+  var b = badanIdentitas("mulai"); b.pelanggaran = 0; b.log = []; b.jawaban = {};
+  kirimKeServer(b).then(function(res){
+    btn.textContent = "Mulai Ujian"; segarkanMulai();
+    if(res && res.ok){ mulaiTesSekarang(); }
+    else if(res && res.kode === "perlu_izin"){ sedangMulai = false; tampilIzin(res.izin || ""); }
+    else { sedangMulai = false; err.textContent = (res && res.pesan) || "Tidak dapat memulai ujian. Coba lagi."; }
+  }).catch(function(){
+    sedangMulai = false;
+    btn.textContent = "Mulai Ujian"; segarkanMulai();
+    err.textContent = "Tidak dapat terhubung ke server. Periksa koneksi internet lalu coba lagi.";
+  });
+}
+function kembaliKeIdentitas(){
+  clearInterval(izinTimer);
+  document.getElementById("hasilBox").style.display = "none";
+  document.getElementById("identitasPane").style.display = "block";
+  segarkanMulai();
+}
+function tampilIzin(izin){
+  clearInterval(izinTimer);
+  document.getElementById("identitasPane").style.display = "none";
+  var box = document.getElementById("hasilBox");
+  box.style.display = "block";
+  var html;
+  if(izin === "Menunggu"){
+    html = kepalaHasil("⏳", "Menunggu Izin Guru", "Permintaan mengulang tes sudah dikirim ke guru.", false);
+    html += '<div class="rbody">' + kartuIdentitas() + '<div class="alert a1">Jangan menutup halaman ini. Ujian akan dimulai otomatis setelah guru memberi izin.</div>';
+    html += '<div class="ractions"><button type="button" class="btn btn-line" id="izinKembaliBtn">Kembali</button></div></div>';
+  } else if(izin === "Ditolak"){
+    html = kepalaHasil("✕", "Izin Belum Diberikan", "Guru belum mengizinkan Anda mengulang tes ini.", true);
+    html += '<div class="rbody">' + kartuIdentitas() + '<div class="alert a1">Hubungi guru Anda bila ingin mengajukan kembali.</div>';
+    html += '<div class="ractions"><button type="button" class="btn btn-primary" id="izinMintaBtn">Ajukan Lagi</button><button type="button" class="btn btn-line" id="izinKembaliBtn">Kembali</button></div></div>';
+  } else {
+    html = kepalaHasil("🔒", "Anda Sudah Menyelesaikan Tes Ini", "Jawaban Anda sudah tercatat. Mengerjakan lagi pada link yang sama memerlukan izin dari guru.", false);
+    html += '<div class="rbody">' + kartuIdentitas() + '<div class="alert a1">Tekan tombol di bawah untuk mengirim permintaan izin. Guru akan menerima pemberitahuan di layar pemantauan.</div>';
+    html += '<div class="ractions"><button type="button" class="btn btn-primary" id="izinMintaBtn">Minta Izin Mengulang Tes</button><button type="button" class="btn btn-line" id="izinKembaliBtn">Kembali</button></div></div>';
+  }
+  box.innerHTML = html;
+  window.scrollTo(0, 0);
+  var kb = document.getElementById("izinKembaliBtn"); if(kb) kb.onclick = kembaliKeIdentitas;
+  var mb = document.getElementById("izinMintaBtn"); if(mb) mb.onclick = mintaIzin;
+  if(izin === "Menunggu") izinTimer = setInterval(cekIzin, 5000);
+}
+function mintaIzin(){
+  var mb = document.getElementById("izinMintaBtn");
+  if(mb){ mb.disabled = true; mb.textContent = "Mengirim permintaan..."; }
+  kirimKeServer(badanIdentitas("minta_ulang")).then(function(res){
+    if(res && res.ok && res.izin === "Boleh"){ mintaMulai(); }
+    else if(res && res.ok){ tampilIzin(res.izin || "Menunggu"); }
+    else { tampilIzin(""); alert((res && res.pesan) || "Permintaan izin gagal dikirim. Coba lagi."); }
+  }).catch(function(){
+    tampilIzin(""); alert("Tidak dapat terhubung ke server. Periksa koneksi internet lalu coba lagi.");
+  });
+}
+function cekIzin(){
+  kirimKeServer(badanIdentitas("cek_izin")).then(function(res){
+    if(!res || !res.ok) return;
+    if(res.izin === "Disetujui"){ clearInterval(izinTimer); mintaMulai(); }
+    else if(res.izin === "Ditolak"){ tampilIzin("Ditolak"); }
+    else if(res.izin === "" && res.selesai){ tampilIzin(""); }
+  }).catch(function(){});
+}
 
 var soalById = {};
 CFG.soal.forEach(function(x){ soalById[x.id] = x; });
@@ -11246,7 +11613,6 @@ function updateBanner(){
 }
 function mulaiPantau(){
   updateBanner();
-  kirimPantau("mulai");
   hbInterval = setInterval(function(){ if(!sudahKirim) kirimPantau("hb"); }, 10000);
 }
 function catat(alasan){
@@ -11323,13 +11689,14 @@ function kumpulkan(){
 }
 var waktuSelesai = null;
 function kirimJawaban(){
-  var payload = { action:"submit", testId:CFG.testId, nama:identitas.nama, nis:identitas.nis, kelas:identitas.kelas, jawaban:jawaban, pelanggaran:pelanggaran, log:logPel, pembahasan: !!CFG.pembahasan };
+  var payload = { action:"submit", testId:CFG.testId, nama:identitas.nama, nis:identitas.nis, kelas:identitas.kelas, jawaban:jawaban, pelanggaran:pelanggaran, log:logPel };
   if(!CFG.endpoint){ tampilkanGagal("Server belum dikonfigurasi oleh guru."); return; }
   tampilkanMengirim();
   fetch(CFG.endpoint, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(payload) })
     .then(function(r){ return r.json(); })
     .then(function(res){
       if(res && res.ok){ tampilkanSukses(res); }
+      else if(res && res.kode === "sudah_selesai"){ document.getElementById("hasilBox").style.display = "none"; tampilIzin(""); }
       else{ tampilkanGagal((res && res.pesan) || "Gagal mengirim jawaban."); }
     })
     .catch(function(){ tampilkanGagal("Tidak dapat terhubung ke server. Periksa koneksi internet."); });
@@ -11376,83 +11743,11 @@ function tampilkanSukses(res){
   html += '<div class="stat' + (pelanggaran > 0 ? ' warn' : '') + '"><b>' + pelanggaran + 'x</b><span>Keluar halaman</span></div>';
   html += '</div>';
   if(pelanggaran > 0) html += '<div class="alert a2">Tercatat ' + pelanggaran + ' kali keluar dari halaman ujian dan sudah dilaporkan kepada guru.</div>';
-  html += '<div class="ractions"><button type="button" class="btn btn-line" id="cetakBtn">🖨 Cetak / Simpan Bukti</button>';
-  if(CFG.pembahasan && res.kunci) html += '<button type="button" class="btn btn-primary" id="pembahasanBtn" style="background:#163c29;">📋 Lihat Pembahasan Jawaban</button>';
-  html += '</div>';
-  html += '<div id="pembahasanBox" style="display:none; text-align:left; margin-top:14px;"></div>';
+  html += '<div class="ractions"><button type="button" class="btn btn-line" id="cetakBtn">🖨 Cetak / Simpan Bukti</button></div>';
   html += '<div class="foot">Terima kasih. Anda boleh menutup halaman ini.</div></div>';
   box.innerHTML = html;
   document.getElementById("cetakBtn").onclick = function(){ window.print(); };
-  if(CFG.pembahasan && res.kunci){
-    document.getElementById("pembahasanBtn").onclick = function(){
-      var kotak = document.getElementById("pembahasanBox");
-      var tombol = document.getElementById("pembahasanBtn");
-      if(kotak.style.display === "none"){
-        if(!kotak.dataset.diisi){ kotak.innerHTML = htmlPembahasan(res.kunci); kotak.dataset.diisi = "1"; }
-        kotak.style.display = "block"; tombol.textContent = "📋 Sembunyikan Pembahasan";
-      } else {
-        kotak.style.display = "none"; tombol.textContent = "📋 Lihat Pembahasan Jawaban";
-      }
-    };
-  }
   window.scrollTo(0, 0);
-}
-function normBahas(x){ return String(x==null?"":x).toLowerCase().trim().split(" ").filter(function(p){return p;}).join(" "); }
-function htmlPembahasan(kunciArr){
-  var kMap = {}; kunciArr.forEach(function(k){ kMap[k.id] = k; });
-  var LABEL = { pg:"Pilihan Ganda", pgk:"PG Kompleks", bs:"Benar-Salah", jodoh:"Menjodohkan", isian:"Isian Singkat", essay:"Esai" };
-  var kartu = soalTampil.map(function(s, idx){
-    var k = kMap[s.id]; var t = s.tipe || "pg"; var j = jawaban[s.id]; var ada = adaJawaban(j);
-    var isi = "", status = "Tidak dijawab", warna = "#6b7a72", bg = "#eef1ef";
-    if(t === "essay"){
-      status = ada ? "Menunggu dinilai guru" : "Tidak dijawab"; warna = ada ? "#8a6a10" : "#6b7a72"; bg = ada ? "#fff4d6" : "#eef1ef";
-      isi = '<div style="padding:10px 12px; border:1.5px solid #e3ede7; border-radius:10px; background:#fafcfb; font-size:13px; white-space:pre-wrap;">' + (ada ? escapeHtml(String(j)) : '<i style="color:#6b7a72;">tidak dijawab</i>') + '</div>';
-    } else if(t === "pg" || t === "pgk"){
-      var kArr = Array.isArray(k.kunci) ? k.kunci : [k.kunci];
-      var pArr = Array.isArray(j) ? j : (j ? [j] : []);
-      var benarSoal = ada && kArr.slice().sort().join(",") === pArr.slice().sort().join(",");
-      status = !ada ? "Tidak dijawab" : (benarSoal ? "Benar" : "Salah"); warna = !ada ? "#6b7a72" : (benarSoal ? "#14663f" : "#b3364f"); bg = !ada ? "#eef1ef" : (benarSoal ? "#e4f6ee" : "#fde8ec");
-      isi = (s.opsi||[]).map(function(o){
-        var isKunci = kArr.indexOf(o.key) > -1, dipilih = pArr.indexOf(o.key) > -1;
-        var bd = isKunci ? "#8fd8ac" : (dipilih ? "#f0b7c3" : "#e3ede7");
-        var bgc = isKunci ? "#eefaf3" : (dipilih ? "#fff3f5" : "#fff");
-        var tag = dipilih ? ('<span style="font-size:10px; font-weight:800; padding:2px 7px; border-radius:999px; background:' + (isKunci?"#14663f":"#b3364f") + '; color:#fff;">Jawaban Anda</span>') : "";
-        if(isKunci) tag += ' <span style="font-size:10px; font-weight:800; color:#14663f;">✓ Kunci</span>';
-        return '<div style="display:flex; justify-content:space-between; gap:8px; padding:7px 10px; border:1.5px solid '+bd+'; background:'+bgc+'; border-radius:9px; margin-bottom:5px; font-size:12.5px;"><span><b>'+o.key+'.</b> '+escapeHtml(o.teks)+'</span><span style="white-space:nowrap;">'+tag+'</span></div>';
-      }).join("");
-    } else if(t === "bs"){
-      var benarBs = ada && j === k.kunci;
-      status = !ada ? "Tidak dijawab" : (benarBs ? "Benar" : "Salah"); warna = !ada ? "#6b7a72" : (benarBs ? "#14663f" : "#b3364f"); bg = !ada ? "#eef1ef" : (benarBs ? "#e4f6ee" : "#fde8ec");
-      isi = ["Benar","Salah"].map(function(v){
-        var isKunci = v === k.kunci, dipilih = v === j;
-        var bd = isKunci ? "#8fd8ac" : (dipilih ? "#f0b7c3" : "#e3ede7");
-        return '<div style="padding:7px 10px; border:1.5px solid '+bd+'; border-radius:9px; margin-bottom:5px; font-size:12.5px;">'+v+(dipilih?' — jawaban Anda':'')+(isKunci?' ✓':'')+'</div>';
-      }).join("");
-    } else if(t === "jodoh"){
-      var kananTeks = {}; (s.kanan||[]).forEach(function(kn){ kananTeks[kn.id] = kn.teks; });
-      var kBenar = k.kunci || {}; var semuaBenar = true, adaJwbJodoh = false;
-      isi = (s.kiri||[]).map(function(ki){
-        var pilihan = (j && typeof j === "object") ? j[ki.id] : "";
-        if(pilihan) adaJwbJodoh = true;
-        var benarP = pilihan === kBenar[ki.id];
-        if(!benarP) semuaBenar = false;
-        return '<div style="padding:8px 10px; border:1.5px solid '+(!pilihan?"#e3ede7":(benarP?"#8fd8ac":"#f0b7c3"))+'; border-radius:9px; margin-bottom:5px; font-size:12.5px;"><b>'+escapeHtml(ki.teks)+'</b><br>Jawaban Anda: '+(pilihan?'<span style="color:'+(benarP?"#14663f":"#b3364f")+';">'+escapeHtml(kananTeks[pilihan]||"-")+(benarP?" ✓":" ✕")+'</span>':'<i>tidak dijawab</i>')+(benarP?'':'<br><span style="color:#14663f;">Kunci: '+escapeHtml(kananTeks[kBenar[ki.id]]||"-")+'</span>')+'</div>';
-      }).join("");
-      ada = adaJwbJodoh;
-      status = !ada ? "Tidak dijawab" : (semuaBenar ? "Benar" : "Sebagian/Salah"); warna = !ada ? "#6b7a72" : (semuaBenar ? "#14663f" : "#b3364f"); bg = !ada ? "#eef1ef" : (semuaBenar ? "#e4f6ee" : "#fde8ec");
-    } else if(t === "isian"){
-      var benarIsian = ada && (k.kunci||[]).some(function(kk){ return normBahas(kk) === normBahas(j); });
-      status = !ada ? "Tidak dijawab" : (benarIsian ? "Benar" : "Salah"); warna = !ada ? "#6b7a72" : (benarIsian ? "#14663f" : "#b3364f"); bg = !ada ? "#eef1ef" : (benarIsian ? "#e4f6ee" : "#fde8ec");
-      isi = '<div style="padding:9px 11px; border:1.5px solid '+(!ada?"#e3ede7":(benarIsian?"#8fd8ac":"#f0b7c3"))+'; border-radius:9px; font-size:12.5px; margin-bottom:5px;">Jawaban Anda: '+(ada?'<b>'+escapeHtml(String(j))+'</b>':'<i>tidak dijawab</i>')+'</div>'
-        + '<div style="font-size:12px; color:#14663f;">Jawaban yang benar: '+(k.kunci||[]).map(function(kk){return '<b>'+escapeHtml(kk)+'</b>';}).join(", ")+'</div>';
-    }
-    return '<div style="border:1.5px solid #dce7e0; border-radius:12px; padding:12px; margin-bottom:10px;">'
-      + '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:7px; flex-wrap:wrap;">'
-      + '<span style="font-weight:800; font-size:12.5px;">Soal '+(idx+1)+' <span style="font-weight:600; color:#6b8577;">('+(LABEL[t]||t)+')</span></span>'
-      + '<span style="font-size:11px; font-weight:800; padding:3px 9px; border-radius:999px; background:'+bg+'; color:'+warna+';">'+status+'</span></div>'
-      + '<div style="font-size:13.5px; font-weight:600; margin-bottom:8px;">'+escapeHtml(s.teks)+'</div>' + isi + '</div>';
-  }).join("");
-  return '<h3 style="font-size:14.5px; margin:0 0 10px;">Pembahasan Jawaban</h3>' + kartu;
 }
 function tampilkanGagal(pesan){
   var box = document.getElementById("hasilBox");
@@ -11680,6 +11975,7 @@ function bukaDetailJawaban(h){
   var soalTes = (tes.soalIds || []).map(function(id){ return bank.find(function(s){ return s.id === id; }); }).filter(Boolean);
   var cfg = DB.get(DB.keys.ujianConfig, {});
   var url = cbtNormUrl(cfg.endpointUrl);
+  if(h.jawabanLokal){ render(h.jawabanLokal); return; }
   if(!url){ pesan("Endpoint server belum diatur di tab Pengaturan Server."); return; }
   pasangKepala('<div style="padding:26px 0; text-align:center; color:#6b8577; font-size:13px;">Memuat jawaban siswa...</div>');
 
@@ -11696,6 +11992,10 @@ function bukaDetailJawaban(h){
         pesan("Jawaban siswa ini tidak tersimpan di server. Hanya ujian yang dikumpulkan <b>setelah</b> kode server diperbarui yang jawabannya tersimpan.");
         return;
       }
+      try{
+        const all = DB.get(DB.keys.ujianHasil, []), x = all.find(function(q){ return q.id === h.id; });
+        if(x && !x.jawabanLokal && JSON.stringify(res.jawaban).length <= 20000){ x.jawabanLokal = res.jawaban; DB.set(DB.keys.ujianHasil, all); }
+      }catch(e){}
       render(res.jawaban);
     })
     .catch(function(){ pesan("Tidak dapat terhubung ke server. Periksa koneksi internet."); });
@@ -12109,7 +12409,61 @@ function unduhTemplateSoalWord(){
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
+/* Sinkronkan Data Siswa ke server ujian agar pilihan Kelas & Nama di halaman awal tes selalu mengikuti Data Siswa */
+function cbtRosterSiswa(){
+  return DB.get(DB.keys.siswa, []).slice().sort(function(a, b){ return naturalCompare(a.kelas, b.kelas) || naturalCompare(a.nama, b.nama); })
+    .map(function(s){ return { id:s.id, nama:s.nama, nis:s.nis || "", kelas:s.kelas || "-" }; });
+}
+function cbtHashRoster(r){ const t = JSON.stringify(r); let h = 0; for(let i = 0; i < t.length; i++){ h = (h * 31 + t.charCodeAt(i)) | 0; } return r.length + ":" + h; }
+function cbtSinkronSiswa(paksa, senyap){
+  const cfg = DB.get(DB.keys.ujianConfig, {}), url = cbtNormUrl(cfg.endpointUrl);
+  if(!url){ if(!senyap) toast("Atur endpoint server dahulu di tab Pengaturan Server"); return Promise.resolve(false); }
+  const roster = cbtRosterSiswa(), hash = cbtHashRoster(roster);
+  if(!paksa && cfg.siswaHash === hash) return Promise.resolve(true);
+  if(!roster.length){ if(!senyap) toast("Data Siswa masih kosong"); return Promise.resolve(false); }
+  return fetch(url, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify({ action:"siswa_simpan", token:tokenGuru(), siswa:roster }) })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if(res && res.ok){ const c = DB.get(DB.keys.ujianConfig, {}); c.siswaHash = hash; DB.set(DB.keys.ujianConfig, c); if(!senyap) toast(roster.length + " siswa disinkronkan ke halaman ujian", "ok"); return true; }
+      if(!senyap){ const m = (res && res.pesan) || "Gagal menyinkronkan data siswa"; toast(/tidak dikenal/i.test(m) ? "Kode server perlu diperbarui: buka Pengaturan Server → Lihat Kode, tempel kode terbaru, lalu deploy versi baru" : m, "danger"); }
+      return false;
+    }).catch(function(){ if(!senyap) toast("Gagal terhubung ke server", "danger"); return false; });
+}
+(function(){
+  const asli = DB.set.bind(DB); let tm = null;
+  DB.set = function(key, value){ const r = asli(key, value); if(key === DB.keys.siswa){ clearTimeout(tm); tm = setTimeout(function(){ try{ cbtSinkronSiswa(false, true); }catch(e){} }, 2500); } return r; };
+})();
+
+/* Simpan salinan jawaban tiap siswa di aplikasi ini, supaya detail jawaban tetap bisa dibuka
+   walaupun baris hasilnya sudah dihapus dari spreadsheet. */
+function cbtSalinJawabanLokal(senyap){
+  const url = cbtNormUrl((DB.get(DB.keys.ujianConfig, {}) || {}).endpointUrl);
+  if(!url) return Promise.resolve(0);
+  const antre = DB.get(DB.keys.ujianHasil, []).filter(function(h){ return !h.jawabanLokal && !h.jawabanTakAda && h.testId; }).map(function(h){ return h.id; });
+  if(!antre.length) return Promise.resolve(0);
+  const token = tokenGuru(); let i = 0, ok = 0;
+  function satu(){
+    if(i >= antre.length) return Promise.resolve();
+    const id = antre[i++], h = DB.get(DB.keys.ujianHasil, []).find(function(x){ return x.id === id; });
+    if(!h) return satu();
+    return fetch(url, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify({ action:"jawaban", testId:h.testId, nis:h.nis || "", nama:h.nama || "", token:token }) })
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if(res && res.ok){
+          const all = DB.get(DB.keys.ujianHasil, []), x = all.find(function(q){ return q.id === id; });
+          if(x){
+            if(res.jawaban && JSON.stringify(res.jawaban).length <= 20000){ x.jawabanLokal = res.jawaban; ok++; }
+            else if(!res.jawaban){ x.jawabanTakAda = true; }
+            DB.set(DB.keys.ujianHasil, all);
+          }
+        } else if(res && /tidak dikenal|ditolak|belum diaktifkan/i.test(res.pesan || "")){ i = antre.length; }
+      }).catch(function(){ i = antre.length; }).then(satu);
+  }
+  return Promise.all([satu(), satu(), satu()]).then(function(){ if(!senyap && ok) toast(ok + " jawaban siswa disimpan di aplikasi", "ok"); return ok; });
+}
+
 function renderUjianCBT(root){
+  cbtSinkronSiswa(false, true);
   if(!document.getElementById("kbStyle")){
     const st = document.createElement("style"); st.id = "kbStyle";
     st.textContent = ".kb-bar{display:flex; gap:6px; flex-wrap:wrap; align-items:center;}"
@@ -12174,6 +12528,10 @@ function renderUjianCBT(root){
           <button type="button" class="doc-add" id="cbtAddTesBtn">${svgIcon("plus")}<span>Buat Tes Baru</span></button>
         </div>
       </div>
+      <div id="cbtSiswaSync" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:12px 0; padding:10px 14px; background:#f3faf6; border:1.5px solid #dce7e0; border-radius:12px; font-size:12.5px;">
+        <span style="flex:1; min-width:200px;">👥 Pilihan <b>Kelas</b> dan <b>Nama</b> di halaman awal tes diambil dari <b>Data Siswa</b> (<span id="cbtSiswaInfo"></span>) dan diperbarui otomatis.</span>
+        <button type="button" class="btn btn-ghost btn-sm" id="cbtSyncSiswaBtn" style="width:auto;">↻ Sinkronkan Sekarang</button>
+      </div>
       <div id="cbtTesList"></div>
     </div>
 
@@ -12188,6 +12546,7 @@ function renderUjianCBT(root){
           <label style="display:flex; align-items:center; gap:6px; margin:0; font-size:12.5px; font-weight:600;"><input type="checkbox" id="pantauAuto" checked style="width:auto; margin:0;">Segarkan otomatis (8 detik)</label>
           <span id="pantauInfo" style="font-size:12px; color:var(--ink-soft);"></span>
         </div>
+        <div id="pantauIzin"></div>
         <div id="pantauSummary" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;"></div>
         <div class="desc" style="font-size:11.5px; margin:-4px 0 8px;">*Nilai sementara = skor jika dikumpulkan sekarang (soal belum dijawab dihitung salah, essay belum dinilai). Diperbarui tiap ±10 detik dari perangkat siswa.</div>
         <div class="pn-tablewrap"><table class="pn-table">
@@ -12208,6 +12567,7 @@ function renderUjianCBT(root){
           <input type="file" id="cbtCsvFile" accept=".csv" style="display:none;">
         </div>
         <p style="font-size:11.5px; color:var(--ink-soft); margin:0 0 10px;">Link tersimpan di perangkat ini dan tetap ada walau sudah logout atau aplikasi ditutup.</p>
+        <p style="font-size:12px; margin:0 0 4px; padding:9px 12px; background:#eefaf3; border:1.5px solid #bfe5cf; border-radius:10px; color:#14663f;">🔒 Hasil yang sudah diambil tersimpan permanen di <b>Hasil Tersimpan</b> pada aplikasi ini, termasuk salinan jawaban tiap siswa. Menghapus baris di spreadsheet <b>tidak</b> menghapusnya di sini; pengambilan berikutnya hanya menambah atau memperbarui. Hapus hasil hanya lewat tombol 🗑 di tabel.</p>
       </div>
       <div class="doc-shell">
         <div class="doc-shell-head" style="justify-content:space-between; flex-wrap:wrap; gap:10px;">
@@ -12609,6 +12969,7 @@ function renderUjianCBT(root){
           const idx = arr.findIndex(x=>x.id===testId);
           if(idx>-1){ arr[idx].kunciTerkirim = true; arr[idx].linkSiap = !!res.linkSiap; arr[idx].perluPerbarui = false; DB.set(DB.keys.ujianTes, arr); }
           drawTesList();
+          cbtSinkronSiswa(false, true);
           if(res.linkSiap){
             toast("Link ujian siap dibagikan","ok");
             if(tampilkanLink !== false) tampilkanLinkTes(arr[idx] || t);
@@ -12632,9 +12993,6 @@ function renderUjianCBT(root){
       </div>
       <div class="field"><label><input type="checkbox" id="t_acak" style="width:auto; margin-right:6px;"${edit&&edit.acak?" checked":""}>Acak urutan soal untuk tiap siswa</label></div>
       <div class="field"><label>Kumpulkan otomatis setelah ... kali keluar tab</label><input type="text" id="t_maks" placeholder="Contoh: 3 (kosongkan = hanya dicatat sebagai curang)" value="${edit&&edit.maksPelanggaran?edit.maksPelanggaran:""}"></div>
-      <div class="field"><label><input type="checkbox" id="t_pembahasan" style="width:auto; margin-right:6px;"${(!edit || edit.tampilkanPembahasan!==false)?" checked":""}>Izinkan siswa melihat pembahasan (benar/salah per soal) setelah mengumpulkan</label>
-        <p style="font-size:11.5px; color:var(--ink-soft); margin:4px 0 0;">Matikan untuk ujian yang dipakai berulang di beberapa sesi/kelas pada hari yang sama, agar siswa yang mengerjakan lebih dulu tidak bisa membocorkan kunci jawaban.</p>
-      </div>
       <div class="field"><label>Pilih Soal dari Bank Soal</label>
         <div class="kb-bar" id="t_kelasBar" style="margin-bottom:6px;"></div>
         <div class="kb-bar" id="t_paketBar" style="margin-bottom:8px;"></div>
@@ -12659,8 +13017,7 @@ function renderUjianCBT(root){
           judul, kelas: document.getElementById("t_kelas").value,
           durasiMenit: parseInt(document.getElementById("t_durasi").value,10) || 0,
           acak: document.getElementById("t_acak").checked, soalIds,
-          maksPelanggaran: parseInt(document.getElementById("t_maks").value,10) || 0,
-          tampilkanPembahasan: document.getElementById("t_pembahasan").checked
+          maksPelanggaran: parseInt(document.getElementById("t_maks").value,10) || 0
         });
         const sudahTayang = !!arrE[ix].linkSiap;
         arrE[ix].perluPerbarui = sudahTayang;
@@ -12680,7 +13037,6 @@ function renderUjianCBT(root){
         id: uid(), judul, kelas: document.getElementById("t_kelas").value,
         durasiMenit: parseInt(document.getElementById("t_durasi").value,10) || 0,
         acak: document.getElementById("t_acak").checked, soalIds, maksPelanggaran: parseInt(document.getElementById("t_maks").value,10) || 0,
-        tampilkanPembahasan: document.getElementById("t_pembahasan").checked,
         dibuat: new Date().toISOString(), kunciTerkirim: false
       };
       const arr = DB.get(DB.keys.ujianTes, []);
@@ -12748,6 +13104,11 @@ function renderUjianCBT(root){
     })();
   }
   root.querySelector("#cbtAddTesBtn").onclick = ()=> bukaFormTes(null);
+  (function(){
+    const info = DB.get(DB.keys.siswa, []);
+    root.querySelector("#cbtSiswaInfo").textContent = info.length + " siswa, " + new Set(info.map(x=>x.kelas||"-")).size + " kelas";
+    root.querySelector("#cbtSyncSiswaBtn").onclick = ()=> cbtSinkronSiswa(true, false);
+  })();
 
   /* ---------- tab: Hasil Ujian ---------- */
   const csvUrlInput = root.querySelector("#cbtCsvUrl");
@@ -12796,11 +13157,12 @@ function renderUjianCBT(root){
   }
   function prosesCsv(text){
     const rows = parseCsvSimple(text);
-    if(!rows.length){ toast("Tidak ada data yang terbaca dari CSV"); return; }
+    if(!rows.length){ toast("Tidak ada data di spreadsheet. Hasil yang sudah tersimpan di aplikasi ini tidak berubah."); return; }
     const siswaAll = DB.get(DB.keys.siswa, []);
     const tesAll = DB.get(DB.keys.ujianTes, []);
     const hasilArr = DB.get(DB.keys.ujianHasil, []);
-    let masuk = 0;
+    let masuk = 0, baru = 0, diperbarui = 0;
+    const idDiSheet = new Set();
     rows.forEach(r=>{
       const testId = r.testid || r.test_id || "";
       const nis = r.nis || "";
@@ -12813,13 +13175,17 @@ function renderUjianCBT(root){
       const siswa = siswaAll.find(s=> (nis && s.nis && s.nis.includes(nis)) || (s.nama||"").toLowerCase()===nama.toLowerCase());
       const idUnik = testId+"__"+(siswa?siswa.id:nis||nama);
       const idx = hasilArr.findIndex(h=>h.idUnik===idUnik);
-      const rec = { id: idx>-1?hasilArr[idx].id:uid(), idUnik, testId, testJudul: tes?tes.judul:(testId||"(tidak dikenal)"), nama, nis, kelas:r.kelas||(siswa?siswa.kelas:""), skor, benar, total, waktu, pelanggaran: parseInt(r.pelanggaran||"0",10)||0, siswaId: siswa?siswa.id:null };
-      if(idx>-1) hasilArr[idx]=rec; else hasilArr.push(rec);
+      idDiSheet.add(idUnik);
+      const rec = { id: idx>-1?hasilArr[idx].id:uid(), idUnik, testId, testJudul: tes?tes.judul:(idx>-1&&hasilArr[idx].testJudul?hasilArr[idx].testJudul:(testId||"(tidak dikenal)")), nama, nis, kelas:r.kelas||(siswa?siswa.kelas:""), skor, benar, total, waktu, pelanggaran: parseInt(r.pelanggaran||"0",10)||0, siswaId: siswa?siswa.id:null };
+      /* gabungkan: data lama tidak pernah dihapus, field lokal (mis. salinan jawaban) dipertahankan */
+      if(idx>-1){ hasilArr[idx] = Object.assign({}, hasilArr[idx], rec); diperbarui++; } else { hasilArr.push(rec); baru++; }
       masuk++;
     });
     DB.set(DB.keys.ujianHasil, hasilArr);
-    toast(masuk+" baris hasil diproses","ok");
+    const tertinggal = hasilArr.filter(h=> !idDiSheet.has(h.idUnik)).length;
+    toast(baru+" hasil baru, "+diperbarui+" diperbarui"+(tertinggal?" · "+tertinggal+" hasil lama tetap tersimpan (sudah tidak ada di spreadsheet)":""),"ok");
     drawHasil();
+    cbtSalinJawabanLokal(false);
   }
   root.querySelector("#cbtFetchCsvBtn").onclick = ()=>{
     const url = csvUrlInput.value.trim();
@@ -12914,7 +13280,9 @@ function renderUjianCBT(root){
   const pantauSum = root.querySelector("#pantauSummary");
   const pantauInfo = root.querySelector("#pantauInfo");
   const pantauAuto = root.querySelector("#pantauAuto");
+  const pantauIzinBox = root.querySelector("#pantauIzin");
   let pantauData = [], pantauBusy = false;
+  let izinDiberitahu = new Set();          /* permintaan yang sudah dimunculkan sebagai notifikasi */
 
   function isiOpsiPantau(){
     const tesAll = DB.get(DB.keys.ujianTes, []).filter(t=> t.aktif !== false);   /* nonaktif tidak dipantau */
@@ -12934,6 +13302,13 @@ function renderUjianCBT(root){
     if(d<60) return d+" dtk lalu";
     if(d<3600) return Math.floor(d/60)+" mnt lalu";
     return "> 1 jam lalu";
+  }
+  function badgeIzin(r){
+    const pill = (txt, bg, fg)=>`<div style="margin-top:5px;"><span style="display:inline-block; padding:3px 10px; border-radius:999px; background:${bg}; color:${fg}; font-size:11px; font-weight:700; white-space:nowrap;">${txt}</span></div>`;
+    if(r.izin==="Menunggu") return pill("🔔 Minta tes ulang", "#fff0cc", "#8a5a00");
+    if(r.izin==="Disetujui") return pill("✓ Diizinkan mengulang", "#e4f6ee", "#14663f");
+    if(r.izin==="Ditolak") return pill("Izin ditolak", "#eceff1", "#5b6b64");
+    return "";
   }
   function badgeStatus(st){
     if(st==="Mengerjakan") return `<span style="display:inline-flex; align-items:center; padding:3px 10px; border-radius:999px; background:#e4f6ee; color:#14663f; font-size:11.5px; font-weight:700; white-space:nowrap;"><span class="pn-dot" style="margin-right:5px;"></span>Mengerjakan</span>`;
@@ -12966,20 +13341,49 @@ function renderUjianCBT(root){
   function drawPantau(){
     const urut = { Mengerjakan:0, Terputus:1, Selesai:2 };
     const list = dedupePantau(pantauData).map(r=>Object.assign({}, r, { st:statusPantau(r) }))
-      .sort((a,b)=> (urut[a.st]-urut[b.st]) || ((b.pelanggaran>0)-(a.pelanggaran>0)) || String(a.nama).localeCompare(String(b.nama)));
+      .sort((a,b)=> ((b.izin==="Menunggu")-(a.izin==="Menunggu")) || (urut[a.st]-urut[b.st]) || ((b.pelanggaran>0)-(a.pelanggaran>0)) || String(a.nama).localeCompare(String(b.nama)));
     const n = st=> list.filter(r=>r.st===st).length;
     const curang = list.filter(r=>r.pelanggaran>0).length;
+    const menunggu = list.filter(r=>r.st==="Selesai" && r.izin==="Menunggu");
     const chip = (txt, bg, fg)=>`<span style="padding:5px 12px; border-radius:10px; background:${bg}; color:${fg}; font-size:12px; font-weight:700;">${txt}</span>`;
     pantauSum.innerHTML =
       chip("Mengerjakan: "+n("Mengerjakan"), "#e4f6ee", "#14663f") +
       chip("Terputus: "+n("Terputus"), "#eceff1", "#5b6b64") +
       chip("Selesai: "+n("Selesai"), "#e8eefc", "#2a4aa0") +
-      chip("Terindikasi curang: "+curang, curang ? "#fde8ec" : "#f3f6f4", curang ? "#b3364f" : "#6b8577");
+      chip("Terindikasi curang: "+curang, curang ? "#fde8ec" : "#f3f6f4", curang ? "#b3364f" : "#6b8577") +
+      (menunggu.length ? chip("🔔 Minta tes ulang: "+menunggu.length, "#fff0cc", "#8a5a00") : "");
+
+    /* Kotak permintaan izin mengulang tes: tombol Izinkan / Tolak */
+    pantauIzinBox.innerHTML = menunggu.length ? `
+      <div style="border:1.5px solid #f0d28a; background:#fffaeb; border-radius:14px; padding:12px 14px; margin-bottom:14px;">
+        <div style="font-weight:800; color:#8a5a00; font-size:13.5px; margin-bottom:8px;">🔔 ${menunggu.length} siswa meminta izin mengulang tes</div>
+        ${menunggu.map((r,i)=>`
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:8px 0; ${i? "border-top:1px solid #f3e3b4;" : ""}">
+            <div style="flex:1 1 200px; min-width:0;">
+              <div style="font-weight:700; font-size:13px;">${esc(r.nama)}</div>
+              <div style="font-size:11.5px; color:var(--ink-soft);">Kelas ${esc(r.kelas)||"-"} · NIS ${esc(r.nis)||"-"} · Percobaan ke-${(Number(r.percobaan)||1)+1}${r.diajukanDetik!=null ? " · diajukan "+fmtLalu(r.diajukanDetik) : ""}</div>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn btn-primary btn-sm" style="width:auto;" data-izin-setuju="${i}">✓ Izinkan</button>
+              <button class="btn btn-ghost btn-sm" style="width:auto;" data-izin-tolak="${i}">✕ Tolak</button>
+            </div>
+          </div>`).join("")}
+      </div>` : "";
+    pantauIzinBox.querySelectorAll("[data-izin-setuju]").forEach(b=> b.onclick = ()=> putuskanIzin(menunggu[parseInt(b.dataset.izinSetuju,10)], "setuju"));
+    pantauIzinBox.querySelectorAll("[data-izin-tolak]").forEach(b=> b.onclick = ()=> putuskanIzin(menunggu[parseInt(b.dataset.izinTolak,10)], "tolak"));
+
+    /* notifikasi untuk permintaan baru yang belum pernah dimunculkan (kunci: tes + siswa) */
+    const kunciMinta = r=> pantauSel.value+"|"+(r.nis||r.nama);
+    const baruMinta = menunggu.filter(r=> !izinDiberitahu.has(kunciMinta(r)));
+    izinDiberitahu = new Set(menunggu.map(kunciMinta));
+    if(baruMinta.length){
+      toast(baruMinta.length===1 ? baruMinta[0].nama+" ("+(baruMinta[0].kelas||"-")+") meminta izin mengulang tes" : baruMinta.length+" siswa meminta izin mengulang tes", "warn");
+    }
     pantauBody.innerHTML = list.length ? list.map((r,i)=>`
-      <tr style="${r.pelanggaran>0?"background:#fff5f6;":""}">
-        <td><div style="font-weight:700;">${esc(r.nama)}</div><div style="font-size:11.5px; color:var(--ink-soft);">NIS ${esc(r.nis)}</div></td>
+      <tr style="${r.izin==="Menunggu" ? "background:#fffaeb;" : (r.pelanggaran>0?"background:#fff5f6;":"")}">
+        <td><div style="font-weight:700;">${esc(r.nama)}</div><div style="font-size:11.5px; color:var(--ink-soft);">NIS ${esc(r.nis)}${(Number(r.percobaan)||1)>1 ? " · Percobaan ke-"+r.percobaan : ""}</div></td>
         <td>${esc(r.kelas)||"-"}</td>
-        <td>${badgeStatus(r.st)}</td>
+        <td>${badgeStatus(r.st)}${r.st==="Selesai" ? badgeIzin(r) : ""}${(r.st==="Selesai" && r.izin==="Disetujui") ? `<div style="margin-top:4px;"><button class="icon-btn" data-izin-cabut="${i}" title="Cabut izin" style="width:auto; padding:0 8px; font-size:11px;">Cabut izin</button></div>` : ""}</td>
         <td style="min-width:96px;">${(r.terjawab!=null && r.totalSoal)
           ? `<div style="font-size:12.5px;"><strong>${r.terjawab}</strong> / ${r.totalSoal}</div><div style="height:5px; border-radius:3px; background:#e3ede7; margin-top:4px; overflow:hidden;"><div style="height:100%; width:${Math.min(100,Math.round(r.terjawab/r.totalSoal*100))}%; background:#1f9d62;"></div></div>`
           : `<span style="color:var(--ink-soft);">-</span>`}</td>
@@ -12992,6 +13396,7 @@ function renderUjianCBT(root){
         <td class="nw" style="font-size:12px; color:var(--ink-soft);">${r.st==="Selesai" ? "-" : fmtLalu(r.detikLalu)}</td>
         <td>${(r.log&&r.log.length)?`<button class="icon-btn" data-pantau-log="${i}" title="Lihat riwayat pelanggaran">≡</button>`:""}</td>
       </tr>`).join("") : `<tr class="empty-row"><td colspan="8">Belum ada siswa yang memulai tes ini.</td></tr>`;
+    pantauBody.querySelectorAll("[data-izin-cabut]").forEach(b=> b.onclick = ()=> putuskanIzin(list[parseInt(b.dataset.izinCabut,10)], "cabut"));
     pantauBody.querySelectorAll("[data-pantau-log]").forEach(b=> b.onclick = ()=>{
       const r = list[parseInt(b.dataset.pantauLog,10)]; if(!r) return;
       openModal("Riwayat Pelanggaran — "+r.nama,
@@ -13000,6 +13405,26 @@ function renderUjianCBT(root){
          ${r.log.map(l=>`<div style="padding:7px 0; border-bottom:1px solid #eef2ef; font-size:12.5px;"><strong>${esc(new Date(l.w).toLocaleTimeString("id-ID"))}</strong> — ${esc(l.a)}</div>`).join("")}
          </div>`, ()=>{}, "Tutup");
     });
+  }
+  /* Guru memutuskan permintaan izin mengulang tes: setuju | tolak | cabut */
+  function putuskanIzin(r, putusan){
+    if(!r) return;
+    const cfgNow = DB.get(DB.keys.ujianConfig, {});
+    const url = cbtNormUrl(cfgNow.endpointUrl);
+    const testId = pantauSel.value;
+    if(!url || !testId){ toast("Atur endpoint server dan pilih tes terlebih dahulu"); return; }
+    fetch(url, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify({ action:"izin_putus", testId:testId, nis:r.nis, nama:r.nama, putusan:putusan, token:tokenGuru() }) })
+      .then(x=>x.json()).then(res=>{
+        if(res && res.ok){
+          pantauData.forEach(p=>{ if(String(p.nis)===String(r.nis) && p.nama===r.nama) p.izin = res.izin; });
+          drawPantau();
+          toast(putusan==="setuju" ? "Izin mengulang diberikan kepada "+r.nama : putusan==="tolak" ? "Permintaan "+r.nama+" ditolak" : "Izin untuk "+r.nama+" dicabut", "ok");
+          ambilPantau();
+        } else {
+          const m = (res && res.pesan) || "Gagal menyimpan keputusan";
+          toast(/tidak dikenal/i.test(m) ? "Kode server perlu diperbarui: buka Pengaturan Server → Lihat Kode, tempel kode terbaru, lalu deploy versi baru." : m, "danger");
+        }
+      }).catch(()=> toast("Tidak dapat terhubung ke server", "danger"));
   }
   function ambilPantau(){
     const cfgNow = DB.get(DB.keys.ujianConfig, {});
@@ -13021,7 +13446,7 @@ function renderUjianCBT(root){
       .catch(()=>{ pantauInfo.textContent = "Tidak dapat terhubung ke server."; })
       .then(()=>{ pantauBusy = false; });
   }
-  pantauSel.onchange = ()=>{ pantauData = []; drawPantau(); ambilPantau(); };
+  pantauSel.onchange = ()=>{ pantauData = []; izinDiberitahu = new Set(); drawPantau(); ambilPantau(); };
   root.querySelector("#pantauRefresh").onclick = ()=> ambilPantau();
   const pantauTimer = setInterval(()=>{
     if(!document.body.contains(pantauBody)){ clearInterval(pantauTimer); return; }
@@ -14615,7 +15040,8 @@ function notifData(){
   const dated = agendaAll.filter(function(a){ return a.tanggal === iso; });
   const status = DB.get(DB.keys.agendaRutinStatus, {});
   const byWaktu = function(a, b){ return a.waktu < b.waktu ? -1 : a.waktu > b.waktu ? 1 : 0; };
-  const rows = dated.map(function(a){ return { judul:a.judul, waktu:a.waktu || "", selesai:!!a.selesai, rutin:false }; })
+  const liburHariIni = agendaLiburInfo(iso);
+  const rows = liburHariIni ? [] : dated.map(function(a){ return { judul:a.judul, waktu:a.waktu || "", selesai:!!a.selesai, rutin:false }; })
     .concat(DB.get(DB.keys.agendaRutin, []).map(function(t){
       const st = status[t.id + "__" + iso];
       return { judul:t.judul, waktu:t.waktu || "", selesai:!!(st && st.selesai), rutin:true };
@@ -14626,14 +15052,14 @@ function notifData(){
   const agendaBesok = agendaAll.filter(function(a){ return a.tanggal === isoBesok && !a.kalender; })
     .map(function(a){ return { judul:a.judul, waktu:a.waktu || "" }; }).sort(byWaktu);
   const sinkron = {}; dated.concat(agendaAll.filter(function(a){ return a.tanggal === isoBesok; })).forEach(function(a){ if(a.kalender && a.kalId) sinkron[a.kalId] = 1; });
-  const hitung = events.filter(function(e){ return e.jenis !== "periode"; }).length + done.length + belum.length + eventsBesok.length + agendaBesok.length;
-  const tanda = [iso,
+  const hitung = events.filter(function(e){ return e.jenis !== "periode"; }).length + done.length + belum.length + eventsBesok.length + agendaBesok.length + (liburHariIni ? 1 : 0);
+  const tanda = [iso, liburHariIni ? "libur:" + liburHariIni.alasan : "",
     events.map(function(e){ return e.id; }).join(","),
     done.map(function(r){ return r.waktu + r.judul; }).join(","),
     belum.map(function(r){ return r.waktu + r.judul; }).join(","),
     eventsBesok.map(function(e){ return e.id; }).join(","),
     agendaBesok.map(function(r){ return r.waktu + r.judul; }).join(",")].join("|");
-  return { iso:iso, isoBesok:isoBesok, events:events, eventsBesok:eventsBesok, rows:rows, done:done, belum:belum, agendaBesok:agendaBesok, sinkron:sinkron, hitung:hitung, tanda:tanda };
+  return { libur:liburHariIni, iso:iso, isoBesok:isoBesok, events:events, eventsBesok:eventsBesok, rows:rows, done:done, belum:belum, agendaBesok:agendaBesok, sinkron:sinkron, hitung:hitung, tanda:tanda };
 }
 function updateNotifBadge(buka){
   const badge = document.getElementById("notifBadge"), btn = document.getElementById("notifBtn");
@@ -14670,10 +15096,11 @@ function renderNotifPanel(){
   panel.innerHTML = `
     <div class="notif-head"><strong>Notifikasi Hari Ini</strong><small>${esc(hariFromISO(d.iso) + ", " + fmtDate(d.iso))}</small>
       <div class="notif-prog"><i style="width:${persen}%"></i></div>
-      <div class="notif-prog-t">${d.done.length} dari ${jmlAgenda} agenda selesai</div></div>
+      <div class="notif-prog-t">${d.libur ? "Hari libur — agenda tidak dihitung" : d.done.length + " dari " + jmlAgenda + " agenda selesai"}</div></div>
     <div class="notif-body">
+      ${d.libur ? `<div class="notif-item libur"><span class="notif-ic">🏖</span><div class="notif-t"><strong>Libur — ${esc(d.libur.alasan)}</strong><small>${esc(d.libur.keterangan || "Tidak masuk kerja/sekolah hari ini")}</small></div></div>` : ""}
       ${sec("Kegiatan Hari Ini", jmlKeg, d.events.map(function(e){ return evItem(e); }).join(""), "Tidak ada kegiatan kalender hari ini.")}
-      ${sec("Agenda Belum Selesai", d.belum.length, belumHtml, jmlAgenda ? "Semua agenda hari ini sudah selesai. 🎉" : "Belum ada agenda untuk hari ini.")}
+      ${sec("Agenda Belum Selesai", d.belum.length, belumHtml, d.libur ? "Hari libur — tidak ada agenda yang perlu dikerjakan." : (jmlAgenda ? "Semua agenda hari ini sudah selesai. 🎉" : "Belum ada agenda untuk hari ini."))}
       ${sec("Agenda Selesai", d.done.length, doneHtml, "Belum ada agenda yang selesai hari ini.")}
       ${sec("Kegiatan Besok · " + esc(hariFromISO(d.isoBesok)), jmlBesok, besokHtml, "Tidak ada kegiatan untuk besok.")}
     </div>
