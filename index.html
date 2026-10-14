@@ -10836,7 +10836,7 @@ function doPost(e){
     const ss = SpreadsheetApp.getActiveSpreadsheet();
 
     if(data.action === "ping"){
-      return respond({ ok:true, pesan:"Server CBT aktif", versi:8 });
+      return respond({ ok:true, pesan:"Server CBT aktif", versi:9 });
     }
 
     if(data.action === "status"){
@@ -11029,7 +11029,20 @@ function prosesSubmit(ss, data){
       if(pshCek){
         const rowCek = cariBarisPantau(pshCek, data.testId, data.nis, data.nama);
         if(rowCek > 0 && pshCek.getRange(rowCek, 5).getValue() === "Selesai"){
-          return respond({ ok:false, kode:"sudah_selesai", pesan:"Jawaban Anda sudah tercatat di server. Untuk mengerjakan lagi, ajukan izin kepada guru." });
+          let hasilLama = null;
+          const hsh = ss.getSheetByName(SHEET_HASIL);
+          if(hsh && hsh.getLastRow() >= 2){
+            const hv = hsh.getRange(2, 1, hsh.getLastRow() - 1, 9).getValues();
+            for(let q = hv.length - 1; q >= 0; q--){
+              const cocok = data.nis ? sameNis(hv[q][3], data.nis) : (String(hv[q][2]).toLowerCase() === String(data.nama || "").toLowerCase());
+              if(String(hv[q][1]) === String(data.testId) && cocok){
+                hasilLama = { ok:true, skor:Number(hv[q][5]), benar:Number(hv[q][6]), total:Number(hv[q][7]), pelanggaran:Number(hv[q][8]) || 0,
+                  essay:soalKunci.filter(function(x){ return (x.tipe || "pg") === "essay"; }).length };
+                break;
+              }
+            }
+          }
+          return respond({ ok:false, kode:"sudah_selesai", hasil:hasilLama, pesan:"Jawaban Anda sudah tercatat di server. Untuk mengerjakan lagi, ajukan izin kepada guru." });
         }
       }
 
@@ -11734,7 +11747,11 @@ function jalankanKirim(){
     .then(function(res){
       kirimBerjalan = false;
       if(res && res.ok){ hasilFinal = true; hapusPending(); tampilkanSukses(res); }
-      else if(res && res.kode === "sudah_selesai"){ hasilFinal = true; hapusPending(); document.getElementById("hasilBox").style.display = "none"; tampilIzin(""); }
+      else if(res && res.kode === "sudah_selesai"){
+        hasilFinal = true; hapusPending();
+        if(res.hasil){ tampilkanSukses(res.hasil, true); }
+        else{ document.getElementById("hasilBox").style.display = "none"; tampilIzin(""); }
+      }
       else if(res && /sibuk/i.test(res.pesan || "") && percobaan < 6){ jadwalUlang(JEDA_ULANG[Math.min(percobaan - 1, JEDA_ULANG.length - 1)]); }
       else{ tampilkanGagal((res && res.pesan) || "Gagal mengirim jawaban."); }
     })
@@ -11763,15 +11780,17 @@ function tampilkanMengirim(){
   box.innerHTML = kepalaHasil("⏳", "Mengirim jawaban...", (otomatis ? "Batas pindah halaman terlampaui, ujian dikumpulkan otomatis. " : "") + (percobaan > 1 ? "Koneksi terputus, mencoba lagi otomatis (percobaan " + percobaan + "). " : "") + "Mohon tunggu, jangan tutup halaman ini.", false);
   window.scrollTo(0, 0);
 }
-function tampilkanSukses(res){
+function tampilkanSukses(res, riwayat){
   var box = document.getElementById("hasilBox");
   box.style.display = "block";
   var terjawab = 0;
   CFG.soal.forEach(function(x){ if(adaJawaban(jawaban[x.id])) terjawab++; });
-  var html = kepalaHasil("✓", "Jawaban Berhasil Dikirim", "Dikumpulkan pukul " + jam2(waktuSelesai.getHours()) + "." + jam2(waktuSelesai.getMinutes()), false);
+  var html = kepalaHasil("✓", riwayat ? "Jawaban Sudah Tercatat" : "Jawaban Berhasil Dikirim", riwayat ? "Jawaban Anda sebelumnya sudah diterima server" : ("Dikumpulkan pukul " + jam2(waktuSelesai.getHours()) + "." + jam2(waktuSelesai.getMinutes())), false);
   html += '<div class="rbody">' + kartuIdentitas();
-  if(otomatis) html += '<div class="alert a2">Ujian dikumpulkan otomatis karena batas keluar halaman terlampaui.</div>';
-  else if(waktuHabis) html += '<div class="alert a1">Waktu mengerjakan habis, jawaban dikumpulkan otomatis.</div>';
+  var infoNilai = res.total ? ' Nilai di bawah dihitung dari ' + terjawab + ' soal yang sudah Anda jawab; ' + (CFG.soal.length - terjawab) + ' soal belum dijawab dihitung salah.' : '';
+  if(riwayat) html += '<div class="alert a1">Pengiriman ini tidak mengubah jawaban Anda yang sudah tercatat. Berikut nilai dari jawaban yang tercatat di server.</div>';
+  else if(otomatis) html += '<div class="alert a2">Batas keluar halaman terlampaui, sehingga ujian dikumpulkan otomatis.' + infoNilai + '</div>';
+  else if(waktuHabis) html += '<div class="alert a1">Waktu mengerjakan habis, jawaban dikumpulkan otomatis.' + infoNilai + '</div>';
   if(res.total){
     var pct = Math.max(0, Math.min(100, Number(res.skor) || 0));
     var C = 2 * Math.PI * 60;
