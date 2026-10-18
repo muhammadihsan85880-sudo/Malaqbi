@@ -1486,6 +1486,24 @@
   .notif-foot button{ flex:1; padding:7px 6px; border-radius:10px; border:1px solid #cfe3d7; background:#fff; color:#145a3b; font:inherit; font-size:11.5px; font-weight:700; cursor:pointer; transition:background .12s, border-color .12s; }
   .notif-foot button:hover{ background:#ecfdf5; border-color:#86d3ad; }
   @media (max-width:600px){ .notif-panel{ position:fixed; top:68px; right:12px; left:12px; width:auto; max-width:none; } }
+  /* ===== Pop up kalender (kiri tombol notifikasi) ===== */
+  .kal-panel{ width:360px; }
+  .kal-head{ padding:10px 12px; }
+  .kal-head strong{ text-align:center; font-size:14px; } .kal-head small{ display:block; text-align:center; }
+  .kal-nav{ width:30px; height:30px; border-radius:10px; border:1px solid rgba(255,255,255,.35); background:rgba(255,255,255,.14); color:#fff; font-size:18px; line-height:1; cursor:pointer; font-family:inherit; }
+  .kal-nav:hover{ background:rgba(255,255,255,.28); }
+  .kal-dow, .kal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+  .kal-dow{ margin:10px 0 4px; } .kal-dow span{ text-align:center; font-size:10px; font-weight:800; color:#6b8577; text-transform:uppercase; } .kal-dow span.wk{ color:#e11d48; }
+  .kal-d{ position:relative; height:34px; border-radius:10px; border:1.5px solid transparent; background:#f7faf8; font:inherit; font-size:12px; font-weight:700; color:var(--ink); cursor:pointer; padding:0; }
+  .kal-d:hover{ border-color:#9fd9bb; background:#fff; }
+  .kal-d.out{ opacity:.35; } .kal-d.wk{ color:#be123c; }
+  .kal-d.t-kegiatan{ background:#d1fae5; } .kal-d.t-ujian{ background:#fef3c7; } .kal-d.t-libur{ background:#ffe4e9; color:#be123c; }
+  .kal-d.today{ box-shadow:0 0 0 2px #10b981; } .kal-d.sel{ border-color:#f59e0b; box-shadow:0 0 0 2px rgba(245,158,11,.35); }
+  .kal-dot{ position:absolute; left:50%; bottom:3px; width:5px; height:5px; margin-left:-2.5px; border-radius:50%; background:#10b981; }
+  .kal-d.t-ujian .kal-dot{ background:#f59e0b; } .kal-d.t-libur .kal-dot{ background:#f43f5e; } .kal-dot.ag{ background:#3b82f6 !important; }
+  .kal-legend{ display:flex; gap:10px; flex-wrap:wrap; margin:8px 2px 2px; font-size:10px; font-weight:700; color:#6b8577; } .kal-legend i{ display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:4px; }
+  .kal-periode{ margin-top:6px; padding:5px 9px; border-radius:9px; background:#eef0ff; color:#4338ca; font-size:11px; font-weight:700; }
+  @media (max-width:600px){ .kal-panel{ width:auto; } }
   #viewRoot{ padding:22px 26px 60px; max-width:1320px; margin:0 auto; width:100%; box-sizing:border-box; }
 
   /* ---------- desktop refinements ---------- */
@@ -2451,12 +2469,16 @@
           <p id="topbarSub">Ringkasan kegiatan pembelajaran</p>
         </div>
         <div class="notif-wrap">
+          <button type="button" class="notif-btn" id="kalBtn" aria-label="Kalender" aria-haspopup="true" aria-expanded="false" title="Kalender">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          </button>
           <button type="button" class="notif-btn" id="notifBtn" aria-label="Notifikasi" aria-haspopup="true" aria-expanded="false" title="Notifikasi">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
             <span class="notif-badge" id="notifBadge" hidden>0</span>
           </button>
           <button class="btn btn-ghost btn-sm" id="logoutBtn" style="background:rgba(255,255,255,.12); border-color:rgba(255,255,255,.4); color:#fff;">Logout</button>
           <div class="notif-panel" id="notifPanel" role="dialog" aria-label="Notifikasi hari ini" hidden></div>
+          <div class="notif-panel kal-panel" id="kalPanel" role="dialog" aria-label="Kalender bulan ini" hidden></div>
         </div>
       </div>
     </div>
@@ -2567,7 +2589,7 @@ const DB = {
     absensi:"lms_absensi", jurnal:"lms_jurnal", catatan:"lms_catatan", asesmen:"lms_asesmen",
     penilaian:"lms_penilaian", penilaianKolom:"lms_penilaian_kolom", penilaianSetting:"lms_penilaian_setting",
     perangkatAjar:"lms_perangkat_ajar", waliKelas:"lms_wali_kelas",
-    peringkatSetting:"lms_peringkat_setting", catatanWali:"lms_catatan_wali", guruWali:"lms_guru_wali", catatanGuruWali:"lms_catatan_guru_wali", kegiatanGuruWali:"lms_kegiatan_guru_wali", strukturKelas:"lms_struktur_kelas", kelompokPiket:"lms_kelompok_piket",
+    peringkatSetting:"lms_peringkat_setting", earsip:"lms_earsip", catatanWali:"lms_catatan_wali", guruWali:"lms_guru_wali", catatanGuruWali:"lms_catatan_guru_wali", kegiatanGuruWali:"lms_kegiatan_guru_wali", strukturKelas:"lms_struktur_kelas", kelompokPiket:"lms_kelompok_piket",
     jadwalPiket:"lms_jadwal_piket", jadwalPelajaran:"lms_jadwal_pelajaran",
     programKerjaWali:"lms_program_kerja_wali", kalenderProgram:"lms_kalender_program",
     agenda:"lms_agenda", jadwalMengajar:"lms_jadwal_mengajar",
@@ -3748,6 +3770,7 @@ const MENU = [
   { id:"jadwal_guru", label:"Jadwal Guru", ico:"table", sub:"Jadwal pelajaran mingguan & foto jadwal resmi" },
   { id:"perangkat_ajar", label:"Perangkat Ajar", ico:"briefcase", sub:"Tahun ajaran dan semester yang berlaku" },
   { id:"materi", label:"Materi Ajar", ico:"book", sub:"Kelola materi pembelajaran" },
+  { id:"e_arsip", label:"E-Arsip", ico:"earsip", sub:"Arsip kegiatan sekolah: rapat, kegiatan, dan disposisi dinas beserta lampiran dan laporan PDF" },
   { id:"siswa", label:"Data Siswa", ico:"users", sub:"Kelola data peserta didik" },
   { id:"wali_kelas", label:"Wali Kelas", ico:"usercheck", sub:"Profil wali kelas dan siswa perwalian" },
   { id:"catatan_wali", label:"Catatan Wali Kelas", ico:"notes", sub:"Catat dan rekap prestasi, pelanggaran, dan perkembangan siswa perwalian" },
@@ -3765,7 +3788,7 @@ const MENU = [
 const MENU_TREE = [
   { id:"dashboard" },
   { group:"g_agenda",   label:"Agenda",   ico:"agenda",   children:["agenda","riwayat_agenda","kalender_pendidikan","sikepo"] },
-  { group:"g_dokumen",  label:"Dokumen",  ico:"dokumen",  children:["jadwal_guru","perangkat_ajar","materi","siswa"] },
+  { group:"g_dokumen",  label:"Dokumen",  ico:"dokumen",  children:["jadwal_guru","perangkat_ajar","materi","e_arsip","siswa"] },
   { group:"g_akademik", label:"Akademik", ico:"akademik", children:["wali_kelas","catatan_wali","guru_wali","absensi","jurnal","catatan","penilaian","ujian_cbt","nilai_akhir"] },
   { sep:true },
   { id:"profil" },
@@ -3781,6 +3804,7 @@ const ICON_PATHS = {
   notes:'<path d="M9 3h6a2 2 0 0 1 2 2v1H7V5a2 2 0 0 1 2-2z"/><path d="M7 6H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-1"/><path d="M8.5 12h7M8.5 16h4"/>',
   sikepo:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/>',
   history:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  earsip:'<rect x="3" y="3" width="18" height="5" rx="1"/><path d="M5 8v11a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>',
   dokumen:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8M8 9h2"/>',
   akademik:'<path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5M22 10v6"/>',
   user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
@@ -14309,6 +14333,344 @@ function renderSikepo(root){
   gambar();
 }
 
+/* ===================================================================
+   E-ARSIP — arsip kegiatan sekolah: rapat, kegiatan, dan disposisi dinas
+   (agenda, peserta, pembahasan, hasil/keputusan, tindak lanjut, lampiran, laporan PDF)
+   =================================================================== */
+const EA_KATEGORI = [
+  { id:"rutin",     label:"Rapat Rutin",            ikon:"📅" },
+  { id:"semester",  label:"Rapat Semester",         ikon:"📘" },
+  { id:"kenaikan",  label:"Rapat Kenaikan Kelas",   ikon:"🎓" },
+  { id:"kelulusan", label:"Rapat Kelulusan",        ikon:"🎖️" },
+  { id:"kegiatan",  label:"Rapat Kegiatan Sekolah", ikon:"🎉" },
+  { id:"disposisi", label:"Disposisi Dinas",        ikon:"🏛️" }
+];
+const EA_JENIS = ["Rapat", "Kegiatan Sekolah", "Surat / Disposisi", "Lainnya"];
+const EA_LAMPIRAN = [
+  { id:"surat",   label:"Surat Undangan",        ikon:"✉️" },
+  { id:"dokumen", label:"Dokumen & Foto",        ikon:"🖼️" },
+  { id:"hadir",   label:"Daftar Hadir / Notulen", ikon:"📋" }
+];
+function eaGet(){ const d = DB.get(DB.keys.earsip, []); return Array.isArray(d) ? d : []; }
+function eaSet(a){ DB.set(DB.keys.earsip, a); }
+function eaOwner(id, jenis){ return "ea" + id + "_" + jenis; }
+function eaKat(id){ return EA_KATEGORI.find(function(k){ return k.id === id; }) || EA_KATEGORI[0]; }
+function eaTanggal(k){
+  const a = fmtDate(k.tanggal);
+  return (k.tanggalSelesai && k.tanggalSelesai !== k.tanggal) ? a + " s.d. " + fmtDate(k.tanggalSelesai) : a;
+}
+function eaJam(k){
+  if(!k.jam) return "";
+  const t = function(x){ return String(x).replace(":", "."); };
+  return t(k.jam) + (k.zona ? " " + k.zona : "") + (k.jamSelesai ? " – " + t(k.jamSelesai) : " sampai selesai");
+}
+function eaTotalLampiran(k){ const l = k.lamp || {}; return (l.surat || 0) + (l.dokumen || 0) + (l.hadir || 0); }
+function eaHitungLampiran(id){
+  return Promise.all(EA_LAMPIRAN.map(function(j){ return listFilesByOwner(eaOwner(id, j.id)).then(function(l){ return l.length; }).catch(function(){ return 0; }); }))
+    .then(function(n){
+      const arr = eaGet(), i = arr.findIndex(function(x){ return x.id === id; });
+      if(i > -1){ arr[i].lamp = { surat:n[0], dokumen:n[1], hadir:n[2] }; eaSet(arr); }
+      return n;
+    });
+}
+
+function renderEArsip(root){
+  let tab = "semua", cari = "", bulan = "";
+  root.innerHTML = `<style>${REDESIGN_CSS}
+    .ea-tabs{ display:flex; gap:4px; flex-wrap:wrap; border-bottom:1.5px solid var(--line); margin-bottom:16px; }
+    .ea-tab{ border:none; background:none; padding:11px 14px; font-size:13px; font-weight:700; color:var(--ink-soft); cursor:pointer; border-bottom:3px solid transparent; font-family:inherit; white-space:nowrap; }
+    .ea-tab.active{ color:#14663f; border-bottom-color:#1f7a4d; }
+    .ea-tab small{ font-weight:800; background:#eef3f0; border-radius:999px; padding:1px 7px; margin-left:4px; font-size:10.5px; }
+    .ea-bar{ display:flex; gap:8px; flex-wrap:wrap; margin:14px 0; }
+    .ea-chip{ display:inline-block; font-size:10.5px; font-weight:800; border-radius:8px; padding:3px 9px; margin:0 5px 4px 0; background:#e9eefc; color:#3a52a8; }
+    .ea-chip.alt{ background:#f1ecfb; color:#6a44b0; }
+    .ea-judul{ font-weight:800; font-size:13.5px; margin:2px 0; }
+    .ea-sub{ font-size:11.5px; color:var(--ink-soft); }
+    .ea-rincian{ font-size:12.5px; line-height:1.5; max-width:340px; }
+    .ea-rincian b{ color:var(--ink-soft); }
+    .ea-status{ border:1.5px solid transparent; background:none; cursor:pointer; text-align:center; font-family:inherit; border-radius:12px; padding:6px 10px; }
+    .ea-status.selesai{ color:#14663f; font-weight:800; font-size:12.5px; }
+    .ea-status.rencana{ color:#8a6a10; font-weight:800; font-size:12.5px; background:#fff7e0; border-color:#ecd9a0; }
+    .ea-badge{ position:relative; }
+    .ea-badge i{ position:absolute; top:-5px; right:-5px; background:#1f7a4d; color:#fff; border-radius:999px; font-style:normal; font-size:9.5px; font-weight:800; min-width:16px; height:16px; display:flex; align-items:center; justify-content:center; padding:0 3px; }
+  </style>
+  <div class="wk-hero"><div class="wk-hero-content">
+    <div class="wk-avatar">🗂️</div>
+    <div class="wk-hero-info"><div class="wk-hero-name">E-Arsip</div>
+      <div class="wk-hero-chips"><span class="wk-chip wk-chip-gold" id="eaChipTotal"></span><span class="wk-chip" id="eaChipSelesai"></span><span class="wk-chip" id="eaChipLamp"></span></div></div>
+    <button class="btn btn-gold btn-sm" id="eaTambahHero">＋ Tambah Kegiatan</button>
+  </div></div>
+  <div class="card" style="margin-top:16px;">
+    <div class="ea-tabs" id="eaTabs"></div>
+    <div id="eaBody"></div>
+  </div>`;
+  const body = root.querySelector("#eaBody");
+
+  function filtered(){
+    return eaGet().filter(function(k){
+      if(tab !== "semua" && k.kategori !== tab) return false;
+      if(bulan && (k.tanggal || "").slice(0, 7) !== bulan) return false;
+      if(cari){ const q = cari.toLowerCase(); if((k.judul + " " + (k.tempat || "") + " " + (k.peserta || "") + " " + (k.agenda || "") + " " + (k.hasil || "") + " " + (k.tindakLanjut || "")).toLowerCase().indexOf(q) < 0) return false; }
+      return true;
+    }).sort(function(a, b){ return (b.tanggal || "").localeCompare(a.tanggal || "") || (b.jam || "").localeCompare(a.jam || ""); });
+  }
+  function gambarTabs(){
+    const all = eaGet(), n = function(id){ return id === "semua" ? all.length : all.filter(function(k){ return k.kategori === id; }).length; };
+    root.querySelector("#eaTabs").innerHTML = [{ id:"semua", label:"Semua", ikon:"📋" }].concat(EA_KATEGORI).map(function(c){
+      return `<button type="button" class="ea-tab${c.id === tab ? " active" : ""}" data-eatab="${c.id}">${c.ikon} ${esc(c.label)} <small>${n(c.id)}</small></button>`; }).join("");
+    root.querySelectorAll("[data-eatab]").forEach(function(b){ b.onclick = function(){ tab = b.dataset.eatab; gambar(); }; });
+    root.querySelector("#eaChipTotal").textContent = "🗂 " + all.length + " kegiatan";
+    root.querySelector("#eaChipSelesai").textContent = "🔒 " + all.filter(function(k){ return k.status === "selesai"; }).length + " selesai";
+    root.querySelector("#eaChipLamp").textContent = "📎 " + all.reduce(function(a, k){ return a + eaTotalLampiran(k); }, 0) + " lampiran";
+  }
+  function gambar(){
+    gambarTabs();
+    const list = filtered(), judul = tab === "semua" ? "Semua Kegiatan" : eaKat(tab).label;
+    body.innerHTML = `
+      <h3 style="margin:0 0 4px; font-size:17px;">E-ARSIP — ${esc(judul)}</h3>
+      <p style="margin:0 0 12px; font-size:12.5px; color:var(--ink-soft); line-height:1.55;">Catat rincian kegiatan sekolah: agenda, peserta, pembahasan, hasil/keputusan dan tindak lanjut. Klik 📄 untuk laporan lengkap (PDF) per kegiatan, atau 📎 untuk lampiran daftar hadir/notulen.</p>
+      <div class="ea-bar">
+        <button class="btn btn-ghost btn-sm" id="eaUpSurat" style="width:auto;">✉️ Upload Surat Undangan</button>
+        <button class="btn btn-ghost btn-sm" id="eaUpDok" style="width:auto;">🖼️ Upload Dokumen &amp; Foto</button>
+        <button class="btn btn-gold btn-sm" id="eaPdf" style="width:auto;">⭳ Unduh Laporan (PDF)</button>
+        <button class="btn btn-ghost btn-sm" id="eaShare" style="width:auto;">☁️ Share ke Drive</button>
+        <button class="btn btn-primary btn-sm" id="eaTambah" style="width:auto;">＋ Tambah Kegiatan</button>
+      </div>
+      <div class="ea-bar" style="margin-top:0;">
+        <input type="text" id="eaCari" placeholder="Cari kegiatan, tempat, peserta..." value="${esc(cari)}" style="max-width:300px;">
+        <input type="month" id="eaBulan" value="${bulan}" title="Filter bulan" style="max-width:170px;">
+        ${bulan ? '<button class="btn btn-ghost btn-sm" id="eaBulanReset" style="width:auto;">Semua bulan</button>' : ""}
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>No</th><th>Tanggal</th><th>Kegiatan</th><th>Rincian &amp; Hasil</th><th></th></tr></thead><tbody>
+      ${list.length ? list.map(function(k, i){
+        const kat = eaKat(k.kategori), kunci = k.status === "selesai", nl = function(x){ return esc(x).split("\n").join("<br>"); };
+        const tmp = [k.tempat ? "📍 " + esc(k.tempat) : "", k.peserta ? esc(k.peserta) : ""].filter(Boolean).join(" · ");
+        return `<tr>
+          <td>${i + 1}</td>
+          <td style="min-width:150px;"><b style="font-size:12.5px;">${esc(eaTanggal(k))}</b>${eaJam(k) ? `<div class="ea-sub">${esc(eaJam(k))}</div>` : ""}</td>
+          <td style="min-width:200px;"><span class="ea-chip">${esc(kat.label)}</span>${k.jenis ? `<span class="ea-chip alt">${esc(k.jenis)}</span>` : ""}<div class="ea-judul">${esc(k.judul)}</div>${tmp ? `<div class="ea-sub">${tmp}</div>` : ""}</td>
+          <td class="ea-rincian">${k.agenda ? nl(k.agenda) : ""}${k.pembahasan ? `<div style="margin-top:4px;"><b>Pembahasan:</b> ${nl(k.pembahasan)}</div>` : ""}${k.hasil ? `<div style="margin-top:4px;"><b>Hasil:</b> ${nl(k.hasil)}</div>` : ""}${k.tindakLanjut ? `<div style="margin-top:4px;"><b>Tindak lanjut:</b> ${nl(k.tindakLanjut)}</div>` : ""}${(!k.agenda && !k.pembahasan && !k.hasil && !k.tindakLanjut) ? '<span class="ea-sub">Belum ada rincian</span>' : ""}</td>
+          <td style="white-space:nowrap;"><div class="row-actions" style="align-items:center;">
+            <button class="icon-btn ea-badge" data-ea-lamp="${k.id}" title="Lampiran (surat undangan, dokumen & foto, daftar hadir/notulen)">📎${eaTotalLampiran(k) ? `<i>${eaTotalLampiran(k)}</i>` : ""}</button>
+            <button class="icon-btn" data-ea-pdf="${k.id}" title="Laporan lengkap (PDF)">📄</button>
+            <button class="icon-btn" data-ea-edit="${k.id}" title="${kunci ? "Terkunci — buka kunci dahulu" : "Ubah"}"${kunci ? " disabled style='opacity:.35;'" : ""}>✎</button>
+            <button class="icon-btn del" data-ea-del="${k.id}" title="${kunci ? "Terkunci — buka kunci dahulu" : "Hapus"}"${kunci ? " disabled style='opacity:.35;'" : ""}>🗑</button>
+            <button class="ea-status ${kunci ? "selesai" : "rencana"}" data-ea-status="${k.id}" title="${kunci ? "Klik untuk membuka kunci" : "Klik untuk menandai selesai dan mengunci"}">${kunci ? "✅ Selesai<div style='font-size:12px;'>🔒</div>" : "⏳ Rencana<div style='font-size:12px;'>🔓</div>"}</button>
+          </div></td></tr>`; }).join("") : `<tr class="empty-row"><td colspan="5">Belum ada kegiatan${cari || bulan ? " yang sesuai filter" : ""}. Klik <b>Tambah Kegiatan</b> untuk mulai mengarsipkan.</td></tr>`}
+      </tbody></table></div>`;
+    body.querySelector("#eaTambah").onclick = function(){ formKegiatan(null); };
+    body.querySelector("#eaUpSurat").onclick = function(){ uploadCepat("surat"); };
+    body.querySelector("#eaUpDok").onclick = function(){ uploadCepat("dokumen"); };
+    body.querySelector("#eaPdf").onclick = function(){ laporanRekap(list, judul); };
+    body.querySelector("#eaShare").onclick = function(){ modalShare(list); };
+    const ci = body.querySelector("#eaCari"); ci.oninput = function(){ cari = this.value; clearTimeout(ci._t); ci._t = setTimeout(function(){ const p = ci.selectionStart; gambar(); const n = body.querySelector("#eaCari"); n.focus(); n.setSelectionRange(p, p); }, 250); };
+    body.querySelector("#eaBulan").onchange = function(){ bulan = this.value; gambar(); };
+    const rb = body.querySelector("#eaBulanReset"); if(rb) rb.onclick = function(){ bulan = ""; gambar(); };
+    body.querySelectorAll("[data-ea-lamp]").forEach(function(b){ b.onclick = function(){ kelolaLampiran(b.dataset.eaLamp); }; });
+    body.querySelectorAll("[data-ea-pdf]").forEach(function(b){ b.onclick = function(){ laporanKegiatan(b.dataset.eaPdf); }; });
+    body.querySelectorAll("[data-ea-edit]:not([disabled])").forEach(function(b){ b.onclick = function(){ formKegiatan(b.dataset.eaEdit); }; });
+    body.querySelectorAll("[data-ea-del]:not([disabled])").forEach(function(b){ b.onclick = function(){
+      confirmDelete("Hapus kegiatan ini beserta seluruh lampirannya?", function(){
+        const id = b.dataset.eaDel;
+        EA_LAMPIRAN.forEach(function(j){ listFilesByOwner(eaOwner(id, j.id)).then(function(l){ l.forEach(function(f){ deleteFileFromDB(f.id); }); }).catch(function(){}); });
+        eaSet(eaGet().filter(function(k){ return k.id !== id; })); gambar();
+      });
+    }; });
+    body.querySelectorAll("[data-ea-status]").forEach(function(b){ b.onclick = function(){
+      const arr = eaGet(), i = arr.findIndex(function(k){ return k.id === b.dataset.eaStatus; }); if(i < 0) return;
+      if(arr[i].status === "selesai"){
+        confirmDelete("Buka kunci kegiatan ini agar bisa diubah kembali?", function(){ const a2 = eaGet(), j = a2.findIndex(function(k){ return k.id === arr[i].id; }); a2[j].status = "rencana"; eaSet(a2); gambar(); });
+        modalSaveBtn.textContent = "Buka Kunci"; modalSaveBtn.classList.remove("btn-danger"); modalSaveBtn.classList.add("btn-primary");
+      } else { arr[i].status = "selesai"; eaSet(arr); gambar(); toast("Kegiatan ditandai selesai dan dikunci", "ok"); }
+    }; });
+  }
+  root.querySelector("#eaTambahHero").onclick = function(){ formKegiatan(null); };
+
+  /* ---------- Form tambah / ubah kegiatan ---------- */
+  function formKegiatan(id){
+    const k = id ? eaGet().find(function(x){ return x.id === id; }) : null;
+    const v = function(f, d){ return k ? esc(k[f] || "") : (d === undefined ? "" : d); };
+    openModal(k ? "Ubah Kegiatan" : "Tambah Kegiatan E-Arsip",
+      `<div class="field-row"><div class="field"><label>Kategori</label><select id="eaKat">${EA_KATEGORI.map(function(c){ return `<option value="${c.id}"${(k ? k.kategori : (tab !== "semua" ? tab : "rutin")) === c.id ? " selected" : ""}>${c.ikon} ${esc(c.label)}</option>`; }).join("")}</select></div>
+        <div class="field"><label>Jenis</label><select id="eaJenis">${EA_JENIS.map(function(j){ return `<option${(k ? k.jenis : "Lainnya") === j ? " selected" : ""}>${j}</option>`; }).join("")}</select></div></div>
+      <div class="field"><label>Nama kegiatan</label><input type="text" id="eaJudul" placeholder="Contoh: Rapat Persiapan Ujian Semester" value="${v("judul")}"></div>
+      <div class="field-row"><div class="field"><label>Tanggal mulai</label><input type="date" id="eaTgl" value="${k ? esc(k.tanggal) : todayISO()}"></div>
+        <div class="field"><label>Tanggal selesai (opsional)</label><input type="date" id="eaTglS" value="${v("tanggalSelesai")}"></div></div>
+      <div class="field-row"><div class="field"><label>Jam mulai</label><input type="time" id="eaJam" value="${v("jam")}"></div>
+        <div class="field"><label>Jam selesai (kosong = sampai selesai)</label><input type="time" id="eaJamS" value="${v("jamSelesai")}"></div>
+        <div class="field"><label>Zona</label><select id="eaZona">${["WITA", "WIB", "WIT", ""].map(function(z){ return `<option value="${z}"${(k ? (k.zona || "") : "WITA") === z ? " selected" : ""}>${z || "(tanpa zona)"}</option>`; }).join("")}</select></div></div>
+      <div class="field-row"><div class="field"><label>Tempat</label><input type="text" id="eaTempat" placeholder="Contoh: Ruang Guru" value="${v("tempat")}"></div>
+        <div class="field"><label>Peserta / pihak terkait</label><input type="text" id="eaPeserta" placeholder="Contoh: Guru, Kepala Sekolah" value="${v("peserta")}"></div></div>
+      <div class="field"><label>Agenda / rincian kegiatan</label><textarea id="eaAgenda" rows="3">${v("agenda")}</textarea></div>
+      <div class="field"><label>Pembahasan</label><textarea id="eaPemb" rows="3">${v("pembahasan")}</textarea></div>
+      <div class="field"><label>Hasil / keputusan</label><textarea id="eaHasil" rows="2">${v("hasil")}</textarea></div>
+      <div class="field"><label>Tindak lanjut</label><textarea id="eaTL" rows="2">${v("tindakLanjut")}</textarea></div>`,
+      function(){
+        const judul = document.getElementById("eaJudul").value.trim(), tgl = document.getElementById("eaTgl").value;
+        if(!judul){ toast("Nama kegiatan wajib diisi"); return false; }
+        if(!tgl){ toast("Tanggal mulai wajib diisi"); return false; }
+        const ts = document.getElementById("eaTglS").value;
+        if(ts && ts < tgl){ toast("Tanggal selesai tidak boleh sebelum tanggal mulai"); return false; }
+        const nilai = { kategori:document.getElementById("eaKat").value, jenis:document.getElementById("eaJenis").value, judul:judul, tanggal:tgl, tanggalSelesai:ts,
+          jam:document.getElementById("eaJam").value, jamSelesai:document.getElementById("eaJamS").value, zona:document.getElementById("eaZona").value,
+          tempat:document.getElementById("eaTempat").value.trim(), peserta:document.getElementById("eaPeserta").value.trim(), agenda:document.getElementById("eaAgenda").value.trim(),
+          pembahasan:document.getElementById("eaPemb").value.trim(), hasil:document.getElementById("eaHasil").value.trim(), tindakLanjut:document.getElementById("eaTL").value.trim() };
+        const arr = eaGet();
+        if(k){ const i = arr.findIndex(function(x){ return x.id === id; }); arr[i] = Object.assign({}, arr[i], nilai); }
+        else arr.push(Object.assign({ id:uid(), status:"rencana", lamp:{ surat:0, dokumen:0, hadir:0 }, dibuat:new Date().toISOString() }, nilai));
+        eaSet(arr); gambar(); toast("Kegiatan tersimpan", "ok");
+      });
+  }
+
+  /* ---------- Lampiran ---------- */
+  function pantauLampiran(id, wadah){
+    /* hitung ulang jumlah lampiran setiap isi daftar berubah */
+    wadah.querySelectorAll("[id^=attList_]").forEach(function(el){
+      new MutationObserver(function(){ clearTimeout(el._t); el._t = setTimeout(function(){ eaHitungLampiran(id).then(function(){ gambarTabs(); const tr = body.querySelector("[data-ea-lamp=\"" + id + "\"]"); if(tr){ const n = eaTotalLampiran(eaGet().find(function(x){ return x.id === id; }) || {}); tr.innerHTML = "📎" + (n ? "<i>" + n + "</i>" : ""); } }); }, 300); }).observe(el, { childList:true });
+    });
+  }
+  function daftarBacaSaja(el, owner){
+    listFilesByOwner(owner).then(function(files){
+      el.innerHTML = files.length ? files.map(function(f){ return `<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:7px 0; border-bottom:1px solid var(--line); font-size:12.5px;"><span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${f.mimeType === "link" ? "🔗" : getFileIcon(f.filename)} ${esc(f.filename)}</span><button type="button" class="icon-btn" data-dl="${f.id}" title="Buka / unduh">${f.mimeType === "link" ? "↗" : "⭳"}</button></div>`; }).join("") : `<div style="font-size:12px; color:var(--ink-soft);">Tidak ada lampiran.</div>`;
+      el.querySelectorAll("[data-dl]").forEach(function(b){ b.onclick = function(){ downloadAttachedFile(b.dataset.dl); }; });
+    });
+  }
+  function isiLampiran(wadah, k, jenisList){
+    const kunci = k.status === "selesai";
+    wadah.innerHTML = jenisList.map(function(j){ return `<div style="border:1.5px solid var(--line); border-radius:14px; padding:12px 14px; margin-bottom:12px;"><div style="font-weight:800; font-size:13.5px; margin-bottom:6px;">${j.ikon} ${j.label}</div><div id="eaP_${j.id}"></div></div>`; }).join("")
+      + (kunci ? `<p style="font-size:12px; color:#8a6a10; background:#fff7e0; border:1.5px solid #ecd9a0; border-radius:10px; padding:8px 12px; margin:0;">🔒 Kegiatan sudah ditandai selesai. Buka kunci di tabel untuk menambah atau menghapus lampiran.</p>` : "");
+    jenisList.forEach(function(j){
+      const el = wadah.querySelector("#eaP_" + j.id);
+      if(kunci){ el.innerHTML = `<div id="attList_${eaOwner(k.id, j.id)}"></div>`; daftarBacaSaja(el.firstChild, eaOwner(k.id, j.id)); }
+      else renderAttachmentPanel(el, eaOwner(k.id, j.id), { standalone:true });
+    });
+    if(!kunci) pantauLampiran(k.id, wadah);
+  }
+  function kelolaLampiran(id){
+    const k = eaGet().find(function(x){ return x.id === id; }); if(!k) return;
+    openModal("Lampiran — " + k.judul, `<div id="eaLampWadah"></div>`, function(){}, "Tutup");
+    isiLampiran(document.getElementById("eaLampWadah"), k, EA_LAMPIRAN);
+  }
+  function uploadCepat(jenis){
+    const arr = eaGet().filter(function(k){ return k.status !== "selesai"; }).sort(function(a, b){ return (b.tanggal || "").localeCompare(a.tanggal || ""); });
+    if(!eaGet().length){ toast("Tambahkan kegiatan terlebih dahulu"); return; }
+    if(!arr.length){ toast("Semua kegiatan terkunci (selesai). Buka kunci salah satu kegiatan terlebih dahulu."); return; }
+    const info = EA_LAMPIRAN.find(function(j){ return j.id === jenis; });
+    openModal("Upload " + info.label,
+      `<div class="field"><label>Pilih kegiatan</label><select id="eaUpKeg">${arr.map(function(k){ return `<option value="${k.id}"${(tab !== "semua" && k.kategori === tab) ? "" : ""}>${esc(fmtDate(k.tanggal))} — ${esc(k.judul)}</option>`; }).join("")}</select></div><div id="eaUpWadah"></div>`,
+      function(){}, "Selesai");
+    const pasang = function(){ const k = arr.find(function(x){ return x.id === document.getElementById("eaUpKeg").value; }); isiLampiran(document.getElementById("eaUpWadah"), k, [info]); };
+    document.getElementById("eaUpKeg").onchange = pasang; pasang();
+  }
+
+  /* ---------- Laporan PDF ---------- */
+  function cetakArea(html, judul){
+    const area = document.getElementById("printArea"); area.innerHTML = html; area.style.display = "block";
+    const asli = document.title; document.title = "MALAQBI_" + judul.toUpperCase().replace(/[^A-Z0-9]+/g, "_");
+    window.print(); setTimeout(function(){ area.style.display = "none"; document.title = asli; }, 800);
+  }
+  function laporanRekap(list, judul){
+    if(!list.length){ toast("Belum ada kegiatan untuk diunduh"); return; }
+    printSimpleReport({ title:"Laporan E-Arsip Kegiatan Sekolah" + (tab === "semua" ? "" : " — " + judul), subtitle:laporanProfilLine(),
+      columns:["No", "Tanggal", "Kegiatan", "Rincian & Hasil", "Status"],
+      rows:list.map(function(k, i){
+        const nl = function(x){ return esc(x).split("\n").join("<br>"); };
+        return [i + 1, esc(eaTanggal(k)) + (eaJam(k) ? "<br>" + esc(eaJam(k)) : ""),
+          "<b>" + esc(k.judul) + "</b><br><i>" + esc(eaKat(k.kategori).label) + (k.jenis ? " · " + esc(k.jenis) : "") + "</i>" + (k.tempat ? "<br>" + esc(k.tempat) : "") + (k.peserta ? "<br>" + esc(k.peserta) : ""),
+          nl(k.agenda || "") + (k.pembahasan ? "<br><b>Pembahasan:</b> " + nl(k.pembahasan) : "") + (k.hasil ? "<br><b>Hasil:</b> " + nl(k.hasil) : "") + (k.tindakLanjut ? "<br><b>Tindak lanjut:</b> " + nl(k.tindakLanjut) : ""),
+          k.status === "selesai" ? "Selesai" : "Rencana"]; }) });
+  }
+  function laporanKegiatan(id){
+    const k = eaGet().find(function(x){ return x.id === id; }); if(!k) return;
+    toast("Menyiapkan laporan...");
+    Promise.all(["dokumen", "hadir", "surat"].map(function(j){ return listFilesByOwner(eaOwner(id, j)).catch(function(){ return []; }); })).then(function(res){
+      const dok = res[0], hadir = res[1], surat = res[2], fotos = [];
+      const gambarDari = function(files, label){ return files.filter(function(f){ return f.blob && /^image\//.test(f.mimeType); }).slice(0, 8).map(function(f){ return resizeImageFile(f.blob, 1000, 0.75).then(function(u){ fotos.push({ label:label, src:u }); }).catch(function(){}); }); };
+      return Promise.all(gambarDari(dok, "Dokumentasi").concat(gambarDari(hadir, "Daftar hadir / notulen"), gambarDari(surat, "Surat undangan"))).then(function(){ return { dok:dok, hadir:hadir, surat:surat, fotos:fotos }; });
+    }).then(function(r){
+      const nl = function(x){ return esc(x).split("\n").join("<br>"); };
+      const baris = function(l, v){ return v ? `<tr><td style="border:1px solid #999; padding:6px 8px; font-size:12px; width:150px; background:#f3f3f3; vertical-align:top;"><b>${l}</b></td><td style="border:1px solid #999; padding:6px 8px; font-size:12px;">${v}</td></tr>` : ""; };
+      const seksi = function(j, t){ return t ? `<h3 style="margin:16px 0 4px; font-size:13px;">${j}</h3><div style="font-size:12.5px; line-height:1.6; border:1px solid #bbb; padding:8px 10px;">${nl(t)}</div>` : ""; };
+      const daftarFile = function(label, files){ const n = files.map(function(f){ return esc(f.filename); }); return n.length ? `<div style="font-size:12px; margin:3px 0;"><b>${label}:</b> ${n.join("; ")}</div>` : ""; };
+      const html = `<div style="font-family:Arial, Helvetica, sans-serif; padding:24px; color:#111;">
+        ${buildKopLaporanHtml("LAPORAN KEGIATAN", esc(k.judul))}
+        <table style="width:100%; border-collapse:collapse;">
+          ${baris("Kategori", esc(eaKat(k.kategori).label) + (k.jenis ? " · " + esc(k.jenis) : ""))}${baris("Hari / Tanggal", esc(eaTanggal(k)))}${baris("Waktu", esc(eaJam(k)))}${baris("Tempat", esc(k.tempat || ""))}${baris("Peserta / Pihak", esc(k.peserta || ""))}${baris("Status", k.status === "selesai" ? "Selesai" : "Rencana")}
+        </table>
+        ${seksi("A. Agenda / Rincian Kegiatan", k.agenda)}${seksi("B. Pembahasan", k.pembahasan)}${seksi("C. Hasil / Keputusan", k.hasil)}${seksi("D. Tindak Lanjut", k.tindakLanjut)}
+        ${(r.dok.length + r.hadir.length + r.surat.length) ? `<h3 style="margin:16px 0 4px; font-size:13px;">E. Lampiran</h3>${daftarFile("Surat undangan", r.surat)}${daftarFile("Dokumen & foto", r.dok)}${daftarFile("Daftar hadir / notulen", r.hadir)}` : ""}
+        ${r.fotos.length ? `<h3 style="margin:16px 0 8px; font-size:13px;">F. Dokumentasi</h3><div style="display:flex; flex-wrap:wrap; gap:8px;">${r.fotos.map(function(f){ return `<div style="width:31%; break-inside:avoid; page-break-inside:avoid;"><img src="${f.src}" alt="" style="width:100%; max-height:200px; object-fit:cover; border:1px solid #999;"><div style="font-size:10px; color:#555;">${esc(f.label)}</div></div>`; }).join("")}</div>` : ""}
+        ${buildTandaTanganHtml("", true)}
+        <p style="margin-top:30px; font-size:11px; color:#555;">Dicetak dari MALAQBI (E-Arsip) pada ${new Date().toLocaleDateString("id-ID", { day:"numeric", month:"long", year:"numeric" })}.</p>
+      </div>`;
+      cetakArea(html, "Laporan " + k.judul);
+    });
+  }
+
+  /* ---------- Share ke Drive / cadangan ---------- */
+  async function bagikanFile(file, judul){
+    if(navigator.canShare && navigator.canShare({ files:[file] })){
+      try{ await navigator.share({ files:[file], title:judul }); toast("Menu berbagi dibuka — pilih Google Drive", "ok"); return; }
+      catch(e){ if(e && e.name === "AbortError") return; }
+    }
+    const url = URL.createObjectURL(file), a = document.createElement("a"); a.href = url; a.download = file.name; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+    toast("Perangkat tidak mendukung berbagi langsung. File diunduh — unggah manual ke Google Drive.");
+  }
+  function rekapAoa(list){
+    const aoa = [["Rekap E-Arsip Kegiatan Sekolah"], [], ["No", "Tanggal", "Waktu", "Kategori", "Jenis", "Kegiatan", "Tempat", "Peserta", "Agenda", "Pembahasan", "Hasil", "Tindak Lanjut", "Status", "Lampiran"]];
+    list.forEach(function(k, i){ aoa.push([i + 1, eaTanggal(k), eaJam(k), eaKat(k.kategori).label, k.jenis || "", k.judul, k.tempat || "", k.peserta || "", k.agenda || "", k.pembahasan || "", k.hasil || "", k.tindakLanjut || "", k.status === "selesai" ? "Selesai" : "Rencana", eaTotalLampiran(k)]); });
+    return aoa;
+  }
+  function modalShare(list){
+    openModal("Share ke Drive / Cadangan Arsip",
+      `<p style="font-size:12.5px; color:var(--ink-soft); margin:0 0 12px; line-height:1.55;">Pilih berkas yang ingin dibagikan. Di HP, menu berbagi akan terbuka dan Anda tinggal memilih <b>Google Drive</b>.</p>
+       <div style="display:grid; gap:10px;">
+         <button class="btn btn-ghost" id="eaShX" style="width:100%; text-align:left;">📊 <b>Rekap Excel</b> — daftar ${list.length} kegiatan yang tampil sekarang</button>
+         <button class="btn btn-ghost" id="eaShJ" style="width:100%; text-align:left;">🗄️ <b>Cadangan lengkap (.json)</b> — semua kegiatan beserta lampirannya</button>
+         <button class="btn btn-ghost" id="eaShP" style="width:100%; text-align:left;">♻️ <b>Pulihkan dari cadangan</b> — impor file cadangan E-Arsip</button>
+       </div><input type="file" id="eaShFile" accept=".json,application/json" style="display:none;">`, function(){}, "Tutup");
+    document.getElementById("eaShX").onclick = function(){
+      if(!list.length){ toast("Belum ada kegiatan"); return; }
+      const ws = XLSX.utils.aoa_to_sheet(rekapAoa(list)); ws["!cols"] = [{ wch:4 }, { wch:24 }, { wch:20 }, { wch:22 }, { wch:16 }, { wch:36 }, { wch:24 }, { wch:20 }, { wch:44 }, { wch:44 }, { wch:36 }, { wch:36 }, { wch:10 }, { wch:9 }];
+      const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "E-Arsip");
+      const buf = XLSX.write(wb, { type:"array", bookType:"xlsx" });
+      bagikanFile(new File([buf], "E-Arsip-" + todayISO() + ".xlsx", { type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), "Rekap E-Arsip");
+    };
+    document.getElementById("eaShJ").onclick = function(){
+      toast("Menyiapkan cadangan...");
+      const arr = eaGet(), paket = { app:"malaqbi-earsip", versi:1, kegiatan:arr, lampiran:[] };
+      const baca = function(b){ return new Promise(function(res){ const fr = new FileReader(); fr.onload = function(){ res(fr.result); }; fr.onerror = function(){ res(null); }; fr.readAsDataURL(b); }); };
+      Promise.all(arr.map(function(k){ return Promise.all(EA_LAMPIRAN.map(function(j){ return listFilesByOwner(eaOwner(k.id, j.id)).then(function(files){
+        return Promise.all(files.map(function(f){ return (f.blob ? baca(f.blob) : Promise.resolve(null)).then(function(d){ paket.lampiran.push({ owner:eaOwner(k.id, j.id), filename:f.filename, mimeType:f.mimeType, url:f.url || "", data:d }); }); })); }).catch(function(){}); })); }))
+      .then(function(){ bagikanFile(new File([JSON.stringify(paket)], "Cadangan-E-Arsip-" + todayISO() + ".json", { type:"application/json" }), "Cadangan E-Arsip"); });
+    };
+    const fi = document.getElementById("eaShFile");
+    document.getElementById("eaShP").onclick = function(){ fi.click(); };
+    fi.onchange = function(){
+      const f = fi.files[0]; if(!f) return; const fr = new FileReader();
+      fr.onload = async function(){
+        try{
+          const p = JSON.parse(fr.result); if(p.app !== "malaqbi-earsip") throw new Error("Bukan file cadangan E-Arsip");
+          const arr = eaGet(); let baru = 0;
+          (p.kegiatan || []).forEach(function(k){ if(!arr.some(function(x){ return x.id === k.id; })){ arr.push(k); baru++; } });
+          eaSet(arr);
+          const ada = {};
+          for(const l of (p.lampiran || [])){
+            const rec = await listFilesByOwner(l.owner).catch(function(){ return []; });
+            if(rec.some(function(x){ return x.filename === l.filename; })) continue;
+            if(l.mimeType === "link") await saveLinkToDB(l.owner, l.filename, l.url);
+            else if(l.data){ const blob = await (await fetch(l.data)).blob(); await saveFileToDB(l.owner, new File([blob], l.filename, { type:l.mimeType })); }
+          }
+          gambar(); toast(baru + " kegiatan dipulihkan dari cadangan", "ok");
+        }catch(e){ toast("Gagal memulihkan: " + (e.message || e)); }
+      };
+      fr.readAsText(f);
+    };
+  }
+  gambar();
+}
+
 /* ---------------- render map ---------------- */
 /* ============================================================
    KALENDER PENDIDIKAN
@@ -15209,6 +15571,83 @@ function renderNotifPanel(){
   setInterval(function(){ if(panel.hidden) updateNotifBadge(); else renderNotifPanel(); }, 30000);
 })();
 
+/* ---------------- pop up kalender di bilah atas (di kiri tombol notifikasi) ---------------- */
+(function(){
+  const btn = document.getElementById("kalBtn"), panel = document.getElementById("kalPanel");
+  if(!btn || !panel) return;
+  const notifBtn = document.getElementById("notifBtn"), notifPanel = document.getElementById("notifPanel");
+  let bulan = new Date(); bulan.setDate(1);
+  let pilih = kpLokalISO(new Date());
+  const HARI = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
+  const ikon = { libur:"✦", ujian:"✎", kegiatan:"★", periode:"◷" };
+
+  function kejadian(iso){ return (kpGet().events || []).filter(function(e){ return e.jenis !== "periode" && e.mulai <= iso && iso <= e.selesai; }); }
+  function periodeOn(iso){ return (kpGet().events || []).filter(function(e){ return e.jenis === "periode" && e.mulai <= iso && iso <= e.selesai; }); }
+  function agendaOn(iso){ return DB.get(DB.keys.agenda, []).filter(function(a){ return a.tanggal === iso && !a.kalender; }).sort(function(a, b){ return (a.waktu || "") < (b.waktu || "") ? -1 : 1; }); }
+  function posisikan(){
+    if(window.innerWidth <= 600) return;
+    const w = btn.parentElement.getBoundingClientRect(), b = btn.getBoundingClientRect();
+    panel.style.right = Math.max(0, Math.round(w.right - b.right - (360 - 36) / 2 + 18)) + "px";
+  }
+  function item(e){
+    return `<div class="notif-item ${e.jenis}"><span class="notif-ic">${ikon[e.jenis] || "★"}</span><div class="notif-t"><strong>${esc(e.judul)}</strong><small>${esc(kpFmtRentang(e.mulai, e.selesai))} · ${esc((KP_JENIS_LABEL[e.jenis] || "Kegiatan").replace(/ \(.*\)$/, ""))}</small></div></div>`;
+  }
+  function gambar(){
+    const y = bulan.getFullYear(), m = bulan.getMonth(), hariIni = kpLokalISO(new Date());
+    const offset = (new Date(y, m, 1).getDay() + 6) % 7, hariDlm = new Date(y, m + 1, 0).getDate(), sel = Math.ceil((offset + hariDlm) / 7) * 7;
+    let grid = "";
+    for(let i = 0; i < sel; i++){
+      const d = new Date(y, m, 1 - offset + i), iso = kpLokalISO(d), luar = d.getMonth() !== m, wk = d.getDay() === 0 || d.getDay() === 6;
+      const ev = kejadian(iso), ag = agendaOn(iso), libur = ev.some(function(e){ return e.jenis === "libur"; }) || !!agendaLiburInfo(iso);
+      const tipe = libur ? "libur" : ev.some(function(e){ return e.jenis === "ujian"; }) ? "ujian" : ev.length ? "kegiatan" : "";
+      grid += `<button type="button" class="kal-d${tipe ? " t-" + tipe : ""}${luar ? " out" : ""}${wk ? " wk" : ""}${iso === hariIni ? " today" : ""}${iso === pilih ? " sel" : ""}" data-kal-iso="${iso}" title="${esc(ev.map(function(e){ return e.judul; }).join(", "))}">${d.getDate()}${(ev.length || ag.length) && !luar ? `<i class="kal-dot${ag.length && !ev.length ? " ag" : ""}"></i>` : ""}</button>`;
+    }
+    const awalB = kpLokalISO(new Date(y, m, 1)), akhirB = kpLokalISO(new Date(y, m, hariDlm));
+    const dlmBulan = (kpGet().events || []).filter(function(e){ return e.mulai <= akhirB && e.selesai >= awalB; });
+    const periode = dlmBulan.filter(function(e){ return e.jenis === "periode"; });
+    const daftar = dlmBulan.filter(function(e){ return e.jenis !== "periode"; }).sort(function(a, b){ return a.mulai < b.mulai ? -1 : 1; });
+    const evPilih = kejadian(pilih), agPilih = agendaOn(pilih), liburP = agendaLiburInfo(pilih), perP = periodeOn(pilih);
+    const agItem = function(a){ return `<div class="notif-item ${a.selesai ? "selesai" : "belum"}"><span class="notif-ic">${a.selesai ? "✓" : "▸"}</span><div class="notif-t"><strong>${esc(a.judul)}<span class="notif-tag">Agenda</span></strong><small>${esc(a.waktu || "Seharian")}${a.selesai ? " · Selesai" : ""}</small></div></div>`; };
+    const detail = (liburP && !evPilih.some(function(e){ return e.jenis === "libur"; }) ? `<div class="notif-item libur"><span class="notif-ic">🏖</span><div class="notif-t"><strong>Libur — ${esc(liburP.alasan)}</strong><small>${esc(liburP.keterangan || "Tidak masuk kerja/sekolah")}</small></div></div>` : "")
+      + evPilih.map(item).join("") + perP.map(item).join("") + agPilih.map(agItem).join("");
+    panel.innerHTML = `
+      <div class="notif-head kal-head"><div style="display:flex; align-items:center; gap:6px;">
+        <button type="button" class="kal-nav" data-kal-nav="-1" aria-label="Bulan sebelumnya">‹</button>
+        <div style="flex:1; text-align:center;"><strong>${KP_NAMA_BULAN[m]} ${y}</strong><small>${dlmBulan.filter(function(e){ return e.jenis !== "periode"; }).length} kegiatan bulan ini</small></div>
+        <button type="button" class="kal-nav" data-kal-nav="1" aria-label="Bulan berikutnya">›</button></div></div>
+      <div class="notif-body">
+        <div class="kal-dow">${HARI.map(function(h, i){ return `<span${i > 4 ? ' class="wk"' : ""}>${h}</span>`; }).join("")}</div>
+        <div class="kal-grid">${grid}</div>
+        <div class="kal-legend"><span><i style="background:#10b981"></i>Kegiatan</span><span><i style="background:#f59e0b"></i>Ujian</span><span><i style="background:#f43f5e"></i>Libur</span><span><i style="background:#3b82f6"></i>Agenda</span></div>
+        ${periode.map(function(e){ return `<div class="kal-periode">📌 ${esc(e.judul)} · ${esc(kpFmtRentang(e.mulai, e.selesai))}</div>`; }).join("")}
+        <div class="notif-sec">${esc(hariFromISO(pilih) + ", " + fmtDate(pilih))} <em>${evPilih.length + agPilih.length}</em></div>
+        ${detail || `<div class="notif-empty">Tidak ada kegiatan pada tanggal ini.</div>`}
+        <div class="notif-sec">Kegiatan Bulan Ini <em>${daftar.length}</em></div>
+        ${daftar.length ? daftar.map(item).join("") : `<div class="notif-empty">Tidak ada kegiatan pada bulan ini.</div>`}
+      </div>
+      <div class="notif-foot"><button type="button" data-kal-today="1">Hari Ini</button><button type="button" data-kal-go="agenda">Agenda Harian</button><button type="button" data-kal-go="kalender_pendidikan">Kalender Pendidikan</button></div>`;
+  }
+  function tutup(){ panel.hidden = true; btn.classList.remove("open"); btn.setAttribute("aria-expanded", "false"); }
+  function buka(){
+    if(notifPanel && !notifPanel.hidden){ notifPanel.hidden = true; notifBtn.classList.remove("open"); notifBtn.setAttribute("aria-expanded", "false"); }
+    bulan = new Date(); bulan.setDate(1); pilih = kpLokalISO(new Date());
+    gambar(); posisikan(); panel.hidden = false; btn.classList.add("open"); btn.setAttribute("aria-expanded", "true");
+  }
+  btn.addEventListener("click", function(e){ e.stopPropagation(); if(!panel.hidden) tutup(); else buka(); });
+  if(notifBtn) notifBtn.addEventListener("click", function(){ if(!panel.hidden) tutup(); }, true);
+  panel.addEventListener("click", function(e){
+    e.stopPropagation();
+    const nav = e.target.closest("[data-kal-nav]"), hari = e.target.closest("[data-kal-iso]"), go = e.target.closest("[data-kal-go]"), td = e.target.closest("[data-kal-today]");
+    if(nav){ bulan = new Date(bulan.getFullYear(), bulan.getMonth() + parseInt(nav.dataset.kalNav, 10), 1); gambar(); return; }
+    if(td){ bulan = new Date(); bulan.setDate(1); pilih = kpLokalISO(new Date()); gambar(); return; }
+    if(hari){ pilih = hari.dataset.kalIso; const d = new Date(pilih + "T00:00:00"); if(d.getMonth() !== bulan.getMonth()) bulan = new Date(d.getFullYear(), d.getMonth(), 1); gambar(); return; }
+    if(go){ tutup(); navigate(go.dataset.kalGo); }
+  });
+  document.addEventListener("click", function(){ if(!panel.hidden) tutup(); });
+  document.addEventListener("keydown", function(e){ if(e.key === "Escape") tutup(); });
+  window.addEventListener("resize", function(){ if(!panel.hidden) posisikan(); });
+})();
+
 const RENDERERS = {
   dashboard: renderDashboard,
   agenda: renderAgendaHarian,
@@ -15220,6 +15659,7 @@ const RENDERERS = {
   jadwal_guru: renderJadwalGuru,
   perangkat_ajar: renderPerangkatAjar,
   materi: renderMateri,
+  e_arsip: renderEArsip,
   siswa: renderSiswa,
   wali_kelas: renderWaliKelas,
   catatan_wali: renderCatatanWali,
