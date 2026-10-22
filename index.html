@@ -2734,6 +2734,35 @@ table.mt th{background:#eef5f0;color:#4b5f54;font-size:12.5px}
 .lg2 .btn.wide:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:760px){.lg2-card{grid-template-columns:1fr}.lg2-hero{padding:24px 22px}.lg2-body{padding:22px 20px}}
 </style></head><body>
+@@LT@@script>
+(function(){
+  function showErr(title, msg){
+    try{
+      var el = document.createElement('div');
+      el.setAttribute('data-elwatch', '1');
+      el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999999;background:#b00020;color:#fff;padding:14px;font:12.5px/1.5 monospace;white-space:pre-wrap;max-height:70vh;overflow:auto;box-shadow:0 4px 18px rgba(0,0,0,.4)';
+      el.textContent = title + '\n' + msg;
+      document.body.appendChild(el);
+    }catch(x){}
+  }
+  window.addEventListener('error', function(e){
+    showErr('⚠ ERROR HALAMAN (screenshot ini, kirim ke Admin):', (e.message||'') + '\n' + (e.filename||'') + ':' + (e.lineno||0) + ':' + (e.colno||0) + '\n' + ((e.error && e.error.stack) || ''));
+  });
+  window.addEventListener('unhandledrejection', function(e){
+    var r = e.reason;
+    showErr('⚠ ERROR PROSES (screenshot ini, kirim ke Admin):', (r && (r.message||String(r))) + '\n' + ((r && r.stack) || ''));
+  });
+  setTimeout(function(){
+    try{
+      var app = document.getElementById('app');
+      var hasErr = document.querySelector('[data-elwatch]');
+      if (app && !app.innerHTML.trim() && !hasErr){
+        showErr('⚠ HALAMAN TIDAK MEMUAT (screenshot ini, kirim ke Admin):', 'Tidak ada error JavaScript, tapi isi halaman kosong setelah 5 detik.\nKemungkinan: koneksi ke server lambat/terputus, atau data tersimpan rusak.\nURL: ' + location.href);
+      }
+    }catch(x){}
+  }, 5000);
+})();
+@@LT@@/script>
 <header class="top"><img src="__EL_LOGO__" alt=""><div class="sep"></div>
 <div><h1>E-Learning</h1><small>Pendidikan Pancasila • Kelas XI Fase F</small><small class="g">Guru: __EL_GURU__</small></div>
 <div class="sp"></div><button class="btn-g" id="hbtn">Panel Guru</button></header>
