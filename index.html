@@ -2823,7 +2823,7 @@ async function api(body) {
     const r = await fetch(backend(), { method: "POST", body: JSON.stringify(body), redirect: "follow", signal: ac.signal });
     const tx = await r.text(); let j;
     try { j = JSON.parse(tx); } catch (e) { throw new Error("Server tidak membalas dengan benar. Pastikan Code.gs terbaru terpasang dan Web App di-deploy dengan akses 'Siapa saja'."); }
-    if (!j.ok) throw new Error(j.error || "Permintaan gagal");
+    if (!j.ok) { const pe = j.error || j.pesan || "Permintaan gagal"; throw new Error(/aksi tidak dikenal/i.test(pe) ? "Kode server di Google Apps Script masih versi lama. Perbarui: Ujian Online (CBT) → Pengaturan Server → Lihat Kode → tempel di Apps Script → Deploy → New version." : pe); }
     Store.stat = { ok: true, msg: "", t: Date.now() }; return j;
   } catch (e) {
     const m = e.name === "AbortError" ? "Waktu habis (koneksi lambat)" : (e.message === "Failed to fetch" ? "Tidak dapat menjangkau server (internet / URL salah / belum di-deploy)" : e.message);
@@ -19101,7 +19101,21 @@ function renderELearning(root){
     Object.keys(rep).forEach(k => { html = html.split(k).join(rep[k]); });
     return html;
   };
-  const kirim = body => fetch(endpoint(), { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(body) }).then(r => r.json());
+  const kirim = body => fetch(endpoint(), { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(body) }).then(r => r.json()).then(j => {
+    if(j && j.ok === false && /aksi tidak dikenal/i.test(String(j.pesan || j.error || ""))){ j.lama = true; j.pesan = "Kode server di Google Apps Script masih versi lama, belum mengenal fitur E-Learning terbaru."; }
+    return j;
+  });
+  /* Kode server yang terpasang harus sama barunya dengan kode di aplikasi ini (CBT_GAS_CODE). */
+  const versiDibutuhkan = () => { const m = /versi:\s*(\d+)/.exec(CBT_GAS_CODE); return m ? +m[1] : 10; };
+  const cekServer = async () => {
+    const perlu = versiDibutuhkan();
+    try{
+      const j = await fetch(endpoint(), { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify({ action:"ping" }) }).then(r => r.json());
+      const v = Number(j && j.versi) || 0;
+      return { ok: !!(j && j.ok !== false) && v >= perlu, versi: v, perlu };
+    }catch(e){ return { ok:false, versi:0, perlu, galat:"Tidak dapat menjangkau server. Periksa koneksi internet dan alamat server di Ujian Online (CBT) → Pengaturan Server." }; }
+  };
+  const petunjukLama = cs => `<b>Kode server belum diperbarui</b> (terpasang ${cs.versi ? "versi " + cs.versi : "versi lama"}, aplikasi butuh versi ${cs.perlu}).<ol style="margin:6px 0 0 18px; padding:0; line-height:1.65;"><li>Klik <b>Salin Kode Server</b> di bawah.</li><li>Buka <b>script.google.com</b> → proyek server Anda → hapus semua kode lama → tempel kode baru → <b>Simpan</b>.</li><li><b>Deploy → Manage deployments → ✎ (edit) → Version: New version → Deploy</b>. URL tetap sama.</li><li>Kembali ke sini, lalu klik <b>Terbitkan Semua Link</b>.</li></ol>`;
   const aktifkan = () => endpoint() ? kirim({ action:"el_aktifkan", adm:tokenGuru() }).catch(()=>null) : Promise.resolve(null);
 
   const load = () => {
@@ -19143,6 +19157,8 @@ function renderELearning(root){
       </div>
       <div id="elpStatus" style="font-size:12.5px; padding:9px 12px; border-radius:10px; background:#f3faf6; border:1px solid #d6e8dc; color:#3f5f4f;">
         ${waktu ? "Halaman terakhir diterbitkan: <b>" + esc(waktu) + "</b>." : "Halaman siswa <b>belum diterbitkan</b>. Klik <b>Terbitkan Semua Link</b> di bawah."} Link ${c.elAktif === false ? "<b>nonaktif</b>" : "aktif"}.</div>
+      <div id="elpSrv" style="margin-top:8px; font-size:12.5px; line-height:1.5; padding:9px 12px; border-radius:10px; background:#f3f5f4; color:#5b6f64;">Memeriksa versi kode server…</div>
+      <div id="elpKode" style="display:none; margin-top:8px;"><button type="button" class="btn btn-gold btn-sm" id="elpSalinKode" style="width:auto;">⧉ Salin Kode Server</button></div>
       ${topics.length ? `<hr style="border:none; border-top:1px solid #e3ede7; margin:14px 0 10px;">
       <p style="font-size:12.5px; font-weight:700; margin:0 0 8px;">Link per topik (langsung masuk ke topik itu)</p>
       ${topics.map(rowTopik).join("")}` : ""}
@@ -19153,6 +19169,14 @@ function renderELearning(root){
         info("Menerbitkan… mohon tunggu.");
         (async () => {
           try{
+            const cs = await cekServer();
+            if(cs.galat) throw new Error(cs.galat);
+            if(!cs.ok){
+              const bx = document.getElementById("elpSrv"); if(bx){ bx.style.background = "#fdecef"; bx.style.color = "#a3213b"; bx.innerHTML = petunjukLama(cs); }
+              info("✗ Kode server belum diperbarui. Ikuti langkah pada kotak merah di atas, lalu klik Terbitkan Semua Link lagi.", true);
+              const kd = document.getElementById("elpKode"); if(kd) kd.style.display = "";
+              return;
+            }
             const a = await aktifkan();
             if(!a || a.ok === false) throw new Error((a && a.pesan) || "Server tidak membalas. Pastikan kode server terbaru sudah dipasang (Ujian Online → Pengaturan Server → Lihat Kode).");
             /* kirim konten buatan guru (bila belum ada di server) agar siswa memakai materi & soal terbaru */
@@ -19184,6 +19208,18 @@ function renderELearning(root){
     setTimeout(() => {
       const L = document.getElementById("elpLink"); if(!L) return;
       const salin = v => { try{ navigator.clipboard.writeText(v); toast("Link disalin", "ok"); }catch(e){ const tmp = document.createElement("textarea"); tmp.value = v; document.body.appendChild(tmp); tmp.select(); document.execCommand("copy"); tmp.remove(); toast("Link disalin", "ok"); } };
+      const salinKode = () => {
+        const cadangan = () => { const tmp = document.createElement("textarea"); tmp.value = CBT_GAS_CODE; document.body.appendChild(tmp); tmp.select(); document.execCommand("copy"); tmp.remove(); toast("Kode server disalin. Tempel di Apps Script.", "ok"); };
+        try{ if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(CBT_GAS_CODE).then(() => toast("Kode server disalin. Tempel di Apps Script.", "ok"), cadangan); else cadangan(); }catch(e){ cadangan(); }
+      };
+      const sk = document.getElementById("elpSalinKode"); if(sk) sk.onclick = salinKode;
+      (async () => {
+        const cs = await cekServer(), box = document.getElementById("elpSrv"), kd = document.getElementById("elpKode");
+        if(!box) return;
+        if(cs.galat){ box.style.background = "#fff0cc"; box.style.color = "#8a5a00"; box.textContent = cs.galat; }
+        else if(cs.ok){ box.style.background = "#e4f6ee"; box.style.color = "#14663f"; box.textContent = "✓ Server siap (kode versi " + cs.versi + ")."; }
+        else { box.style.background = "#fdecef"; box.style.color = "#a3213b"; box.innerHTML = petunjukLama(cs); if(kd) kd.style.display = ""; }
+      })();
       document.getElementById("elpCopy").onclick = () => salin(L.value);
       document.getElementById("elpOpen").onclick = () => window.open(L.value, "_blank");
       document.getElementById("elpToggle").onclick = async function(){
