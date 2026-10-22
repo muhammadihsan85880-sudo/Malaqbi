@@ -2734,39 +2734,11 @@ table.mt th{background:#eef5f0;color:#4b5f54;font-size:12.5px}
 .lg2 .btn.wide:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:760px){.lg2-card{grid-template-columns:1fr}.lg2-hero{padding:24px 22px}.lg2-body{padding:22px 20px}}
 </style></head><body>
-@@LT@@script>
-(function(){
-  function showErr(title, msg){
-    try{
-      var el = document.createElement('div');
-      el.setAttribute('data-elwatch', '1');
-      el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999999;background:#b00020;color:#fff;padding:14px;font:12.5px/1.5 monospace;white-space:pre-wrap;max-height:70vh;overflow:auto;box-shadow:0 4px 18px rgba(0,0,0,.4)';
-      el.textContent = title + '\n' + msg;
-      document.body.appendChild(el);
-    }catch(x){}
-  }
-  window.addEventListener('error', function(e){
-    showErr('⚠ ERROR HALAMAN (screenshot ini, kirim ke Admin):', (e.message||'') + '\n' + (e.filename||'') + ':' + (e.lineno||0) + ':' + (e.colno||0) + '\n' + ((e.error && e.error.stack) || ''));
-  });
-  window.addEventListener('unhandledrejection', function(e){
-    var r = e.reason;
-    showErr('⚠ ERROR PROSES (screenshot ini, kirim ke Admin):', (r && (r.message||String(r))) + '\n' + ((r && r.stack) || ''));
-  });
-  setTimeout(function(){
-    try{
-      var app = document.getElementById('app');
-      var hasErr = document.querySelector('[data-elwatch]');
-      if (app && !app.innerHTML.trim() && !hasErr){
-        showErr('⚠ HALAMAN TIDAK MEMUAT (screenshot ini, kirim ke Admin):', 'Tidak ada error JavaScript, tapi isi halaman kosong setelah 5 detik.\nKemungkinan: koneksi ke server lambat/terputus, atau data tersimpan rusak.\nURL: ' + location.href);
-      }
-    }catch(x){}
-  }, 5000);
-})();
-@@LT@@/script>
 <header class="top"><img src="__EL_LOGO__" alt=""><div class="sep"></div>
 <div><h1>E-Learning</h1><small>Pendidikan Pancasila • Kelas XI Fase F</small><small class="g">Guru: __EL_GURU__</small></div>
 <div class="sp"></div><button class="btn-g" id="hbtn">Panel Guru</button></header>
-<main id="app"></main><div class="toast" id="toast"></div><div id="printdoc"></div>
+<main id="app"><p id="boot" style="max-width:520px;margin:60px auto;text-align:center;color:#5b6f64;font-family:sans-serif">Memuat E-Learning…</p></main><div class="toast" id="toast"></div><div id="printdoc"></div>
+@@LT@@script>setTimeout(function(){ if(!window.__elOk){ var a = document.getElementById("app"); if(a) a.innerHTML = '<div style="max-width:560px;margin:40px auto;padding:20px;background:#fff;border:1px solid #f0d28a;border-radius:14px;font-family:sans-serif;line-height:1.55"><b>Halaman belum termuat dengan sempurna.</b><br>Muat ulang halaman ini. Bila tetap seperti ini, hubungi gurumu: link mungkin belum diterbitkan utuh.</div>'; } }, 9000);@@LT@@/script>
 @@LT@@script>
 const STUDENTS = __EL_STUDENTS__;
 const LOGO = "__EL_LOGO__"; 
@@ -2852,7 +2824,7 @@ async function api(body) {
     const r = await fetch(backend(), { method: "POST", body: JSON.stringify(body), redirect: "follow", signal: ac.signal });
     const tx = await r.text(); let j;
     try { j = JSON.parse(tx); } catch (e) { throw new Error("Server tidak membalas dengan benar. Pastikan Code.gs terbaru terpasang dan Web App di-deploy dengan akses 'Siapa saja'."); }
-    if (!j.ok) throw new Error(j.error || "Permintaan gagal");
+    if (!j.ok) { const pe = j.error || j.pesan || "Permintaan gagal"; throw new Error(/aksi tidak dikenal/i.test(pe) ? "Kode server di Google Apps Script masih versi lama. Perbarui: Ujian Online (CBT) → Pengaturan Server → Lihat Kode → tempel di Apps Script → Deploy → New version." : pe); }
     Store.stat = { ok: true, msg: "", t: Date.now() }; return j;
   } catch (e) {
     const m = e.name === "AbortError" ? "Waktu habis (koneksi lambat)" : (e.message === "Failed to fetch" ? "Tidak dapat menjangkau server (internet / URL salah / belum di-deploy)" : e.message);
@@ -4368,6 +4340,7 @@ function renderSet() {
 window.addEventListener("beforeunload", e => { if (T.dirty && T.draft) { e.preventDefault(); e.returnValue = ""; } });
 
 if (MODE === "siswa") { const hb = document.getElementById("hbtn"); if (hb) hb.remove(); } else document.getElementById("hbtn").onclick = openTeacher;
+window.__elOk = true;
 showLogin();
 @@LT@@/script></body></html>
 </script>
@@ -13701,26 +13674,54 @@ function simpanHalaman(ss, testId, html){
   let sh = ss.getSheetByName(SHEET_HALAMAN);
   if(!sh){
     sh = ss.insertSheet(SHEET_HALAMAN);
-    sh.appendRow(["TestID","Urut","Potongan"]);
+    sh.appendRow(["TestID","Urut","Potongan","Format"]);
+  } else if(sh.getRange(1, 4).getValue() !== "Format"){
+    sh.getRange(1, 4).setValue("Format");
   }
-  const last = sh.getLastRow();
-  if(last >= 2){
-    const ids = sh.getRange(2, 1, last - 1, 1).getValues();
-    for(let i = ids.length - 1; i >= 0; i--){
-      if(String(ids[i][0]) === String(testId)) sh.deleteRow(i + 2);
+  const lk = LockService.getScriptLock();
+  lk.waitLock(30000);
+  try{
+    const last = sh.getLastRow();
+    if(last >= 2){
+      const ids = sh.getRange(2, 1, last - 1, 1).getValues();
+      for(let i = ids.length - 1; i >= 0; i--){
+        if(String(ids[i][0]) === String(testId)) sh.deleteRow(i + 2);
+      }
     }
+    /* Disimpan sebagai Base64 (UTF-8) supaya aman dari pemangkasan spasi, karakter khusus, dan emoji pada sel Google Sheets */
+    const b64 = Utilities.base64Encode(html, Utilities.Charset.UTF_8);
+    const ukuran = 40000;
+    const baris = [];
+    for(let i = 0, n = 0; i < b64.length; i += ukuran, n++){
+      baris.push([testId, n, b64.substr(i, ukuran), "b64"]);
+    }
+    if(baris.length){
+      const r = sh.getRange(sh.getLastRow() + 1, 1, baris.length, 4);
+      r.setNumberFormat("@");
+      r.setValues(baris);
+    }
+    try{ CacheService.getScriptCache().remove("hal_" + testId); }catch(err){}
+    SpreadsheetApp.flush();
+    /* baca ulang & bandingkan: halaman yang rusak tidak boleh diterbitkan diam-diam */
+    const balik = bacaHalamanLangsung(testId);
+    if(balik !== html) throw new Error("Halaman tidak tersimpan utuh di Google Sheets (" + balik.length + " dari " + html.length + " karakter). Coba terbitkan lagi.");
+  } finally {
+    lk.releaseLock();
   }
-  const ukuran = 40000;
-  const baris = [];
-  for(let i = 0, n = 0; i < html.length; i += ukuran, n++){
-    baris.push([testId, n, html.substr(i, ukuran)]);
+}
+
+function bacaHalamanLangsung(testId){
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_HALAMAN);
+  if(!sh || sh.getLastRow() < 2) return "";
+  const rows = sh.getRange(2, 1, sh.getLastRow() - 1, 4).getValues()
+    .filter(function(r){ return String(r[0]) === String(testId); })
+    .sort(function(a, b){ return Number(a[1]) - Number(b[1]); });
+  if(!rows.length) return "";
+  const gabung = rows.map(function(r){ return String(r[2]); }).join("");
+  if(String(rows[0][3]) === "b64"){
+    return Utilities.newBlob(Utilities.base64Decode(gabung)).getDataAsString("UTF-8");
   }
-  if(baris.length){
-    const r = sh.getRange(sh.getLastRow() + 1, 1, baris.length, 3);
-    r.setNumberFormat("@");
-    r.setValues(baris);
-  }
-  try{ CacheService.getScriptCache().remove("hal_" + testId); }catch(err){}
+  return gabung;
 }
 
 function bacaHalaman(testId){
@@ -13729,13 +13730,8 @@ function bacaHalaman(testId){
     const c = cache.get("hal_" + testId);
     if(c) return c;
   }catch(err){}
-  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_HALAMAN);
-  if(!sh || sh.getLastRow() < 2) return "";
-  const rows = sh.getRange(2, 1, sh.getLastRow() - 1, 3).getValues()
-    .filter(function(r){ return String(r[0]) === String(testId); })
-    .sort(function(a, b){ return Number(a[1]) - Number(b[1]); });
-  const html = rows.map(function(r){ return r[2]; }).join("");
-  try{ if(html && html.length < 95000) cache.put("hal_" + testId, html, 21600); }catch(err){}
+  const html = bacaHalamanLangsung(testId);
+  try{ if(html && html.length < 30000) cache.put("hal_" + testId, html, 21600); }catch(err){}
   return html;
 }
 
@@ -13773,6 +13769,11 @@ function aturAktif(testId, aktif){
 /* Tautan ujian siswa: URL-Web-App?t=ID-TES */
 function doGet(e){
   const id = e && e.parameter && e.parameter.t ? String(e.parameter.t) : "";
+  /* ?t=ID&cek=1 : periksa halaman yang tersimpan (panjang, awal, akhir) tanpa membukanya */
+  if(e && e.parameter && e.parameter.cek){
+    const h = id ? bacaHalamanLangsung(id) : "";
+    return ContentService.createTextOutput(h ? ("Halaman " + id + ": " + h.length + " karakter (" + Math.round(h.length / 1024) + " KB). Awal: " + h.substr(0, 40) + " ... Akhir: " + h.substr(Math.max(0, h.length - 40))) : ("Halaman " + id + " belum diterbitkan"));
+  }
   if(id && ujianNonaktif(id)){
     return HtmlService.createHtmlOutput("<p style='font-family:sans-serif;padding:24px'>Ujian ini sedang dinonaktifkan oleh guru. Silakan hubungi guru Anda.</p>")
       .addMetaTag("viewport", "width=device-width, initial-scale=1");
@@ -14070,7 +14071,7 @@ function doPost(e){
     const ss = SpreadsheetApp.getActiveSpreadsheet();
 
     if(data.action === "ping"){
-      return respond({ ok:true, pesan:"Server CBT aktif", versi:10, v:4 });
+      return respond({ ok:true, pesan:"Server CBT aktif", versi:11, v:4 });
     }
 
     if(data.action === "status"){
@@ -14391,9 +14392,13 @@ function doPost(e){
       if(!elAdmin(data)) return elGalat("Akses ditolak: perangkat ini bukan perangkat guru yang memasang server.");
       if(!data.html) return elGalat("Halaman kosong");
       const elTid = String(data.testId || "el");
-      simpanHalaman(ss, elTid, String(data.html));
+      try{
+        simpanHalaman(ss, elTid, String(data.html));
+      }catch(errH){
+        return elGalat(String(errH && errH.message ? errH.message : errH));
+      }
       aturAktif(elTid, data.aktif !== false);
-      return respond({ ok:true, testId:elTid });
+      return respond({ ok:true, testId:elTid, panjang:String(data.html).length });
     }
 
     if(data.action === "kunci"){
@@ -19128,9 +19133,29 @@ function renderELearning(root){
     };
     let html = srcEl.textContent.replace(/@@LT@@/g, "<");
     Object.keys(rep).forEach(k => { html = html.split(k).join(rep[k]); });
+    if(mode === "siswa"){
+      /* halaman siswa tidak membutuhkan Panel Guru: dibuang agar jauh lebih kecil dan tombolnya tidak tampil */
+      const pa = html.indexOf("/* ===== Panel Guru ===== */"), pb = html.indexOf('window.addEventListener("beforeunload"', pa);
+      if(pa > 0 && pb > pa){ const pe = html.indexOf("\n", pb); html = html.slice(0, pa) + html.slice(pe + 1); }
+      html = html.replace('<button class="btn-g" id="hbtn">Panel Guru</button>', "");
+    }
     return html;
   };
-  const kirim = body => fetch(endpoint(), { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(body) }).then(r => r.json());
+  const kirim = body => fetch(endpoint(), { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(body) }).then(r => r.json()).then(j => {
+    if(j && j.ok === false && /aksi tidak dikenal/i.test(String(j.pesan || j.error || ""))){ j.lama = true; j.pesan = "Kode server di Google Apps Script masih versi lama, belum mengenal fitur E-Learning terbaru."; }
+    return j;
+  });
+  /* Kode server yang terpasang harus sama barunya dengan kode di aplikasi ini (CBT_GAS_CODE). */
+  const versiDibutuhkan = () => { const m = /versi:\s*(\d+)/.exec(CBT_GAS_CODE); return m ? +m[1] : 10; };
+  const cekServer = async () => {
+    const perlu = versiDibutuhkan();
+    try{
+      const j = await fetch(endpoint(), { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify({ action:"ping" }) }).then(r => r.json());
+      const v = Number(j && j.versi) || 0;
+      return { ok: !!(j && j.ok !== false) && v >= perlu, versi: v, perlu };
+    }catch(e){ return { ok:false, versi:0, perlu, galat:"Tidak dapat menjangkau server. Periksa koneksi internet dan alamat server di Ujian Online (CBT) → Pengaturan Server." }; }
+  };
+  const petunjukLama = cs => `<b>Kode server belum diperbarui</b> (terpasang ${cs.versi ? "versi " + cs.versi : "versi lama"}, aplikasi butuh versi ${cs.perlu}).<ol style="margin:6px 0 0 18px; padding:0; line-height:1.65;"><li>Klik <b>Salin Kode Server</b> di bawah.</li><li>Buka <b>script.google.com</b> → proyek server Anda → hapus semua kode lama → tempel kode baru → <b>Simpan</b>.</li><li><b>Deploy → Manage deployments → ✎ (edit) → Version: New version → Deploy</b>. URL tetap sama.</li><li>Kembali ke sini, lalu klik <b>Terbitkan Semua Link</b>.</li></ol>`;
   const aktifkan = () => endpoint() ? kirim({ action:"el_aktifkan", adm:tokenGuru() }).catch(()=>null) : Promise.resolve(null);
 
   const load = () => {
@@ -19172,6 +19197,8 @@ function renderELearning(root){
       </div>
       <div id="elpStatus" style="font-size:12.5px; padding:9px 12px; border-radius:10px; background:#f3faf6; border:1px solid #d6e8dc; color:#3f5f4f;">
         ${waktu ? "Halaman terakhir diterbitkan: <b>" + esc(waktu) + "</b>." : "Halaman siswa <b>belum diterbitkan</b>. Klik <b>Terbitkan Semua Link</b> di bawah."} Link ${c.elAktif === false ? "<b>nonaktif</b>" : "aktif"}.</div>
+      <div id="elpSrv" style="margin-top:8px; font-size:12.5px; line-height:1.5; padding:9px 12px; border-radius:10px; background:#f3f5f4; color:#5b6f64;">Memeriksa versi kode server…</div>
+      <div id="elpKode" style="display:none; margin-top:8px;"><button type="button" class="btn btn-gold btn-sm" id="elpSalinKode" style="width:auto;">⧉ Salin Kode Server</button></div>
       ${topics.length ? `<hr style="border:none; border-top:1px solid #e3ede7; margin:14px 0 10px;">
       <p style="font-size:12.5px; font-weight:700; margin:0 0 8px;">Link per topik (langsung masuk ke topik itu)</p>
       ${topics.map(rowTopik).join("")}` : ""}
@@ -19182,6 +19209,14 @@ function renderELearning(root){
         info("Menerbitkan… mohon tunggu.");
         (async () => {
           try{
+            const cs = await cekServer();
+            if(cs.galat) throw new Error(cs.galat);
+            if(!cs.ok){
+              const bx = document.getElementById("elpSrv"); if(bx){ bx.style.background = "#fdecef"; bx.style.color = "#a3213b"; bx.innerHTML = petunjukLama(cs); }
+              info("✗ Kode server belum diperbarui. Ikuti langkah pada kotak merah di atas, lalu klik Terbitkan Semua Link lagi.", true);
+              const kd = document.getElementById("elpKode"); if(kd) kd.style.display = "";
+              return;
+            }
             const a = await aktifkan();
             if(!a || a.ok === false) throw new Error((a && a.pesan) || "Server tidak membalas. Pastikan kode server terbaru sudah dipasang (Ujian Online → Pengaturan Server → Lihat Kode).");
             /* kirim konten buatan guru (bila belum ada di server) agar siswa memakai materi & soal terbaru */
@@ -19213,6 +19248,18 @@ function renderELearning(root){
     setTimeout(() => {
       const L = document.getElementById("elpLink"); if(!L) return;
       const salin = v => { try{ navigator.clipboard.writeText(v); toast("Link disalin", "ok"); }catch(e){ const tmp = document.createElement("textarea"); tmp.value = v; document.body.appendChild(tmp); tmp.select(); document.execCommand("copy"); tmp.remove(); toast("Link disalin", "ok"); } };
+      const salinKode = () => {
+        const cadangan = () => { const tmp = document.createElement("textarea"); tmp.value = CBT_GAS_CODE; document.body.appendChild(tmp); tmp.select(); document.execCommand("copy"); tmp.remove(); toast("Kode server disalin. Tempel di Apps Script.", "ok"); };
+        try{ if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(CBT_GAS_CODE).then(() => toast("Kode server disalin. Tempel di Apps Script.", "ok"), cadangan); else cadangan(); }catch(e){ cadangan(); }
+      };
+      const sk = document.getElementById("elpSalinKode"); if(sk) sk.onclick = salinKode;
+      (async () => {
+        const cs = await cekServer(), box = document.getElementById("elpSrv"), kd = document.getElementById("elpKode");
+        if(!box) return;
+        if(cs.galat){ box.style.background = "#fff0cc"; box.style.color = "#8a5a00"; box.textContent = cs.galat; }
+        else if(cs.ok){ box.style.background = "#e4f6ee"; box.style.color = "#14663f"; box.textContent = "✓ Server siap (kode versi " + cs.versi + ")."; }
+        else { box.style.background = "#fdecef"; box.style.color = "#a3213b"; box.innerHTML = petunjukLama(cs); if(kd) kd.style.display = ""; }
+      })();
       document.getElementById("elpCopy").onclick = () => salin(L.value);
       document.getElementById("elpOpen").onclick = () => window.open(L.value, "_blank");
       document.getElementById("elpToggle").onclick = async function(){
