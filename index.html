@@ -2738,7 +2738,9 @@ table.mt th{background:#eef5f0;color:#4b5f54;font-size:12.5px}
 <div><h1>E-Learning</h1><small>Pendidikan Pancasila • Kelas XI Fase F</small><small class="g">Guru: __EL_GURU__</small></div>
 <div class="sp"></div><button class="btn-g" id="hbtn">Panel Guru</button></header>
 <main id="app"><p id="boot" style="max-width:520px;margin:60px auto;text-align:center;color:#5b6f64;font-family:sans-serif">Memuat E-Learning…</p></main><div class="toast" id="toast"></div><div id="printdoc"></div>
-@@LT@@script>setTimeout(function(){ if(!window.__elOk){ var a = document.getElementById("app"); if(a) a.innerHTML = '<div style="max-width:560px;margin:40px auto;padding:20px;background:#fff;border:1px solid #f0d28a;border-radius:14px;font-family:sans-serif;line-height:1.55"><b>Halaman belum termuat dengan sempurna.</b><br>Muat ulang halaman ini. Bila tetap seperti ini, hubungi gurumu: link mungkin belum diterbitkan utuh.</div>'; } }, 9000);@@LT@@/script>
+@@LT@@script>(function(){ var errs = []; window.addEventListener("error", function(e){ errs.push((e.message || "galat") + " (baris " + (e.lineno || "?") + ")"); }); window.addEventListener("unhandledrejection", function(e){ errs.push("promise: " + ((e.reason && e.reason.message) || e.reason)); });
+setTimeout(function(){ if(window.__elOk) return; var a = document.getElementById("app"); if(!a) return; var box = document.createElement("div"); box.style.cssText = "max-width:560px;margin:40px auto;padding:20px;background:#fff;border:1px solid #f0d28a;border-radius:14px;font-family:sans-serif;line-height:1.55";
+ box.innerHTML = "<b>Halaman belum termuat dengan sempurna.</b><br>Muat ulang halaman ini. Bila tetap seperti ini, hubungi gurumu."; var d = document.createElement("div"); d.style.cssText = "margin-top:10px;font-size:12px;color:#7a6a3a;word-break:break-word"; d.textContent = "Rincian teknis: " + (errs.length ? errs.slice(0, 3).join(" | ") : "tidak ada galat tercatat (skrip mungkin terpotong)"); box.appendChild(d); a.innerHTML = ""; a.appendChild(box); }, 9000); })();@@LT@@/script>
 @@LT@@script>
 const STUDENTS = __EL_STUDENTS__;
 const LOGO = "__EL_LOGO__"; 
@@ -14071,7 +14073,7 @@ function doPost(e){
     const ss = SpreadsheetApp.getActiveSpreadsheet();
 
     if(data.action === "ping"){
-      return respond({ ok:true, pesan:"Server CBT aktif", versi:11, v:4 });
+      return respond({ ok:true, pesan:"Server CBT aktif", versi:12, v:4 });
     }
 
     if(data.action === "status"){
@@ -14385,6 +14387,15 @@ function doPost(e){
         });
       }
       return respond({ ok:true, items:out });
+    }
+
+    /* "pemuat" kecil di link siswa mengambil halaman aplikasi E-Learning lewat sini (hanya halaman berawalan el) */
+    if(data.action === "el_ambil"){
+      const idA = String(data.testId || "");
+      if(!/^el[A-Za-z0-9_]*$/.test(idA)) return elGalat("ID halaman tidak valid");
+      const hA = bacaHalamanLangsung(idA);
+      if(!hA) return elGalat("Halaman belum diterbitkan oleh guru");
+      return respond({ ok:true, html:hA });
     }
 
     /* halaman E-Learning untuk siswa dipublikasikan ke server (link: URL-Web-App?t=el) */
@@ -19141,6 +19152,20 @@ function renderELearning(root){
     }
     return html;
   };
+  /* Link siswa = halaman KECIL (pemuat) yang mengambil aplikasi lengkap dari server lalu menjalankannya di bingkai terisolasi.
+     Cara ini tidak bergantung pada ukuran halaman yang disajikan Google Apps Script. */
+  const buildLoader = (topik) => {
+    const cfg = { ep: endpoint().replace(/"/g, ""), app: "el__app", topik: topik || "" };
+    return `<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>E-Learning</title>
+<style>html,body{margin:0;height:100%;background:#eef4f0;font-family:sans-serif}#ld{max-width:520px;margin:70px auto;text-align:center;color:#5b6f64;padding:0 16px;line-height:1.6}#fr{border:0;width:100%;height:100%;display:none;position:fixed;left:0;top:0}</style></head>
+<body><div id="ld">Memuat E-Learning…</div><iframe id="fr" allow="fullscreen; autoplay; encrypted-media; picture-in-picture; clipboard-write" allowfullscreen></iframe>
+<script>(function(){var C=${aman(cfg)};var ld=document.getElementById("ld");
+function gagal(m){ld.innerHTML="<b>Gagal memuat E-Learning.</b><br>"+m+"<br><br><button onclick='location.reload()' style='padding:10px 20px;border-radius:10px;border:0;background:#1f7a4d;color:#fff;font-size:15px'>Muat ulang</button>";}
+fetch(C.ep,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"el_ambil",testId:C.app})})
+.then(function(r){return r.json();})
+.then(function(j){if(!j||!j.ok||!j.html)throw new Error((j&&j.pesan)||"Halaman kosong");var f=document.getElementById("fr");f.srcdoc=j.html.split("__EL_TOPIC__").join(C.topik);f.style.display="block";ld.style.display="none";})
+.catch(function(e){gagal(String((e&&e.message)||e));});})();<\/script></body></html>`;
+  };
   const kirim = body => fetch(endpoint(), { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(body) }).then(r => r.json()).then(j => {
     if(j && j.ok === false && /aksi tidak dikenal/i.test(String(j.pesan || j.error || ""))){ j.lama = true; j.pesan = "Kode server di Google Apps Script masih versi lama, belum mengenal fitur E-Learning terbaru."; }
     return j;
@@ -19229,13 +19254,16 @@ function renderELearning(root){
               }
             }catch(e){}
             await cbtSinkronSiswa(true, true);
-            const r = await kirim({ action:"el_halaman", testId:"el", adm:tokenGuru(), html:buildHtml("siswa"), aktif:cfgNow().elAktif !== false });
+            /* 1) aplikasi lengkap (satu salinan untuk semua link)  2) pemuat kecil per link */
+            const rApp = await kirim({ action:"el_halaman", testId:"el__app", adm:tokenGuru(), html:buildHtml("siswa", "__EL_TOPIC__"), aktif:true });
+            if(!rApp || rApp.ok === false) throw new Error((rApp && rApp.pesan) || "Gagal menyimpan aplikasi E-Learning ke server");
+            const r = await kirim({ action:"el_halaman", testId:"el", adm:tokenGuru(), html:buildLoader(""), aktif:cfgNow().elAktif !== false });
             if(!r || r.ok === false) throw new Error((r && r.pesan) || "Gagal menerbitkan halaman gabungan");
             const topicsNow = currentTopics();
             const cfgT = cfgNow(); cfgT.elTopikAktif = cfgT.elTopikAktif || {};
             for(const t of topicsNow){
               const aktifT = cfgT.elTopikAktif[t.id] !== false;
-              const rt = await kirim({ action:"el_halaman", testId:"el_" + t.id, adm:tokenGuru(), html:buildHtml("siswa", t.id), aktif:aktifT });
+              const rt = await kirim({ action:"el_halaman", testId:"el_" + t.id, adm:tokenGuru(), html:buildLoader(t.id), aktif:aktifT });
               if(!rt || rt.ok === false) throw new Error((rt && rt.pesan) || ("Gagal menerbitkan link topik: " + t.judul));
             }
             const cc = cfgNow(); cc.elTerbit = new Date().toISOString(); DB.set(DB.keys.ujianConfig, cc);
