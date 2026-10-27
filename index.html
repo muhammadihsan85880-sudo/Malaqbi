@@ -5331,9 +5331,12 @@ function renderSet() {
     @@LT@@p class="sub">${Store.cloud() ? "Mode @@LT@@b>server@@LT@@/b>: data siswa & konten tersimpan di Google Sheet Anda dan sinkron di semua perangkat." : "Mode @@LT@@b>lokal@@LT@@/b>: data hanya tersimpan di browser perangkat ini. Agar siswa di perangkat lain terbaca di panel guru, isi URL Web App Google Apps Script di bawah (lihat file Code.gs)."}@@LT@@/p>
     ${BACKEND_URL ? `@@LT@@p class="hint">URL sudah tertanam di berkas situs (berakhiran …${esc(BACKEND_URL.slice(-12))}). Isian di bawah hanya dipakai bila URL tertanam kosong.@@LT@@/p>` : ""}@@LT@@label class="f">URL Web App Google Apps Script@@LT@@/label>@@LT@@input class="inp" id="bu" value="${esc(LS.get("backend") || "")}" placeholder="https://script.google.com/macros/s/…/exec">
     @@LT@@div class="row" style="margin-top:12px">@@LT@@button class="btn sm" id="bs">Simpan@@LT@@/button>@@LT@@button class="btn out sm" id="bt">Uji koneksi@@LT@@/button>@@LT@@button class="btn out sm" id="bpush">⬆ Kirim konten ke server@@LT@@/button>@@LT@@/div>@@LT@@/div>
-    @@LT@@div class="card">@@LT@@h2>Penilaian AI (Google Gemini)@@LT@@/h2>@@LT@@p class="sub">Soal essay, apersepsi, dan refleksi dinilai otomatis begitu siswa mengirim jawaban. Kunci API disimpan aman di server Apps Script (tidak pernah ikut ke halaman siswa). Nilai apersepsi/refleksi tetap bisa Anda koreksi manual di tab Nilai.@@LT@@/p>
-    @@LT@@p class="hint" id="aiSt">Memeriksa…@@LT@@/p>@@LT@@p class="hint">Setelah menempel Code.gs versi 15, jalankan fungsi @@LT@@b>otorisasiAI@@LT@@/b> sekali di editor Apps Script lalu terapkan @@LT@@b>Versi baru@@LT@@/b>. Klik @@LT@@b>Tes penilaian@@LT@@/b> untuk memastikan.@@LT@@/p>
-    @@LT@@label class="f" for="aiKey">Kunci API Gemini@@LT@@/label>@@LT@@input class="inp" id="aiKey" type="password" autocomplete="off" placeholder="Tempel kunci dari aistudio.google.com/apikey">
+    @@LT@@div class="card">@@LT@@h2>Penilaian AI@@LT@@/h2>@@LT@@p class="sub">Soal essay, apersepsi, dan refleksi dinilai otomatis begitu siswa mengirim jawaban. Kunci API disimpan aman di server Apps Script (tidak pernah ikut ke halaman siswa). Nilai apersepsi/refleksi tetap bisa Anda koreksi manual di tab Nilai.@@LT@@/p>
+    @@LT@@p class="hint" id="aiSt">Memeriksa…@@LT@@/p>@@LT@@p class="hint">Setelah menempel Code.gs versi 16, jalankan fungsi @@LT@@b>otorisasiAI@@LT@@/b> sekali di editor Apps Script lalu terapkan @@LT@@b>Versi baru@@LT@@/b>. Klik @@LT@@b>Tes penilaian@@LT@@/b> untuk memastikan.@@LT@@/p>
+    @@LT@@label class="f" for="aiProv">Penyedia AI@@LT@@/label>@@LT@@select class="inp" id="aiProv">@@LT@@option value="groq">Groq (gratis, cepat — disarankan)@@LT@@/option>@@LT@@option value="openrouter">OpenRouter (ada model gratis)@@LT@@/option>@@LT@@option value="gemini">Google Gemini@@LT@@/option>@@LT@@/select>
+    @@LT@@label class="f" for="aiKey" id="aiKeyL">Kunci API@@LT@@/label>@@LT@@input class="inp" id="aiKey" type="password" autocomplete="off" placeholder="Tempel kunci API">
+    @@LT@@label class="f" for="aiMod">Model (opsional)@@LT@@/label>@@LT@@input class="inp" id="aiMod" placeholder="Kosongkan untuk model bawaan">
+    @@LT@@p class="hint" id="aiHelp">@@LT@@/p>
     @@LT@@div class="row" style="margin-top:12px">@@LT@@button class="btn sm" id="aiSave">Simpan kunci@@LT@@/button>@@LT@@button class="btn out sm" id="aiTest">Tes penilaian@@LT@@/button>@@LT@@button class="btn out sm" id="aiDel">Hapus kunci@@LT@@/button>@@LT@@/div>@@LT@@/div>
     @@LT@@div class="card">@@LT@@h2>Cadangan data@@LT@@/h2>@@LT@@p class="sub">Unduh cadangan berisi seluruh konten (topik, materi, soal, video), data siswa, dan nilai guru. Simpan sebelum memindahkan situs ke hosting baru; impor untuk memulihkan.@@LT@@/p>
     @@LT@@div class="row">@@LT@@button class="btn sm" id="bk">⬇ Unduh cadangan (.json)@@LT@@/button>@@LT@@label class="btn out sm" style="cursor:pointer">⬆ Impor cadangan@@LT@@input type="file" id="bi" accept=".json,application/json" style="display:none">@@LT@@/label>@@LT@@/div>@@LT@@/div>
@@ -5370,9 +5373,12 @@ function renderSet() {
     updSrv();
   };
   const aiSt = $("#aiSt");
-  const aiStatus = async () => { if (!Store.cloud()) { aiSt.textContent = "Hubungkan server (URL Web App) terlebih dahulu agar penilaian AI dapat dipakai."; return; } try { const j = await api({ action: "el_ai_status" }); aiSt.textContent = j.ada ? "✓ Kunci Gemini terpasang di server. Penilaian AI aktif." : "Belum ada kunci. Soal essay masih dinilai manual oleh guru."; } catch (e) { aiSt.textContent = "Status tidak terbaca: " + e.message + " (pastikan Code.gs terbaru sudah dipasang)"; } };
+  const aiStatus = async () => { if (!Store.cloud()) { aiSt.textContent = "Hubungkan server (URL Web App) terlebih dahulu agar penilaian AI dapat dipakai."; return; } try { const j = await api({ action: "el_ai_status" }); aiSt.textContent = j.ada ? "✓ Kunci " + ({ groq: "Groq", openrouter: "OpenRouter", gemini: "Gemini" }[j.provider] || "AI") + " terpasang di server. Penilaian AI aktif." : "Belum ada kunci. Soal essay masih dinilai manual oleh guru."; } catch (e) { aiSt.textContent = "Status tidak terbaca: " + e.message + " (pastikan Code.gs terbaru sudah dipasang)"; } };
   aiStatus();
-  $("#aiSave").onclick = async () => { const k = $("#aiKey").value.trim(); if (!k) { toast("Tempel kunci API Gemini terlebih dahulu"); return; } try { await api({ action: "el_ai_simpan", kunci: k }); $("#aiKey").value = ""; AI_ST.off = false; toast("✓ Kunci tersimpan di server"); } catch (e) { toast("⚠ " + e.message); } aiStatus(); };
+  const AI_H = { groq: "Buat kunci gratis di console.groq.com/keys (daftar dengan akun Google, lalu Create API Key).", openrouter: "Buat kunci di openrouter.ai/keys. Model berakhiran :free tidak berbayar.", gemini: "Kunci dari aistudio.google.com/apikey (model bisa sering sibuk)." };
+  const aiProv = $("#aiProv"), aiHelp = () => { $("#aiHelp").textContent = AI_H[aiProv.value]; };
+  aiProv.onchange = aiHelp; aiHelp();
+  $("#aiSave").onclick = async () => { const k = $("#aiKey").value.trim(); if (!k) { toast("Tempel kunci API terlebih dahulu"); return; } try { await api({ action: "el_ai_simpan", kunci: k, provider: aiProv.value, model: $("#aiMod").value.trim() }); $("#aiKey").value = ""; AI_ST.off = false; toast("✓ Kunci tersimpan di server"); } catch (e) { toast("⚠ " + e.message); } aiStatus(); };
   $("#aiDel").onclick = async () => { if (!(await ask("Hapus kunci AI?", "Penilaian essay kembali manual oleh guru.", "Hapus", "Batal"))) return; try { await api({ action: "el_ai_simpan", hapus: true }); toast("Kunci dihapus"); } catch (e) { toast("⚠ " + e.message); } aiStatus(); };
   $("#aiTest").onclick = async () => {
     toast("Menguji penilaian AI…");
@@ -15358,7 +15364,7 @@ function doPost(e){
     const ss = SpreadsheetApp.getActiveSpreadsheet();
 
     if(data.action === "ping"){
-      return respond({ ok:true, pesan:"Server CBT aktif", versi:15, v:6 });
+      return respond({ ok:true, pesan:"Server CBT aktif", versi:16, v:6 });
     }
 
     if(data.action === "status"){
@@ -15711,17 +15717,21 @@ function doPost(e){
     if(data.action === "el_ai_status"){
       if(!elAdmin(data)) return elGalat("Akses ditolak: kode guru tidak valid");
       const spS = PropertiesService.getScriptProperties();
-      return respond({ ok:true, ada: !!spS.getProperty("gemini_key"), model: spS.getProperty("gemini_model") || "otomatis" });
+      const pv = aiPenyedia();
+      return respond({ ok:true, ada: !!pv && !!(pv === "gemini" ? spS.getProperty("gemini_key") : spS.getProperty("ai_key")), provider: pv || "", model: spS.getProperty("ai_model") || spS.getProperty("gemini_model") || "otomatis" });
     }
 
     if(data.action === "el_ai_simpan"){
       if(!elAdmin(data)) return elGalat("Akses ditolak: kode guru tidak valid");
       const spK = PropertiesService.getScriptProperties();
-      if(data.hapus){ spK.deleteProperty("gemini_key"); return respond({ ok:true, ada:false }); }
+      if(data.hapus){ spK.deleteProperty("gemini_key"); spK.deleteProperty("ai_key"); spK.deleteProperty("ai_provider"); spK.deleteProperty("ai_model"); return respond({ ok:true, ada:false }); }
       const kn = String(data.kunci || "").replace(/ /g, "");
       if(kn.length < 20 || kn.length > 200) return elGalat("Kunci API tidak tampak benar");
-      spK.setProperty("gemini_key", kn);
-      if(data.model) spK.setProperty("gemini_model", String(data.model).substring(0, 60)); 
+      const pvn = data.provider === "groq" || data.provider === "openrouter" ? data.provider : "gemini";
+      if(pvn === "gemini") spK.setProperty("gemini_key", kn); else spK.setProperty("ai_key", kn);
+      spK.setProperty("ai_provider", pvn);
+      if(data.model) spK.setProperty("ai_model", String(data.model).substring(0, 80)); else spK.deleteProperty("ai_model");
+      CacheService.getScriptCache().remove("ai_models3");
       return respond({ ok:true, ada:true });
     }
 
@@ -15867,29 +15877,27 @@ function aiPetunjuk(){
 /* Cari model Gemini yang benar-benar tersedia untuk kunci ini (nama model berganti seiring waktu). Hasil disimpan 6 jam. */
 function aiDaftarModel(kunci){
   const cache = CacheService.getScriptCache();
-  const ada = cache.get("ai_models2");
+  const ada = cache.get("ai_models3");
   if(ada){ try{ const a = JSON.parse(ada); if(a.length) return a; }catch(x){} }
-  const baku = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash"];
+  Logger.log("AI: mencari daftar model");
+  const baku = ["gemini-flash-latest", "gemini-flash-lite-latest", "gemini-3-flash-preview"];
   try{
     const r = UrlFetchApp.fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers:{ "x-goog-api-key": kunci }, muteHttpExceptions:true });
     if(r.getResponseCode() !== 200) return baku;
     const ms = (JSON.parse(r.getContentText()).models || []).filter(function(m){
-      return /flash/i.test(m.name) && !/(lite|image|tts|live|audio|embed|thinking|exp|preview|vision|8b)/i.test(m.name) && (m.supportedGenerationMethods || []).indexOf("generateContent") >= 0;
+      return /flash/i.test(m.name) && !/(image|tts|live|audio|embed|exp|vision|8b|robotics|computer|native)/i.test(m.name) && (m.supportedGenerationMethods || []).indexOf("generateContent") >= 0;
     }).map(function(m){ return String(m.name).replace(/^models[/]/, ""); });
-    ms.sort(function(a, b){
-      const va = parseFloat((a.match(/([0-9]+[.]?[0-9]*)/) || [0, 0])[1]), vb = parseFloat((b.match(/([0-9]+[.]?[0-9]*)/) || [0, 0])[1]);
-      const la = /latest/.test(a) ? 1 : 0, lb = /latest/.test(b) ? 1 : 0;
-      const p = function(n){ return /2[.]5-flash$/.test(n) ? 1 : 0; };
-      if(p(a) !== p(b)) return p(b) - p(a);
-      return la !== lb ? la - lb : vb - va;
-    });
-    const hasil = ms.slice(0, 4);
+    function ver(n){ const x = n.match(/([0-9]+[.]?[0-9]*)/); return x ? parseFloat(x[1]) : 0; }
+    function grup(n){ return /lite/.test(n) ? 2 : (/latest/.test(n) ? 0 : 1); }
+    ms.sort(function(a, b){ return grup(a) !== grup(b) ? grup(a) - grup(b) : ver(b) - ver(a); });
+    const hasil = ms.slice(0, 6);
     if(!hasil.length) return baku;
-    cache.put("ai_models2", JSON.stringify(hasil), 21600);
+    Logger.log("AI: model tersedia " + hasil.join(", "));
+    cache.put("ai_models3", JSON.stringify(hasil), 1800);
     return hasil;
   }catch(x){ return baku; }
 }
-function aiNilaiGemini(items){
+function aiNilaiGeminiAsli(items){
   const sp = PropertiesService.getScriptProperties();
   const kunci = sp.getProperty("gemini_key");
   if(!kunci) throw new Error("Kunci Gemini belum dipasang oleh guru");
@@ -15914,7 +15922,8 @@ function aiNilaiGemini(items){
         method:"post", contentType:"application/json", headers:{ "x-goog-api-key": kunci }, payload: JSON.stringify(b2), muteHttpExceptions:true
       });
       const kode = r.getResponseCode();
-      if(kode === 404){ galat = "Model Gemini tidak tersedia untuk kunci ini (" + daftar.join(", ") + ")"; break; }
+      Logger.log("AI model=" + daftar[m] + " kode=" + kode + " dtk=" + Math.round((Date.now() - mulai) / 1000) + " " + (kode === 200 ? "" : detail(r)));
+      if(kode === 404){ galat = "Model Gemini tidak tersedia untuk kunci ini (" + daftar.join(", ") + ")"; CacheService.getScriptCache().remove("ai_models3"); break; }
       if(kode === 400 && b2.generationConfig.thinkingConfig && /thinking/i.test(detail(r))){ delete b2.generationConfig.thinkingConfig; continue; }
       if(kode === 400 || kode === 403){ throw new Error("Kunci Gemini tidak valid atau tidak diizinkan (kode " + kode + "): " + detail(r) + " Periksa kunci API di Pengaturan."); }
       if(kode === 429 || kode >= 500){ galat = (kode === 429 ? "Kuota AI sedang penuh, coba lagi sebentar" : "Layanan AI sedang sibuk (kode " + kode + ")") + " " + detail(r); if(kode === 429) break; Utilities.sleep(1000); continue; }
@@ -15938,10 +15947,88 @@ function aiNilaiGemini(items){
   }
   throw new Error(galat + " [" + Math.round((Date.now() - mulai) / 1000) + " dtk, model: " + daftar.join(", ") + "]");
 }
+/* Diagnosa: pilih fungsi ini di editor lalu Jalankan; hasil tiap langkah tampil di "Log eksekusi". */
+function ujiGemini(){
+  const kunci = PropertiesService.getScriptProperties().getProperty("gemini_key");
+  if(!kunci){ Logger.log("Kunci Gemini belum tersimpan (simpan dari Pengaturan Panel Guru)"); return; }
+  let t = Date.now();
+  function lap(x){ Logger.log(Math.round((Date.now() - t) / 100) / 10 + " dtk | " + x); t = Date.now(); }
+  const r = UrlFetchApp.fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers:{ "x-goog-api-key": kunci }, muteHttpExceptions:true });
+  lap("daftar model: kode " + r.getResponseCode());
+  CacheService.getScriptCache().remove("ai_models3");
+  const nama = aiDaftarModel(kunci);
+  lap("model yang akan dicoba: " + nama.join(", "));
+  nama.forEach(function(m){
+    try{
+      const g = UrlFetchApp.fetch("https://generativelanguage.googleapis.com/v1beta/models/" + m + ":generateContent", { method:"post", contentType:"application/json", headers:{ "x-goog-api-key": kunci }, payload: JSON.stringify({ contents:[{ parts:[{ text:"Balas satu kata: siap" }] }], generationConfig:{ maxOutputTokens:20 } }), muteHttpExceptions:true });
+      lap(m + ": kode " + g.getResponseCode() + " " + g.getContentText().substring(0, 150).replace(/\s+/g, " "));
+    }catch(e){ lap(m + ": GALAT " + e.message); }
+  });
+}
 /* Jalankan SEKALI dari editor Apps Script (pilih fungsi ini lalu klik Jalankan) untuk memberi izin akses internet ke Gemini. */
 function otorisasiAI(){
   const r = UrlFetchApp.fetch("https://generativelanguage.googleapis.com/", { muteHttpExceptions:true });
   Logger.log("Izin akses internet OK (kode " + r.getResponseCode() + "). Sekarang: Terapkan > Kelola deployment > Edit > Versi baru > Terapkan.");
+}
+/* Penyedia AI yang dipakai: groq (disarankan, gratis), openrouter, atau gemini. Diatur dari Pengaturan Panel Guru. */
+function aiPenyedia(){
+  const sp = PropertiesService.getScriptProperties();
+  const p = sp.getProperty("ai_provider");
+  if(p === "groq" || p === "openrouter" || p === "gemini") return p;
+  return sp.getProperty("gemini_key") ? "gemini" : "";
+}
+function aiNilaiGemini(items){
+  const p = aiPenyedia();
+  if(p === "groq" || p === "openrouter") return aiNilaiOpenAI(items, p);
+  return aiNilaiGeminiAsli(items);
+}
+function aiNilaiOpenAI(items, p){
+  const sp = PropertiesService.getScriptProperties();
+  const kunci = sp.getProperty("ai_key");
+  if(!kunci) throw new Error("Kunci AI belum dipasang oleh guru");
+  const NL = String.fromCharCode(10);
+  let teks = aiPetunjuk() + NL + 'Bentuk balasan: objek JSON {"hasil":[{"id":"...","skor":85,"umpan":"..."}]}' + NL + NL;
+  items.forEach(function(it, i){
+    teks += "### BUTIR " + (i + 1) + NL + "id: " + it.id + NL + "Jenis: " + it.jenis + NL + "Pertanyaan: " + it.soal + NL
+      + "Pedoman penilaian: " + (it.pedoman || "(tidak ada)") + NL + "Jawaban siswa: <<<" + it.jawaban + ">>>" + NL + NL;
+  });
+  const url = p === "groq" ? "https://api.groq.com/openai/v1/chat/completions" : "https://openrouter.ai/api/v1/chat/completions";
+  const pilihan = sp.getProperty("ai_model");
+  const daftar = pilihan ? [pilihan] : (p === "groq" ? ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"] : ["meta-llama/llama-3.3-70b-instruct:free", "google/gemma-3-27b-it:free", "openrouter/auto"]);
+  let galat = "AI tidak dapat dihubungi";
+  const mulai = Date.now();
+  for(let m = 0; m < daftar.length; m++){
+    for(let coba = 0; coba < 2; coba++){
+      if(Date.now() - mulai > 30000) throw new Error(galat + " (waktu habis di server)");
+      const isi = { model: daftar[m], temperature: 0.2, max_tokens: 1500, messages: [{ role:"system", content:"Kamu penilai jawaban siswa. Balas hanya dengan JSON." }, { role:"user", content: teks }] };
+      if(p === "groq") isi.response_format = { type:"json_object" };
+      const r = UrlFetchApp.fetch(url, { method:"post", contentType:"application/json", headers:{ Authorization:"Bearer " + kunci }, payload: JSON.stringify(isi), muteHttpExceptions:true });
+      const kode = r.getResponseCode();
+      let det = ""; try{ const e = JSON.parse(r.getContentText()).error; det = e && e.message ? String(e.message).substring(0, 160) : ""; }catch(x){}
+      Logger.log("AI " + p + " model=" + daftar[m] + " kode=" + kode + " dtk=" + Math.round((Date.now() - mulai) / 1000) + " " + (kode === 200 ? "" : det));
+      if(kode === 401 || kode === 403){ throw new Error("Kunci AI tidak valid atau tidak diizinkan (kode " + kode + "): " + det); }
+      if(kode === 404 || kode === 400){ galat = "Model " + daftar[m] + " ditolak (kode " + kode + ") " + det; break; }
+      if(kode === 429 || kode >= 500){ galat = (kode === 429 ? "Kuota AI sedang penuh, coba lagi sebentar" : "Layanan AI sibuk (kode " + kode + ")") + " " + det; if(kode === 429) break; Utilities.sleep(1000); continue; }
+      if(kode !== 200){ galat = "AI menolak permintaan (kode " + kode + ") " + det; break; }
+      try{
+        const j = JSON.parse(r.getContentText());
+        const t = String(j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content || "");
+        let arr = null;
+        const o1 = t.indexOf("{"), o2 = t.lastIndexOf("}"), a1 = t.indexOf("["), a2 = t.lastIndexOf("]");
+        if(o1 >= 0 && o2 > o1){ try{ const ob = JSON.parse(t.substring(o1, o2 + 1)); arr = ob.hasil || ob.results || ob.penilaian || null; }catch(x1){} }
+        if(!arr && a1 >= 0 && a2 > a1){ arr = JSON.parse(t.substring(a1, a2 + 1)); }
+        if(!arr) throw new Error("format");
+        const hasil = [];
+        arr.forEach(function(x){
+          const sk = Math.round(Number(x && x.skor));
+          if(x && x.id != null && !isNaN(sk)) hasil.push({ id:String(x.id), skor:Math.max(0, Math.min(100, sk)), umpan:String(x.umpan || "").substring(0, 400) });
+        });
+        if(hasil.length) return hasil;
+        galat = "AI tidak memberi nilai";
+      }catch(errP){ galat = "Jawaban AI tidak terbaca, coba lagi"; }
+    }
+  }
+  throw new Error(galat + " [" + Math.round((Date.now() - mulai) / 1000) + " dtk]");
 }
 function aiBatas(nama){
   const c = CacheService.getScriptCache(), k = "ai_" + String(nama || "x").substring(0, 40);
