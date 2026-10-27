@@ -2415,6 +2415,69 @@
   .lms-stat-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
+/* ===== Pustaka grafik MALAQBI (SVG murni, offline) ===== */
+.mc-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin:14px 0}
+.mc-grid.w2{grid-template-columns:repeat(auto-fit,minmax(380px,1fr))}
+.mc-card{background:#fff;border:1px solid #e1e8e3;border-radius:16px;padding:16px 18px 18px;box-shadow:0 1px 2px rgba(11,30,20,.05),0 6px 18px -12px rgba(11,30,20,.18);min-width:0;position:relative}
+.mc-card::before{content:"";position:absolute;left:18px;top:0;width:34px;height:3px;border-radius:0 0 4px 4px;background:var(--mc-acc,#c9a227)}
+.mc-head{margin-bottom:10px}
+.mc-head h4{margin:0;font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-size:16px;color:#123d2a;letter-spacing:-.005em}
+.mc-head p{margin:2px 0 0;font-size:12px;color:#5f7268;line-height:1.45}
+.mc-scroll{max-height:310px;overflow:auto;padding-right:6px}
+.mc-empty{text-align:center;color:#8a9a91;font-size:12.5px;padding:34px 10px}
+.mc-kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin:0 0 14px}
+.mc-kpi{position:relative;overflow:hidden;border-radius:16px;padding:14px 16px 12px;color:#fff;background:linear-gradient(135deg,var(--k1,#123d2a),var(--k2,#1f7a4d));box-shadow:0 14px 28px -16px var(--k1,#123d2a)}
+.mc-kpi::after{content:"";position:absolute;right:-28px;top:-34px;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.1)}
+.mc-kpi>*{position:relative;z-index:1}
+.mc-kpi .k-l{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;opacity:.88}
+.mc-kpi .k-v{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-size:32px;font-weight:700;line-height:1.15;margin:3px 0 1px}
+.mc-kpi .k-s{font-size:11.5px;opacity:.85}
+.mc-kpi svg.mc-spark{position:absolute;right:12px;top:12px;width:84px;height:30px;opacity:.9;z-index:1}
+.mc-donut{display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:center}
+.mc-donut svg{flex:none;max-width:100%;height:auto}
+.mc-donut .mc-big{font-family:"Iowan Old Style",Georgia,serif;font-size:26px;font-weight:700;fill:#123d2a}
+.mc-donut .mc-sm{font-size:11px;fill:#5f7268;font-weight:600}
+.mc-leg{list-style:none;margin:0;padding:0;display:grid;gap:7px;flex:1 1 130px;min-width:130px}
+.mc-leg li{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#26352d}
+.mc-leg i{width:11px;height:11px;border-radius:4px;flex:none}
+.mc-leg b{margin-left:auto;font-variant-numeric:tabular-nums}
+.mc-leg small{color:#7a8c82;font-size:11px;min-width:34px;text-align:right}
+.mc-svg{width:100%;height:auto;display:block;overflow:visible}
+.mc-svg text{font-family:"Google Sans","Segoe UI",Roboto,system-ui,sans-serif}
+.mc-grid-l{stroke:#e6ece8;stroke-width:1}
+.mc-ax{font-size:10.5px;fill:#74867b}
+.mc-val{font-size:11.5px;font-weight:700;fill:#26352d}
+.mc-bar{transform-box:fill-box;transform-origin:50% 100%;animation:mc-grow .7s cubic-bezier(.2,.8,.2,1) both;animation-delay:var(--mc-d,0ms);transition:filter .15s}
+.mc-bar:hover,.mc-arc:hover{filter:brightness(1.12) saturate(1.1)}
+.mc-arc{animation:mc-fade .8s both;animation-delay:var(--mc-d,0ms);transition:filter .15s}
+.mc-line{stroke-dasharray:var(--mc-len,2000);stroke-dashoffset:var(--mc-len,2000);animation:mc-dash 1.2s ease forwards}
+.mc-area{animation:mc-fade 1.2s both}
+.mc-dot{transition:r .15s}
+.mc-dot:hover{r:6}
+.mc-ref{stroke:#c0455f;stroke-width:1.4;stroke-dasharray:5 4}
+.mc-ref-t{font-size:10px;fill:#c0455f;font-weight:700}
+@keyframes mc-grow{from{transform:scaleY(0);opacity:.4}to{transform:scaleY(1);opacity:1}}
+@keyframes mc-fade{from{opacity:0}to{opacity:1}}
+@keyframes mc-dash{to{stroke-dashoffset:0}}
+.mc-h{display:grid;gap:9px}
+.mc-hr{display:grid;grid-template-columns:minmax(70px,34%) 1fr auto;gap:10px;align-items:center;font-size:12.5px}
+.mc-hr .l{color:#26352d;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mc-hr .l small{display:block;font-weight:500;color:#7a8c82;font-size:10.5px}
+.mc-hr .t{height:12px;border-radius:99px;background:#eef3f0;overflow:hidden}
+.mc-hr .f{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--c1,#1f7a4d),var(--c2,#4fbf86));transform-origin:left;animation:mc-gx .8s cubic-bezier(.2,.8,.2,1) both;animation-delay:var(--mc-d,0ms)}
+.mc-hr .v{font-weight:800;color:#123d2a;font-variant-numeric:tabular-nums;min-width:38px;text-align:right}
+@keyframes mc-gx{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.mc-rank{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#eaf6ef;color:#123d2a;font-size:11px;font-weight:800;margin-right:6px;flex:none}
+.mc-gauge{display:grid;justify-items:center}
+.mc-gauge .mc-big{font-family:"Iowan Old Style",Georgia,serif;font-size:30px;font-weight:700;fill:#123d2a}
+.mc-gauge .mc-sm{font-size:11px;fill:#5f7268;font-weight:600}
+.mc-stack{display:flex;height:26px;border-radius:99px;overflow:hidden;background:#eef3f0}
+.mc-stack span{display:block;height:100%;transform-origin:left;animation:mc-gx .8s both}
+.mc-stack-leg{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:12px;color:#26352d}
+.mc-stack-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+@media (max-width:560px){.mc-grid,.mc-grid.w2{grid-template-columns:1fr}.mc-hr{grid-template-columns:minmax(60px,38%) 1fr auto}.mc-kpi .k-v{font-size:28px}}
+@media (prefers-reduced-motion:reduce){.mc-bar,.mc-arc,.mc-line,.mc-area,.mc-hr .f,.mc-stack span{animation:none!important;stroke-dashoffset:0!important}}
+
 /* ===== E-Learning: Arsip Jawaban Siswa ===== */
 .ja{--ja-forest:#123d2a;--ja-leaf:#1f7a4d;--ja-gold:#c9a227;--ja-line:#e1e8e3;--ja-mut:#5f7268;display:flex;flex-direction:column;gap:14px;padding:14px 18px 34px;font-family:"Google Sans","Segoe UI",Roboto,system-ui,-apple-system,sans-serif;color:#16231c}
 .ja-hero{background:linear-gradient(120deg,#082a1b,#123d2a 55%,#1f7a4d);color:#fff;border-radius:18px;padding:20px 22px 18px;border-bottom:3px solid var(--ja-gold);box-shadow:0 22px 46px -24px rgba(8,28,19,.55);position:relative;overflow:hidden}
@@ -3111,6 +3174,67 @@ table.mt th{background:var(--primary-50);color:var(--primary-700);font-size:12px
 .lg2-agree input{margin-top:3px;width:auto}
 .lg2 .btn.wide:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:760px){.lg2-card{grid-template-columns:1fr}.lg2-hero{padding:26px 24px}.lg2-body{padding:24px 22px}}
+/* ===== Pustaka grafik MALAQBI (SVG murni, offline) ===== */
+.mc-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin:14px 0;align-items:start}
+.mc-grid.w2{grid-template-columns:repeat(auto-fit,minmax(380px,1fr))}
+.mc-card{background:#fff;border:1px solid #e1e8e3;border-radius:16px;padding:16px 18px 18px;box-shadow:0 1px 2px rgba(11,30,20,.05),0 6px 18px -12px rgba(11,30,20,.18);min-width:0;position:relative}
+.mc-card::before{content:"";position:absolute;left:18px;top:0;width:34px;height:3px;border-radius:0 0 4px 4px;background:var(--mc-acc,#c9a227)}
+.mc-head{margin-bottom:10px}
+.mc-head h4{margin:0;font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-size:16px;color:#123d2a;letter-spacing:-.005em}
+.mc-head p{margin:2px 0 0;font-size:12px;color:#5f7268;line-height:1.45}
+.mc-empty{text-align:center;color:#8a9a91;font-size:12.5px;padding:34px 10px}
+.mc-kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin:0 0 14px}
+.mc-kpi{position:relative;overflow:hidden;border-radius:16px;padding:14px 16px 12px;color:#fff;background:linear-gradient(135deg,var(--k1,#123d2a),var(--k2,#1f7a4d));box-shadow:0 14px 28px -16px var(--k1,#123d2a)}
+.mc-kpi::after{content:"";position:absolute;right:-28px;top:-34px;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.1)}
+.mc-kpi>*{position:relative;z-index:1}
+.mc-kpi .k-l{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;opacity:.88}
+.mc-kpi .k-v{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-size:32px;font-weight:700;line-height:1.15;margin:3px 0 1px}
+.mc-kpi .k-s{font-size:11.5px;opacity:.85}
+.mc-kpi svg.mc-spark{position:absolute;right:10px;bottom:8px;width:92px;height:34px;opacity:.9;z-index:1}
+.mc-donut{display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:center}
+.mc-donut svg{flex:none;width:auto;max-width:200px;height:auto}
+.mc-donut .mc-big{font-family:"Iowan Old Style",Georgia,serif;font-size:26px;font-weight:700;fill:#123d2a}
+.mc-donut .mc-sm{font-size:11px;fill:#5f7268;font-weight:600}
+.mc-leg{list-style:none;margin:0;padding:0;display:grid;gap:7px;flex:1 1 130px;min-width:130px}
+.mc-leg li{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#26352d}
+.mc-leg i{width:11px;height:11px;border-radius:4px;flex:none}
+.mc-leg b{margin-left:auto;font-variant-numeric:tabular-nums}
+.mc-leg small{color:#7a8c82;font-size:11px;min-width:34px;text-align:right}
+.mc-svg{width:100%;height:auto;display:block;overflow:visible}
+.mc-svg text{font-family:"Google Sans","Segoe UI",Roboto,system-ui,sans-serif}
+.mc-grid-l{stroke:#e6ece8;stroke-width:1}
+.mc-ax{font-size:10.5px;fill:#74867b}
+.mc-val{font-size:11.5px;font-weight:700;fill:#26352d}
+.mc-bar{transform-box:fill-box;transform-origin:50% 100%;animation:mc-grow .7s cubic-bezier(.2,.8,.2,1) both;animation-delay:var(--mc-d,0ms);transition:filter .15s}
+.mc-bar:hover,.mc-arc:hover{filter:brightness(1.12) saturate(1.1)}
+.mc-arc{animation:mc-fade .8s both;animation-delay:var(--mc-d,0ms);transition:filter .15s}
+.mc-line{stroke-dasharray:var(--mc-len,2000);stroke-dashoffset:var(--mc-len,2000);animation:mc-dash 1.2s ease forwards}
+.mc-area{animation:mc-fade 1.2s both}
+.mc-dot{transition:r .15s}
+.mc-dot:hover{r:6}
+.mc-ref{stroke:#c0455f;stroke-width:1.4;stroke-dasharray:5 4}
+.mc-ref-t{font-size:10px;fill:#c0455f;font-weight:700}
+@keyframes mc-grow{from{transform:scaleY(0);opacity:.4}to{transform:scaleY(1);opacity:1}}
+@keyframes mc-fade{from{opacity:0}to{opacity:1}}
+@keyframes mc-dash{to{stroke-dashoffset:0}}
+.mc-h{display:grid;gap:9px}
+.mc-hr{display:grid;grid-template-columns:minmax(70px,34%) 1fr auto;gap:10px;align-items:center;font-size:12.5px}
+.mc-hr .l{color:#26352d;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mc-hr .l small{display:block;font-weight:500;color:#7a8c82;font-size:10.5px}
+.mc-hr .t{height:12px;border-radius:99px;background:#eef3f0;overflow:hidden}
+.mc-hr .f{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--c1,#1f7a4d),var(--c2,#4fbf86));transform-origin:left;animation:mc-gx .8s cubic-bezier(.2,.8,.2,1) both;animation-delay:var(--mc-d,0ms)}
+.mc-hr .v{font-weight:800;color:#123d2a;font-variant-numeric:tabular-nums;min-width:38px;text-align:right}
+@keyframes mc-gx{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.mc-rank{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#eaf6ef;color:#123d2a;font-size:11px;font-weight:800;margin-right:6px;flex:none}
+.mc-gauge{display:grid;justify-items:center}
+.mc-gauge .mc-big{font-family:"Iowan Old Style",Georgia,serif;font-size:30px;font-weight:700;fill:#123d2a}
+.mc-gauge .mc-sm{font-size:11px;fill:#5f7268;font-weight:600}
+.mc-stack{display:flex;height:26px;border-radius:99px;overflow:hidden;background:#eef3f0}
+.mc-stack span{display:block;height:100%;transform-origin:left;animation:mc-gx .8s both}
+.mc-stack-leg{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:12px;color:#26352d}
+.mc-stack-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+@media (max-width:560px){.mc-grid,.mc-grid.w2{grid-template-columns:1fr}.mc-hr{grid-template-columns:minmax(60px,38%) 1fr auto}.mc-kpi .k-v{font-size:28px}}
+@media (prefers-reduced-motion:reduce){.mc-bar,.mc-arc,.mc-line,.mc-area,.mc-hr .f,.mc-stack span{animation:none!important;stroke-dashoffset:0!important}}
 @@LT@@/style>@@LT@@/head>@@LT@@body>
 @@LT@@header class="top">@@LT@@img src="__EL_LOGO__" alt="">@@LT@@div class="sep">@@LT@@/div>
 @@LT@@div>@@LT@@h1>E-Learning@@LT@@/h1>@@LT@@small>Pendidikan Pancasila@@LT@@/small>@@LT@@small class="g">Guru: __EL_GURU__@@LT@@/small>@@LT@@/div>
@@ -3388,7 +3512,7 @@ async function aiMinta(items) {
   let err;
   for (let k = 0; k !== 2; k++) {
     try { const j = await api({ action: "el_ai_nilai", nama: (typeof S !== "undefined" && S) ? S.nama : "guru", items, _to: 60000 }); return j.hasil || []; }
-    catch (e) { err = e; if (/belum dipasang|versi lama|tidak valid/i.test(e.message)) { if (!/tidak valid/i.test(e.message)) AI_ST.off = true; throw e; } }
+    catch (e) { err = e; if (/belum dipasang|versi lama|tidak valid|UrlFetchApp|external_request|izin untuk memanggil/i.test(e.message)) { if (!/tidak valid/i.test(e.message)) AI_ST.off = true; throw e; } }
   }
   throw err;
 }
@@ -4220,6 +4344,183 @@ function vSelesai() {
 }
 
 /* ===== Panel Guru ===== */
+/* ===================================================================
+   PUSTAKA GRAFIK MALAQBI — SVG murni (tanpa pustaka luar, tetap offline)
+   =================================================================== */
+const MC_PAL = ["#1f7a4d", "#c9a227", "#2f8fbf", "#e0683f", "#7a5fc0", "#14a39a", "#c0455f", "#8a9a3a"];
+const MC_GRADE = { A:"#1f7a4d", B:"#14a39a", C:"#e0a526", D:"#d0453b", none:"#c5cfc9" };
+const MC_HADIR = { H:"#1f7a4d", S:"#e0a526", I:"#2f8fbf", D:"#7a5fc0", A:"#d0453b" };
+let MC_UID = 0;
+function mcN(v, d){ if(v === null || v === undefined || isNaN(v)) return "–"; const p = Math.pow(10, d === undefined ? 1 : d); return (Math.round(v * p) / p).toString().replace(".", ","); }
+function mcLighten(hex, f){ const n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255, m = function(x){ return Math.round(x + (255 - x) * f); }; return "rgb(" + m(r) + "," + m(g) + "," + m(b) + ")"; }
+function mcWarna(v, max){ const p = (max || 100) ? v / (max || 100) : 0; return p >= 0.85 ? "#1f7a4d" : p >= 0.7 ? "#14a39a" : p >= 0.55 ? "#e0a526" : "#d0453b"; }
+function mcCard(judul, desc, isi, acc){
+  return '@@LT@@div class="mc-card"' + (acc ? ' style="--mc-acc:' + acc + '"' : "") + '>@@LT@@div class="mc-head">@@LT@@h4>' + esc(judul) + '@@LT@@/h4>' + (desc ? '@@LT@@p>' + esc(desc) + '@@LT@@/p>' : "") + '@@LT@@/div>' + isi + '@@LT@@/div>';
+}
+function mcEmpty(t){ return '@@LT@@div class="mc-empty">' + esc(t || "Belum ada data untuk ditampilkan.") + '@@LT@@/div>'; }
+/* histogram: values (angka), edges [0,60,70,80,90,101], labels ["@@LT@@60","60–69",…] */
+function mcBins(values, edges, labels, colors){
+  const out = labels.map(function(l, i){ return { label:l, value:0, color:colors ? colors[i] : null }; });
+  values.forEach(function(v){ if(v === null || v === undefined || isNaN(v)) return; for(let i = 0; i @@LT@@ edges.length - 1; i++){ if(v >= edges[i] && v @@LT@@ edges[i + 1]){ out[i].value++; break; } } });
+  return out;
+}
+function mcDonut(o){
+  const data = (o.data || []).filter(function(d){ return d.value > 0; }), tot = data.reduce(function(a, d){ return a + d.value; }, 0);
+  const size = o.size || 170, th = o.thick || 24, r = (size - th) / 2, c = 2 * Math.PI * r, mid = size / 2;
+  if(!tot) return mcEmpty(o.empty);
+  let off = 0, arcs = "";
+  data.forEach(function(d, i){
+    const len = d.value / tot * c, gap = data.length > 1 ? 2.5 : 0, col = d.color || MC_PAL[i % MC_PAL.length];
+    arcs += '@@LT@@circle class="mc-arc" cx="' + mid + '" cy="' + mid + '" r="' + r + '" fill="none" stroke="' + col + '" stroke-width="' + th + '" stroke-dasharray="' + Math.max(0, len - gap) + ' ' + c + '" stroke-dashoffset="' + (-off) + '" transform="rotate(-90 ' + mid + ' ' + mid + ')" style="--mc-d:' + (i * 110) + 'ms">@@LT@@title>' + esc(d.label) + ': ' + d.value + ' (' + mcN(d.value / tot * 100, 0) + '%)@@LT@@/title>@@LT@@/circle>';
+    off += len;
+  });
+  const svg = '@@LT@@svg class="mc-svg" width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" role="img" aria-label="' + esc(o.aria || "Diagram donat") + '">@@LT@@circle cx="' + mid + '" cy="' + mid + '" r="' + r + '" fill="none" stroke="#eef3f0" stroke-width="' + th + '"/>' + arcs
+    + (o.big != null ? '@@LT@@text class="mc-big" x="' + mid + '" y="' + (mid + (o.small ? 2 : 9)) + '" text-anchor="middle">' + esc(String(o.big)) + '@@LT@@/text>' : "")
+    + (o.small ? '@@LT@@text class="mc-sm" x="' + mid + '" y="' + (mid + 18) + '" text-anchor="middle">' + esc(o.small) + '@@LT@@/text>' : "") + '@@LT@@/svg>';
+  const leg = '@@LT@@ul class="mc-leg">' + data.map(function(d, i){ return '@@LT@@li>@@LT@@i style="background:' + (d.color || MC_PAL[i % MC_PAL.length]) + '">@@LT@@/i>@@LT@@span>' + esc(d.label) + '@@LT@@/span>@@LT@@b>' + d.value + '@@LT@@/b>@@LT@@small>' + mcN(d.value / tot * 100, 0) + '%@@LT@@/small>@@LT@@/li>'; }).join("") + '@@LT@@/ul>';
+  return '@@LT@@div class="mc-donut">' + svg + leg + '@@LT@@/div>';
+}
+function mcBars(o){
+  const data = o.data || [];
+  if(!data.length || !data.some(function(d){ return d.value > 0; })) return mcEmpty(o.empty);
+  const n = data.length, H = o.height || 200, W = Math.max(300, n * 58), pl = 30, pr = 8, pt = 22, pb = 32, iw = W - pl - pr, ih = H - pt - pb;
+  const maxV = o.max || Math.max.apply(null, data.map(function(d){ return d.value; })) * 1.12 || 1;
+  const step = iw / n, bw = Math.min(40, step * 0.62), id = "mcg" + (++MC_UID);
+  let defs = "", grid = "", bars = "", xl = "";
+  [0, 0.5, 1].forEach(function(t){ const y = pt + ih - ih * t; grid += '@@LT@@line class="mc-grid-l" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y + '" y2="' + y + '"/>@@LT@@text class="mc-ax" x="' + (pl - 6) + '" y="' + (y + 3.5) + '" text-anchor="end">' + mcN(maxV * t, maxV >= 10 ? 0 : 1) + '@@LT@@/text>'; });
+  data.forEach(function(d, i){
+    const col = d.color || (o.color || MC_PAL[0]), h = Math.max(d.value > 0 ? 2 : 0, d.value / maxV * ih), x = pl + step * i + (step - bw) / 2, y = pt + ih - h;
+    defs += '@@LT@@linearGradient id="' + id + i + '" x1="0" y1="0" x2="0" y2="1">@@LT@@stop offset="0" stop-color="' + col + '"/>@@LT@@stop offset="1" stop-color="' + mcLighten(col, 0.38) + '"/>@@LT@@/linearGradient>';
+    bars += '@@LT@@rect class="mc-bar" x="' + x + '" y="' + y + '" width="' + bw + '" height="' + h + '" rx="6" fill="url(#' + id + i + ')" style="--mc-d:' + (i * 60) + 'ms">@@LT@@title>' + esc(d.label) + ': ' + mcN(d.value) + (o.unit || "") + '@@LT@@/title>@@LT@@/rect>'
+      + (d.value > 0 ? '@@LT@@text class="mc-val" x="' + (x + bw / 2) + '" y="' + (y - 6) + '" text-anchor="middle">' + mcN(d.value, o.dec === undefined ? (d.value % 1 ? 1 : 0) : o.dec) + (o.unit || "") + '@@LT@@/text>' : "");
+    const lab = String(d.label); xl += '@@LT@@text class="mc-ax" x="' + (x + bw / 2) + '" y="' + (H - 12) + '" text-anchor="middle">' + esc(lab.length > 11 ? lab.slice(0, 10) + "…" : lab) + '@@LT@@/text>';
+  });
+  let ref = "";
+  if(o.ref != null){ const y = pt + ih - ih * Math.min(1, o.ref / maxV); ref = '@@LT@@line class="mc-ref" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y + '" y2="' + y + '"/>@@LT@@text class="mc-ref-t" x="' + (W - pr) + '" y="' + (y - 4) + '" text-anchor="end">' + esc(o.refLabel || "") + '@@LT@@/text>'; }
+  return '@@LT@@svg class="mc-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(o.aria || "Diagram batang") + '">@@LT@@defs>' + defs + '@@LT@@/defs>' + grid + ref + bars + xl + '@@LT@@/svg>';
+}
+function mcHBars(o){
+  const data = o.data || [];
+  if(!data.length) return mcEmpty(o.empty);
+  const max = o.max || Math.max.apply(null, data.map(function(d){ return d.value; })) || 1;
+  return '@@LT@@div class="mc-h">' + data.map(function(d, i){
+    const col = d.color || (o.auto ? mcWarna(d.value, max) : (o.color || MC_PAL[0]));
+    return '@@LT@@div class="mc-hr" title="' + esc(d.label) + ': ' + mcN(d.value) + '">@@LT@@span class="l">' + (o.rank ? '@@LT@@span class="mc-rank">' + (i + 1) + '@@LT@@/span>' : "") + esc(d.label) + (d.sub ? '@@LT@@small>' + esc(d.sub) + '@@LT@@/small>' : "") + '@@LT@@/span>@@LT@@span class="t">@@LT@@span class="f" style="width:' + Math.max(1.5, Math.min(100, d.value / max * 100)) + '%;--c1:' + col + ';--c2:' + mcLighten(col, 0.42) + ';--mc-d:' + (i * 55) + 'ms">@@LT@@/span>@@LT@@/span>@@LT@@span class="v">' + mcN(d.value) + (o.unit || "") + '@@LT@@/span>@@LT@@/div>';
+  }).join("") + '@@LT@@/div>';
+}
+function mcGauge(o){
+  const v = Math.max(0, Math.min(o.max || 100, o.value || 0)), max = o.max || 100, size = o.size || 190, th = 18, r = (size - th) / 2, cx = size / 2, cy = size / 2 + 4;
+  const half = Math.PI * r, col = o.color || mcWarna(v, max), id = "mcgg" + (++MC_UID);
+  const path = 'M ' + th / 2 + ' ' + cy + ' A ' + r + ' ' + r + ' 0 0 1 ' + (size - th / 2) + ' ' + cy;
+  return '@@LT@@div class="mc-gauge">@@LT@@svg class="mc-svg" style="max-width:' + size + 'px" viewBox="0 0 ' + size + ' ' + (cy + 12) + '" role="img" aria-label="' + esc(o.aria || "Pengukur") + '">@@LT@@defs>@@LT@@linearGradient id="' + id + '" x1="0" x2="1">@@LT@@stop offset="0" stop-color="' + col + '"/>@@LT@@stop offset="1" stop-color="' + mcLighten(col, 0.4) + '"/>@@LT@@/linearGradient>@@LT@@/defs>'
+    + '@@LT@@path d="' + path + '" fill="none" stroke="#eef3f0" stroke-width="' + th + '" stroke-linecap="round"/>'
+    + '@@LT@@path class="mc-arc" d="' + path + '" fill="none" stroke="url(#' + id + ')" stroke-width="' + th + '" stroke-linecap="round" stroke-dasharray="' + (half * v / max) + ' ' + half * 2 + '">@@LT@@title>' + mcN(v) + (o.unit || "") + '@@LT@@/title>@@LT@@/path>'
+    + '@@LT@@text class="mc-big" x="' + cx + '" y="' + (cy - 8) + '" text-anchor="middle">' + (o.text != null ? esc(String(o.text)) : mcN(v, 0) + (o.unit || "")) + '@@LT@@/text>'
+    + (o.label ? '@@LT@@text class="mc-sm" x="' + cx + '" y="' + (cy + 9) + '" text-anchor="middle">' + esc(o.label) + '@@LT@@/text>' : "") + '@@LT@@/svg>@@LT@@/div>';
+}
+function mcSmooth(pts){
+  if(pts.length @@LT@@ 2) return "";
+  let d = "M " + pts[0][0] + " " + pts[0][1];
+  for(let i = 0; i @@LT@@ pts.length - 1; i++){
+    const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2, t = 0.18;
+    d += " C " + (p1[0] + (p2[0] - p0[0]) * t) + " " + (p1[1] + (p2[1] - p0[1]) * t) + ", " + (p2[0] - (p3[0] - p1[0]) * t) + " " + (p2[1] - (p3[1] - p1[1]) * t) + ", " + p2[0] + " " + p2[1];
+  }
+  return d;
+}
+function mcLine(o){
+  const labels = o.labels || [], series = (o.series || []).filter(function(s){ return (s.values || []).some(function(v){ return v !== null && v !== undefined; }); });
+  if(!labels.length || !series.length) return mcEmpty(o.empty);
+  const n = labels.length, H = o.height || 210, W = Math.max(320, n * 56), pl = 32, pr = 14, pt = 18, pb = 30, iw = W - pl - pr, ih = H - pt - pb;
+  const all = [].concat.apply([], series.map(function(s){ return s.values.filter(function(v){ return v !== null && v !== undefined; }); }));
+  let mx = o.max || Math.max.apply(null, all) * 1.1 || 1, mn = o.min !== undefined ? o.min : 0; if(mx @@LT@@= mn) mx = mn + 1;
+  const X = function(i){ return n === 1 ? pl + iw / 2 : pl + iw * i / (n - 1); }, Y = function(v){ return pt + ih - ih * (v - mn) / (mx - mn); };
+  let grid = "", out = "", defs = "";
+  [0, 0.5, 1].forEach(function(t){ const y = pt + ih - ih * t; grid += '@@LT@@line class="mc-grid-l" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y + '" y2="' + y + '"/>@@LT@@text class="mc-ax" x="' + (pl - 6) + '" y="' + (y + 3.5) + '" text-anchor="end">' + mcN(mn + (mx - mn) * t, mx >= 10 ? 0 : 1) + '@@LT@@/text>'; });
+  labels.forEach(function(l, i){ if(n > 9 && i % 2) return; grid += '@@LT@@text class="mc-ax" x="' + X(i) + '" y="' + (H - 9) + '" text-anchor="middle">' + esc(l) + '@@LT@@/text>'; });
+  series.forEach(function(s, k){
+    const col = s.color || MC_PAL[k % MC_PAL.length], pts = [], id = "mcl" + (++MC_UID);
+    s.values.forEach(function(v, i){ if(v !== null && v !== undefined) pts.push([X(i), Y(v), v, i]); });
+    if(!pts.length) return;
+    defs += '@@LT@@linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1">@@LT@@stop offset="0" stop-color="' + col + '" stop-opacity=".28"/>@@LT@@stop offset="1" stop-color="' + col + '" stop-opacity="0"/>@@LT@@/linearGradient>';
+    const d = mcSmooth(pts);
+    if(o.area !== false && pts.length > 1) out += '@@LT@@path class="mc-area" d="' + d + ' L ' + pts[pts.length - 1][0] + ' ' + (pt + ih) + ' L ' + pts[0][0] + ' ' + (pt + ih) + ' Z" fill="url(#' + id + ')"/>';
+    if(pts.length > 1) out += '@@LT@@path class="mc-line" style="--mc-len:' + Math.round(iw * 2.2) + '" d="' + d + '" fill="none" stroke="' + col + '" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" pathLength="' + Math.round(iw * 2.2) + '"/>';
+    pts.forEach(function(p){ out += '@@LT@@circle class="mc-dot" cx="' + p[0] + '" cy="' + p[1] + '" r="4" fill="#fff" stroke="' + col + '" stroke-width="2.4">@@LT@@title>' + esc((s.name ? s.name + " · " : "") + labels[p[3]] + ": " + mcN(p[2])) + '@@LT@@/title>@@LT@@/circle>'; });
+  });
+  let leg = "";
+  if(series.length > 1) leg = '@@LT@@div class="mc-stack-leg">' + series.map(function(s, k){ return '@@LT@@span>@@LT@@i style="background:' + (s.color || MC_PAL[k % MC_PAL.length]) + '">@@LT@@/i>' + esc(s.name || "") + '@@LT@@/span>'; }).join("") + '@@LT@@/div>';
+  return '@@LT@@svg class="mc-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(o.aria || "Diagram garis") + '">@@LT@@defs>' + defs + '@@LT@@/defs>' + grid + out + '@@LT@@/svg>' + leg;
+}
+function mcStack(data){
+  data = (data || []).filter(function(d){ return d.value > 0; });
+  const tot = data.reduce(function(a, d){ return a + d.value; }, 0);
+  if(!tot) return mcEmpty();
+  return '@@LT@@div class="mc-stack">' + data.map(function(d, i){ return '@@LT@@span style="width:' + d.value / tot * 100 + '%;background:' + (d.color || MC_PAL[i % MC_PAL.length]) + ';animation-delay:' + i * 90 + 'ms" title="' + esc(d.label) + ': ' + d.value + '">@@LT@@/span>'; }).join("") + '@@LT@@/div>'
+    + '@@LT@@div class="mc-stack-leg">' + data.map(function(d, i){ return '@@LT@@span>@@LT@@i style="background:' + (d.color || MC_PAL[i % MC_PAL.length]) + '">@@LT@@/i>' + esc(d.label) + ' @@LT@@b>' + d.value + '@@LT@@/b>@@LT@@/span>'; }).join("") + '@@LT@@/div>';
+}
+function mcSpark(values, col){
+  const v = values.filter(function(x){ return x !== null && x !== undefined; });
+  if(v.length @@LT@@ 2) return "";
+  const W = 92, H = 34, mx = Math.max.apply(null, v), mn = Math.min.apply(null, v), rg = (mx - mn) || 1;
+  const pts = v.map(function(x, i){ return [i * (W - 4) / (v.length - 1) + 2, H - 4 - (x - mn) / rg * (H - 10)]; });
+  return '@@LT@@svg class="mc-spark" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">@@LT@@path d="' + mcSmooth(pts) + '" fill="none" stroke="' + (col || "#fff") + '" stroke-width="2.2" stroke-linecap="round"/>@@LT@@/svg>';
+}
+function mcKpi(o){
+  return '@@LT@@div class="mc-kpi" style="--k1:' + (o.c1 || "#123d2a") + ';--k2:' + (o.c2 || "#1f7a4d") + '">@@LT@@div class="k-l">' + esc(o.label) + '@@LT@@/div>@@LT@@div class="k-v">' + esc(String(o.value)) + '@@LT@@/div>@@LT@@div class="k-s">' + esc(o.sub || "") + '@@LT@@/div>' + (o.spark ? mcSpark(o.spark) : "") + '@@LT@@/div>';
+}
+
+/* ----- Grafik Panel Guru ----- */
+function gSisip(html) {
+  let b = $("#gch"); if (!b) { const ts = $("#tview .tscroll"); if (!ts) return; ts.insertAdjacentHTML("beforebegin", '@@LT@@div id="gch">@@LT@@/div>'); b = $("#gch"); }
+  if (b._h === html) return; b._h = html; b.innerHTML = html;
+}
+function gGrafikMonitor(rows) {
+  if (!rows.length) { gSisip(""); return; }
+  const now = Date.now(), on = rows.filter(r => now - r.lastAt @@LT@@ 75000).length, tuntas = rows.filter(r => r.nDone > 0).length;
+  const tahap = STEPS.map(st => ({ label: (STEP_LABEL[st] || st).replace("Uji Pemahaman ", "Uji "), value: rows.filter(r => r.topic && r.step === st).length }));
+  const tp = {}; rows.forEach(r => { if (r.topic) tp[r.topicJudul || r.topic] = (tp[r.topicJudul || r.topic] || 0) + 1; });
+  const sering = rows.filter(r => (r.leaves || 0) > 0).sort((a, b) => (b.leaves || 0) - (a.leaves || 0)).slice(0, 5);
+  gSisip(`@@LT@@div class="mc-kpis">
+      ${mcKpi({ label: "Siswa Terdata", value: rows.length, sub: T.kelas ? "kelas " + T.kelas : "semua kelas", c1: "#123d2a", c2: "#1f7a4d" })}
+      ${mcKpi({ label: "Sedang Online", value: on, sub: "aktif 75 detik terakhir", c1: "#0f6f67", c2: "#14a39a" })}
+      ${mcKpi({ label: "Sudah Tuntas", value: tuntas, sub: Math.round(tuntas / rows.length * 100) + "% dari siswa terdata", c1: "#1d5f8a", c2: "#2f8fbf" })}
+      ${mcKpi({ label: "Keluar Halaman", value: rows.reduce((a, r) => a + (r.leaves || 0), 0), sub: rows.filter(r => r.leaves > 0).length + " siswa pernah keluar", c1: "#7a2e3a", c2: "#c0455f" })}
+    @@LT@@/div>
+    @@LT@@div class="mc-grid">
+      ${mcCard("Status Siswa", "Online, offline, dan tuntas", mcDonut({ data: [{ label: "Online", value: on, color: "#1f7a4d" }, { label: "Offline", value: rows.length - on, color: "#9aa8a0" }], big: rows.length, small: "siswa" }), "#1f7a4d")}
+      ${mcCard("Posisi Tahap Belajar", "Jumlah siswa pada tiap tahap", mcBars({ data: tahap.map((t, i) => Object.assign(t, { color: MC_PAL[i % MC_PAL.length] })), height: 190 }), "#c9a227")}
+      ${mcCard("Siswa per Topik", "Topik yang sedang dikerjakan", '@@LT@@div class="mc-scroll">' + mcHBars({ data: Object.keys(tp).map(k => ({ label: k, value: tp[k] })), max: Math.max(1, ...Object.values(tp)), empty: "Belum ada siswa memilih topik." }) + "@@LT@@/div>", "#7a5fc0")}
+    @@LT@@/div>${sering.length ? `@@LT@@div class="mc-grid">${mcCard("Paling Sering Keluar Halaman", "5 siswa dengan keluar halaman terbanyak", mcHBars({ data: sering.map(r => ({ label: r.nama, sub: "Kelas " + r.kelas, value: r.leaves, color: "#d0453b" })), max: Math.max(...sering.map(r => r.leaves)), unit: "×" }), "#d0453b")}@@LT@@/div>` : ""}`);
+}
+function gGrafikNilai(rows) {
+  const ada = rows.filter(x => x.ru != null), pick = k => rows.map(x => x.sc[k]).filter(v => v != null);
+  const av = a => a.length ? a.reduce((p, q) => p + q, 0) / a.length : null;
+  const ru = ada.map(x => x.ru), kkm = (CONTENT.penilaian && CONTENT.penilaian.kkm) || 75;
+  const komp = [["Uji Materi", "ujiMateri", "#2f8fbf"], ["Uji Video", "ujiVideo", "#14a39a"], ["Pos Tes", "postes", "#c9a227"], ["Apersepsi", "apersepsi", "#7a5fc0"], ["Refleksi", "refleksi", "#c0455f"], ["Sikap", "sikap", "#1f7a4d"]].map(c => ({ label: c[0], value: av(pick(c[1])) || 0, color: c[2] }));
+  const na = rows.map(x => x.na).filter(v => v != null);
+  gSisip(`@@LT@@div class="mc-kpis">
+      ${mcKpi({ label: "Siswa Bernilai", value: ada.length, sub: "dari " + rows.length + " siswa", c1: "#123d2a", c2: "#1f7a4d" })}
+      ${mcKpi({ label: "Rata-rata Uji", value: mcN(av(ru)), sub: "uji materi, video, dan pos tes", c1: "#1d5f8a", c2: "#2f8fbf" })}
+      ${mcKpi({ label: "Tuntas (≥ KKM " + kkm + ")", value: ru.length ? Math.round(ru.filter(v => v >= kkm).length / ru.length * 100) + "%" : "–", sub: ru.filter(v => v >= kkm).length + " dari " + ru.length + " siswa", c1: "#0f6f67", c2: "#14a39a" })}
+      ${mcKpi({ label: "Rata-rata Nilai Akhir", value: mcN(av(na)), sub: na.length + " siswa selesai", c1: "#8a6a0e", c2: "#c9a227" })}
+    @@LT@@/div>
+    @@LT@@div class="mc-grid">
+      ${mcCard("Rata-rata per Komponen", "Seluruh komponen penilaian", mcBars({ data: komp, max: 100, dec: 1, ref: kkm, refLabel: "KKM " + kkm }), "#2f8fbf")}
+      ${mcCard("Sebaran Rata-rata Uji", "Jumlah siswa per rentang nilai", mcBars({ data: mcBins(ru, [0, 60, 70, 80, 90, 101], ["@@LT@@ 60", "60–69", "70–79", "80–89", "90–100"], [MC_GRADE.D, "#e0a526", MC_GRADE.B, "#2f8fbf", MC_GRADE.A]), empty: "Belum ada nilai uji." }), "#c9a227")}
+      ${mcCard("Ketuntasan", "Rata-rata uji dibanding KKM " + kkm, mcDonut({ data: [{ label: "Tuntas", value: ru.filter(v => v >= kkm).length, color: MC_GRADE.A }, { label: "Belum tuntas", value: ru.filter(v => v @@LT@@ kkm).length, color: MC_GRADE.D }], big: ru.length, small: "siswa" }), "#1f7a4d")}
+    @@LT@@/div>`);
+}
+function gGrafikPeringkat(ranked, rows) {
+  const top = ranked.slice(0, 10), kp = {};
+  ranked.forEach(x => { (kp[x.kelas] = kp[x.kelas] || []).push(x.ru); });
+  const av = a => a.reduce((p, q) => p + q, 0) / a.length;
+  gSisip(`@@LT@@div class="mc-grid">
+      ${mcCard("10 Besar", "Rata-rata uji tertinggi", mcHBars({ data: top.map(x => ({ label: x.nama, sub: "Kelas " + x.kelas, value: x.ru })), max: 100, auto: true, rank: true, empty: "Belum ada siswa bernilai." }), "#c9a227")}
+      ${mcCard("Sebaran Rata-rata Uji", "Jumlah siswa per rentang nilai", mcBars({ data: mcBins(ranked.map(x => x.ru), [0, 60, 70, 80, 90, 101], ["@@LT@@ 60", "60–69", "70–79", "80–89", "90–100"], [MC_GRADE.D, "#e0a526", MC_GRADE.B, "#2f8fbf", MC_GRADE.A]), empty: "Belum ada nilai." }), "#2f8fbf")}
+      ${!T.kelas && Object.keys(kp).length > 1 ? mcCard("Rata-rata per Kelas", "Perbandingan antarkelas", '@@LT@@div class="mc-scroll">' + mcHBars({ data: Object.keys(kp).map(k => ({ label: "Kelas " + k, value: av(kp[k]), sub: kp[k].length + " siswa" })), max: 100, auto: true }) + "@@LT@@/div>", "#7a5fc0") : ""}
+    @@LT@@/div>`);
+}
+
 const gPending = {}, gSaveT = {};
 const T = { linkAktif: null, izin: [], izinSeen: new Set(), tab: "monitor", kelas: "", topik: "", q: "", rows: [], grades: {}, draft: null, dirty: false, ti: -1, sub: "materi", timer: null, jf: "XI", sortR: "no", bb: "" };
 
@@ -4298,11 +4599,19 @@ async function refreshRows(withGrades = true) {
   }
 }
 
+function aiGalatTeks(m) {
+  m = String(m || "");
+  if (/UrlFetchApp|external_request|izin untuk memanggil|permission/i.test(m)) return "IZIN";
+  return m;
+}
+function aiIzinHtml() {
+  return `@@LT@@h3>⚠️ Server belum diberi izin internet@@LT@@/h3>@@LT@@div style="color:#4b5f54;line-height:1.65;text-align:left;font-size:14px">Kode Apps Script sudah benar, tetapi Google belum mengizinkan skrip menghubungi Gemini. Lakukan sekali saja:@@LT@@ol style="margin:8px 0 0 18px;padding:0">@@LT@@li>Buka @@LT@@b>script.google.com@@LT@@/b> → proyek server Anda.@@LT@@/li>@@LT@@li>Tempel @@LT@@b>Code.gs terbaru@@LT@@/b> (versi 15) lalu @@LT@@b>Simpan@@LT@@/b>.@@LT@@/li>@@LT@@li>Di bar atas pilih fungsi @@LT@@b>otorisasiAI@@LT@@/b> → klik @@LT@@b>Jalankan@@LT@@/b> → @@LT@@b>Tinjau izin@@LT@@/b> → pilih akun → @@LT@@b>Lanjutan@@LT@@/b> → @@LT@@b>Buka … (tidak aman)@@LT@@/b> → @@LT@@b>Izinkan@@LT@@/b>.@@LT@@/li>@@LT@@li>@@LT@@b>Terapkan → Kelola deployment → ikon pensil → Versi: Versi baru → Terapkan@@LT@@/b> (URL tetap sama).@@LT@@/li>@@LT@@li>Kembali ke sini, klik @@LT@@b>Tes penilaian@@LT@@/b>.@@LT@@/li>@@LT@@/ol>@@LT@@/div>@@LT@@button class="btn sm" data-r="ok" style="margin-top:12px">Tutup@@LT@@/button>`;
+}
 function updSrv() {
   const e = $("#srvp"); if (!e) return;
   if (!Store.cloud()) { e.className = "pill wn"; e.textContent = "Mode lokal (perangkat ini)"; return; }
   const s = Store.stat;
-  if (s.ok === false) { e.className = "pill no"; e.textContent = "⚠ Server gagal: " + s.msg; }
+  if (s.ok === false) { e.className = "pill no"; e.textContent = aiGalatTeks(s.msg) === "IZIN" ? "⚠ Server belum diberi izin internet (lihat Pengaturan › Penilaian AI)" : "⚠ Server gagal: " + s.msg; }
   else if (Store.srvV != null && Store.srvV @@LT@@ 3) { e.className = "pill wn"; e.textContent = "⚠ Code.gs masih versi lama — tempel Code.gs terbaru"; }
   else { e.className = "pill ok"; e.textContent = "Server tersambung" + (s.t ? " · " + fmtTime(s.t) : ""); }
 }
@@ -4351,7 +4660,7 @@ function renderMonitor() {
     @@LT@@div class="tscroll">@@LT@@table class="tbl">@@LT@@thead>@@LT@@tr>@@LT@@th>#@@LT@@/th>@@LT@@th>Kelas@@LT@@/th>@@LT@@th>Nama@@LT@@/th>@@LT@@th>Status@@LT@@/th>@@LT@@th>Materi@@LT@@/th>@@LT@@th>Lama belajar@@LT@@/th>@@LT@@th>Keluar halaman@@LT@@/th>@@LT@@th>Uji Materi@@LT@@/th>@@LT@@th>Uji Video@@LT@@/th>@@LT@@th>Pos Tes@@LT@@/th>@@LT@@th>Terakhir@@LT@@/th>@@LT@@th>@@LT@@/th>@@LT@@/tr>@@LT@@/thead>@@LT@@tbody>
     ${rows.map((r, i) => { const sc = autoScores(r); return `@@LT@@tr>@@LT@@td>${i + 1}@@LT@@/td>@@LT@@td>${esc(r.kelas)}@@LT@@/td>@@LT@@td>${esc(r.nama)}@@LT@@/td>@@LT@@td>${statusOf(r)}${izinPill(r)}${r.skipped ? ' @@LT@@span class="pill no">video dilewati@@LT@@/span>' : ""}@@LT@@/td>@@LT@@td>${esc(r.topicJudul || "-")}@@LT@@/td>@@LT@@td>${fmtDur(r.activeSec)}@@LT@@/td>@@LT@@td>${r.leaves || 0}× (${fmtDur(r.leaveSec || 0)})${r.restarts ? ` @@LT@@span class="pill no">ulang ${r.restarts}×@@LT@@/span>` : ""}@@LT@@/td>@@LT@@td>${f(sc.ujiMateri)}@@LT@@/td>@@LT@@td>${f(sc.ujiVideo)}@@LT@@/td>@@LT@@td>${f(sc.postes)}@@LT@@/td>@@LT@@td>${fmtTime(r.lastAt)}@@LT@@/td>@@LT@@td>@@LT@@button class="btn red sm" data-del="${esc(skey(r.kelas, r.nama))}">Hapus@@LT@@/button>@@LT@@/td>@@LT@@/tr>`; }).join("") || '@@LT@@tr>@@LT@@td colspan="12" class="sub">Belum ada siswa yang login.@@LT@@/td>@@LT@@/tr>'}
     @@LT@@/tbody>@@LT@@/table>@@LT@@/div>`;
-  izinRender();
+  izinRender(); gGrafikMonitor(rows);
   $("#fk").onchange = e => { T.kelas = e.target.value; renderMonitor(); };
   $("#q").oninput = e => { T.q = e.target.value; const p = e.target.selectionStart; renderMonitor(); const n = $("#q"); n.focus(); n.setSelectionRange(p, p); };
   $("#rf").onclick = async () => { await refreshRows(); await refreshIzin(false); renderMonitor(); renderTeacher_tabsBadge(); toast("Diperbarui"); };
@@ -4439,6 +4748,7 @@ function setCells(tr, x) {
 function liveUpdate() {
   const trs = $$("#gt tbody tr[data-n]"); if (!trs.length) return;
   const rows = roster(T.kelas); trs.forEach((tr, i) => { if (rows[i]) setCells(tr, rows[i]); });
+  gGrafikNilai(rows);
 }
 function renderNilai() {
   const v = $("#tview"); if (!T.kelas) T.kelas = "X.1";
@@ -4487,6 +4797,7 @@ function renderPeringkat() {
     @@LT@@div class="tscroll">@@LT@@table class="tbl">@@LT@@thead>@@LT@@tr>@@LT@@th>Peringkat@@LT@@/th>@@LT@@th>Nama@@LT@@/th>${T.kelas ? "" : "@@LT@@th>Kelas@@LT@@/th>"}@@LT@@th>Uji Materi@@LT@@/th>@@LT@@th>Uji Video@@LT@@/th>@@LT@@th>Pos Tes@@LT@@/th>@@LT@@th>Rata-rata Uji@@LT@@/th>@@LT@@/tr>@@LT@@/thead>@@LT@@tbody>
     ${ranked.map(x => `@@LT@@tr>@@LT@@td>${x.rank @@LT@@= 3 ? medali[x.rank - 1] + " " + x.rank : x.rank}@@LT@@/td>@@LT@@td>${esc(x.nama)}@@LT@@/td>${T.kelas ? "" : `@@LT@@td>${esc(x.kelas)}@@LT@@/td>`}@@LT@@td>${x.sc.ujiMateri ?? "-"}@@LT@@/td>@@LT@@td>${x.sc.ujiVideo ?? "-"}@@LT@@/td>@@LT@@td>${x.sc.postes ?? "-"}@@LT@@/td>@@LT@@td>@@LT@@b>${x.ru}@@LT@@/b>@@LT@@/td>@@LT@@/tr>`).join("") || `@@LT@@tr>@@LT@@td colspan="${T.kelas ? 6 : 7}" class="sub">Belum ada nilai uji untuk diperingkat.@@LT@@/td>@@LT@@/tr>`}
     @@LT@@/tbody>@@LT@@/table>@@LT@@/div>`;
+  gGrafikPeringkat(ranked, rows);
   $("#fk").onchange = e => { T.kelas = e.target.value; renderPeringkat(); };
   $("#ft").onchange = e => { T.topik = e.target.value; renderPeringkat(); };
   $("#rf").onclick = async () => { await refreshRows(); renderPeringkat(); toast("Diperbarui"); };
@@ -5021,7 +5332,7 @@ function renderSet() {
     ${BACKEND_URL ? `@@LT@@p class="hint">URL sudah tertanam di berkas situs (berakhiran …${esc(BACKEND_URL.slice(-12))}). Isian di bawah hanya dipakai bila URL tertanam kosong.@@LT@@/p>` : ""}@@LT@@label class="f">URL Web App Google Apps Script@@LT@@/label>@@LT@@input class="inp" id="bu" value="${esc(LS.get("backend") || "")}" placeholder="https://script.google.com/macros/s/…/exec">
     @@LT@@div class="row" style="margin-top:12px">@@LT@@button class="btn sm" id="bs">Simpan@@LT@@/button>@@LT@@button class="btn out sm" id="bt">Uji koneksi@@LT@@/button>@@LT@@button class="btn out sm" id="bpush">⬆ Kirim konten ke server@@LT@@/button>@@LT@@/div>@@LT@@/div>
     @@LT@@div class="card">@@LT@@h2>Penilaian AI (Google Gemini)@@LT@@/h2>@@LT@@p class="sub">Soal essay, apersepsi, dan refleksi dinilai otomatis begitu siswa mengirim jawaban. Kunci API disimpan aman di server Apps Script (tidak pernah ikut ke halaman siswa). Nilai apersepsi/refleksi tetap bisa Anda koreksi manual di tab Nilai.@@LT@@/p>
-    @@LT@@p class="hint" id="aiSt">Memeriksa…@@LT@@/p>
+    @@LT@@p class="hint" id="aiSt">Memeriksa…@@LT@@/p>@@LT@@p class="hint">Setelah menempel Code.gs versi 15, jalankan fungsi @@LT@@b>otorisasiAI@@LT@@/b> sekali di editor Apps Script lalu terapkan @@LT@@b>Versi baru@@LT@@/b>. Klik @@LT@@b>Tes penilaian@@LT@@/b> untuk memastikan.@@LT@@/p>
     @@LT@@label class="f" for="aiKey">Kunci API Gemini@@LT@@/label>@@LT@@input class="inp" id="aiKey" type="password" autocomplete="off" placeholder="Tempel kunci dari aistudio.google.com/apikey">
     @@LT@@div class="row" style="margin-top:12px">@@LT@@button class="btn sm" id="aiSave">Simpan kunci@@LT@@/button>@@LT@@button class="btn out sm" id="aiTest">Tes penilaian@@LT@@/button>@@LT@@button class="btn out sm" id="aiDel">Hapus kunci@@LT@@/button>@@LT@@/div>@@LT@@/div>
     @@LT@@div class="card">@@LT@@h2>Cadangan data@@LT@@/h2>@@LT@@p class="sub">Unduh cadangan berisi seluruh konten (topik, materi, soal, video), data siswa, dan nilai guru. Simpan sebelum memindahkan situs ke hosting baru; impor untuk memulihkan.@@LT@@/p>
@@ -5068,7 +5379,7 @@ function renderSet() {
     try {
       const j = await api({ action: "el_ai_nilai", nama: "guru", items: [{ id: "tes", jenis: "essay", soal: "Jelaskan makna sila kedua Pancasila.", pedoman: "Kemanusiaan yang adil dan beradab: menghargai martabat manusia dan HAM.", jawaban: "Sila kedua berarti kita memperlakukan semua orang dengan adil dan beradab serta menghormati hak asasi manusia." }], _to: 60000 }), r = (j.hasil || [])[0];
       await modal(`@@LT@@h3>Penilaian AI berfungsi@@LT@@/h3>@@LT@@p style="color:#4b5f54;line-height:1.6;text-align:left">Contoh jawaban dinilai @@LT@@b>${r ? r.s : "?"}/100@@LT@@/b>.@@LT@@br>${esc(r ? r.f : "")}@@LT@@/p>@@LT@@button class="btn sm" data-r="ok">Tutup@@LT@@/button>`, { light: true });
-    } catch (e) { await modal(`@@LT@@h3>⚠️ Penilaian AI gagal@@LT@@/h3>@@LT@@p style="color:#4b5f54;line-height:1.6;text-align:left">${esc(e.message)}@@LT@@/p>@@LT@@button class="btn sm" data-r="ok">Tutup@@LT@@/button>`, { light: true }); }
+    } catch (e) { if (aiGalatTeks(e.message) === "IZIN") await modal(aiIzinHtml(), { light: true }); else await modal(`@@LT@@h3>⚠️ Penilaian AI gagal@@LT@@/h3>@@LT@@p style="color:#4b5f54;line-height:1.6;text-align:left">${esc(e.message)}@@LT@@/p>@@LT@@button class="btn sm" data-r="ok">Tutup@@LT@@/button>`, { light: true }); }
   };
   $("#bpush").onclick = async () => { const r = await pushContent(); toast(r.ok ? "✓ Konten terkirim dan terverifikasi di server" : "⚠ Gagal: " + r.msg); updSrv(); };
   $("#bk").onclick = async () => { const full = await Store.list("s:"); download(new Blob([JSON.stringify({ app: "wfh-pendidikan-pancasila", at: Date.now(), content: CONTENT, students: full, grades: Object.values(T.grades) })], { type: "application/json" }), "Cadangan_WFH_PendidikanPancasila_" + new Date().toISOString().slice(0, 10) + ".json"); };
@@ -7882,6 +8193,132 @@ function getCheckedStudentValues(idPrefix, count){
 /* ============================================================
    DASHBOARD
    ============================================================ */
+/* ===================================================================
+   PUSTAKA GRAFIK MALAQBI — SVG murni (tanpa pustaka luar, tetap offline)
+   =================================================================== */
+const MC_PAL = ["#1f7a4d", "#c9a227", "#2f8fbf", "#e0683f", "#7a5fc0", "#14a39a", "#c0455f", "#8a9a3a"];
+const MC_GRADE = { A:"#1f7a4d", B:"#14a39a", C:"#e0a526", D:"#d0453b", none:"#c5cfc9" };
+const MC_HADIR = { H:"#1f7a4d", S:"#e0a526", I:"#2f8fbf", D:"#7a5fc0", A:"#d0453b" };
+const MC_BULAN = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+let MC_UID = 0;
+function mcN(v, d){ if(v === null || v === undefined || isNaN(v)) return "–"; const p = Math.pow(10, d === undefined ? 1 : d); return (Math.round(v * p) / p).toString().replace(".", ","); }
+function mcLighten(hex, f){ const n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255, m = function(x){ return Math.round(x + (255 - x) * f); }; return "rgb(" + m(r) + "," + m(g) + "," + m(b) + ")"; }
+function mcWarna(v, max){ const p = (max || 100) ? v / (max || 100) : 0; return p >= 0.85 ? "#1f7a4d" : p >= 0.7 ? "#14a39a" : p >= 0.55 ? "#e0a526" : "#d0453b"; }
+function mcCard(judul, desc, isi, acc){
+  return '<div class="mc-card"' + (acc ? ' style="--mc-acc:' + acc + '"' : "") + '><div class="mc-head"><h4>' + esc(judul) + '</h4>' + (desc ? '<p>' + esc(desc) + '</p>' : "") + '</div>' + isi + '</div>';
+}
+function mcEmpty(t){ return '<div class="mc-empty">' + esc(t || "Belum ada data untuk ditampilkan.") + '</div>'; }
+/* histogram: values (angka), edges [0,60,70,80,90,101], labels ["<60","60–69",…] */
+function mcBins(values, edges, labels, colors){
+  const out = labels.map(function(l, i){ return { label:l, value:0, color:colors ? colors[i] : null }; });
+  values.forEach(function(v){ if(v === null || v === undefined || isNaN(v)) return; for(let i = 0; i < edges.length - 1; i++){ if(v >= edges[i] && v < edges[i + 1]){ out[i].value++; break; } } });
+  return out;
+}
+function mcDonut(o){
+  const data = (o.data || []).filter(function(d){ return d.value > 0; }), tot = data.reduce(function(a, d){ return a + d.value; }, 0);
+  const size = o.size || 170, th = o.thick || 24, r = (size - th) / 2, c = 2 * Math.PI * r, mid = size / 2;
+  if(!tot) return mcEmpty(o.empty);
+  let off = 0, arcs = "";
+  data.forEach(function(d, i){
+    const len = d.value / tot * c, gap = data.length > 1 ? 2.5 : 0, col = d.color || MC_PAL[i % MC_PAL.length];
+    arcs += '<circle class="mc-arc" cx="' + mid + '" cy="' + mid + '" r="' + r + '" fill="none" stroke="' + col + '" stroke-width="' + th + '" stroke-dasharray="' + Math.max(0, len - gap) + ' ' + c + '" stroke-dashoffset="' + (-off) + '" transform="rotate(-90 ' + mid + ' ' + mid + ')" style="--mc-d:' + (i * 110) + 'ms"><title>' + esc(d.label) + ': ' + d.value + ' (' + mcN(d.value / tot * 100, 0) + '%)</title></circle>';
+    off += len;
+  });
+  const svg = '<svg class="mc-svg" style="width:' + size + 'px;max-width:100%" viewBox="0 0 ' + size + ' ' + size + '" role="img" aria-label="' + esc(o.aria || "Diagram donat") + '"><circle cx="' + mid + '" cy="' + mid + '" r="' + r + '" fill="none" stroke="#eef3f0" stroke-width="' + th + '"/>' + arcs
+    + (o.big != null ? '<text class="mc-big" x="' + mid + '" y="' + (mid + (o.small ? 2 : 9)) + '" text-anchor="middle">' + esc(String(o.big)) + '</text>' : "")
+    + (o.small ? '<text class="mc-sm" x="' + mid + '" y="' + (mid + 18) + '" text-anchor="middle">' + esc(o.small) + '</text>' : "") + '</svg>';
+  const leg = '<ul class="mc-leg">' + data.map(function(d, i){ return '<li><i style="background:' + (d.color || MC_PAL[i % MC_PAL.length]) + '"></i><span>' + esc(d.label) + '</span><b>' + d.value + '</b><small>' + mcN(d.value / tot * 100, 0) + '%</small></li>'; }).join("") + '</ul>';
+  return '<div class="mc-donut">' + svg + leg + '</div>';
+}
+function mcBars(o){
+  const data = o.data || [];
+  if(!data.length || !data.some(function(d){ return d.value > 0; })) return mcEmpty(o.empty);
+  const n = data.length, H = o.height || 200, W = Math.max(300, n * 58), pl = 30, pr = 8, pt = 22, pb = 32, iw = W - pl - pr, ih = H - pt - pb;
+  const maxV = o.max || Math.max.apply(null, data.map(function(d){ return d.value; })) * 1.12 || 1;
+  const step = iw / n, bw = Math.min(40, step * 0.62), id = "mcg" + (++MC_UID);
+  let defs = "", grid = "", bars = "", xl = "";
+  [0, 0.5, 1].forEach(function(t){ const y = pt + ih - ih * t; grid += '<line class="mc-grid-l" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y + '" y2="' + y + '"/><text class="mc-ax" x="' + (pl - 6) + '" y="' + (y + 3.5) + '" text-anchor="end">' + mcN(maxV * t, maxV >= 10 ? 0 : 1) + '</text>'; });
+  data.forEach(function(d, i){
+    const col = d.color || (o.color || MC_PAL[0]), h = Math.max(d.value > 0 ? 2 : 0, d.value / maxV * ih), x = pl + step * i + (step - bw) / 2, y = pt + ih - h;
+    defs += '<linearGradient id="' + id + i + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + col + '"/><stop offset="1" stop-color="' + mcLighten(col, 0.38) + '"/></linearGradient>';
+    bars += '<rect class="mc-bar" x="' + x + '" y="' + y + '" width="' + bw + '" height="' + h + '" rx="6" fill="url(#' + id + i + ')" style="--mc-d:' + (i * 60) + 'ms"><title>' + esc(d.label) + ': ' + mcN(d.value) + (o.unit || "") + '</title></rect>'
+      + (d.value > 0 ? '<text class="mc-val" x="' + (x + bw / 2) + '" y="' + (y - 6) + '" text-anchor="middle">' + mcN(d.value, o.dec === undefined ? (d.value % 1 ? 1 : 0) : o.dec) + (o.unit || "") + '</text>' : "");
+    const lab = String(d.label); xl += '<text class="mc-ax" x="' + (x + bw / 2) + '" y="' + (H - 12) + '" text-anchor="middle">' + esc(lab.length > 11 ? lab.slice(0, 10) + "…" : lab) + '</text>';
+  });
+  let ref = "";
+  if(o.ref != null){ const y = pt + ih - ih * Math.min(1, o.ref / maxV); ref = '<line class="mc-ref" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y + '" y2="' + y + '"/><text class="mc-ref-t" x="' + (W - pr) + '" y="' + (y - 4) + '" text-anchor="end">' + esc(o.refLabel || "") + '</text>'; }
+  return '<svg class="mc-svg" style="max-width:' + Math.round(W * 1.55) + 'px;margin:0 auto" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(o.aria || "Diagram batang") + '"><defs>' + defs + '</defs>' + grid + ref + bars + xl + '</svg>';
+}
+function mcHBars(o){
+  const data = o.data || [];
+  if(!data.length) return mcEmpty(o.empty);
+  const max = o.max || Math.max.apply(null, data.map(function(d){ return d.value; })) || 1;
+  return '<div class="mc-h">' + data.map(function(d, i){
+    const col = d.color || (o.auto ? mcWarna(d.value, max) : (o.color || MC_PAL[0]));
+    return '<div class="mc-hr" title="' + esc(d.label) + ': ' + mcN(d.value) + '"><span class="l">' + (o.rank ? '<span class="mc-rank">' + (i + 1) + '</span>' : "") + esc(d.label) + (d.sub ? '<small>' + esc(d.sub) + '</small>' : "") + '</span><span class="t"><span class="f" style="width:' + Math.max(1.5, Math.min(100, d.value / max * 100)) + '%;--c1:' + col + ';--c2:' + mcLighten(col, 0.42) + ';--mc-d:' + (i * 55) + 'ms"></span></span><span class="v">' + mcN(d.value) + (o.unit || "") + '</span></div>';
+  }).join("") + '</div>';
+}
+function mcGauge(o){
+  const v = Math.max(0, Math.min(o.max || 100, o.value || 0)), max = o.max || 100, size = o.size || 190, th = 18, r = (size - th) / 2, cx = size / 2, cy = size / 2 + 4;
+  const half = Math.PI * r, col = o.color || mcWarna(v, max), id = "mcgg" + (++MC_UID);
+  const path = 'M ' + th / 2 + ' ' + cy + ' A ' + r + ' ' + r + ' 0 0 1 ' + (size - th / 2) + ' ' + cy;
+  return '<div class="mc-gauge"><svg class="mc-svg" style="max-width:' + size + 'px" viewBox="0 0 ' + size + ' ' + (cy + 12) + '" role="img" aria-label="' + esc(o.aria || "Pengukur") + '"><defs><linearGradient id="' + id + '" x1="0" x2="1"><stop offset="0" stop-color="' + col + '"/><stop offset="1" stop-color="' + mcLighten(col, 0.4) + '"/></linearGradient></defs>'
+    + '<path d="' + path + '" fill="none" stroke="#eef3f0" stroke-width="' + th + '" stroke-linecap="round"/>'
+    + '<path class="mc-arc" d="' + path + '" fill="none" stroke="url(#' + id + ')" stroke-width="' + th + '" stroke-linecap="round" stroke-dasharray="' + (half * v / max) + ' ' + half * 2 + '"><title>' + mcN(v) + (o.unit || "") + '</title></path>'
+    + '<text class="mc-big" x="' + cx + '" y="' + (cy - 8) + '" text-anchor="middle">' + (o.text != null ? esc(String(o.text)) : mcN(v, 0) + (o.unit || "")) + '</text>'
+    + (o.label ? '<text class="mc-sm" x="' + cx + '" y="' + (cy + 9) + '" text-anchor="middle">' + esc(o.label) + '</text>' : "") + '</svg></div>';
+}
+function mcSmooth(pts){
+  if(pts.length < 2) return "";
+  let d = "M " + pts[0][0] + " " + pts[0][1];
+  for(let i = 0; i < pts.length - 1; i++){
+    const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2, t = 0.18;
+    d += " C " + (p1[0] + (p2[0] - p0[0]) * t) + " " + (p1[1] + (p2[1] - p0[1]) * t) + ", " + (p2[0] - (p3[0] - p1[0]) * t) + " " + (p2[1] - (p3[1] - p1[1]) * t) + ", " + p2[0] + " " + p2[1];
+  }
+  return d;
+}
+function mcLine(o){
+  const labels = o.labels || [], series = (o.series || []).filter(function(s){ return (s.values || []).some(function(v){ return v !== null && v !== undefined; }); });
+  if(!labels.length || !series.length) return mcEmpty(o.empty);
+  const n = labels.length, H = o.height || 210, W = Math.max(320, n * 56), pl = 32, pr = 14, pt = 18, pb = 30, iw = W - pl - pr, ih = H - pt - pb;
+  const all = [].concat.apply([], series.map(function(s){ return s.values.filter(function(v){ return v !== null && v !== undefined; }); }));
+  let mx = o.max || Math.max.apply(null, all) * 1.1 || 1, mn = o.min !== undefined ? o.min : 0; if(mx <= mn) mx = mn + 1;
+  const X = function(i){ return n === 1 ? pl + iw / 2 : pl + iw * i / (n - 1); }, Y = function(v){ return pt + ih - ih * (v - mn) / (mx - mn); };
+  let grid = "", out = "", defs = "";
+  [0, 0.5, 1].forEach(function(t){ const y = pt + ih - ih * t; grid += '<line class="mc-grid-l" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y + '" y2="' + y + '"/><text class="mc-ax" x="' + (pl - 6) + '" y="' + (y + 3.5) + '" text-anchor="end">' + mcN(mn + (mx - mn) * t, mx >= 10 ? 0 : 1) + '</text>'; });
+  labels.forEach(function(l, i){ if(n > 9 && i % 2) return; grid += '<text class="mc-ax" x="' + X(i) + '" y="' + (H - 9) + '" text-anchor="middle">' + esc(l) + '</text>'; });
+  series.forEach(function(s, k){
+    const col = s.color || MC_PAL[k % MC_PAL.length], pts = [], id = "mcl" + (++MC_UID);
+    s.values.forEach(function(v, i){ if(v !== null && v !== undefined) pts.push([X(i), Y(v), v, i]); });
+    if(!pts.length) return;
+    defs += '<linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + col + '" stop-opacity=".28"/><stop offset="1" stop-color="' + col + '" stop-opacity="0"/></linearGradient>';
+    const d = mcSmooth(pts);
+    if(o.area !== false && pts.length > 1) out += '<path class="mc-area" d="' + d + ' L ' + pts[pts.length - 1][0] + ' ' + (pt + ih) + ' L ' + pts[0][0] + ' ' + (pt + ih) + ' Z" fill="url(#' + id + ')"/>';
+    if(pts.length > 1) out += '<path class="mc-line" style="--mc-len:' + Math.round(iw * 2.2) + '" d="' + d + '" fill="none" stroke="' + col + '" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" pathLength="' + Math.round(iw * 2.2) + '"/>';
+    pts.forEach(function(p){ out += '<circle class="mc-dot" cx="' + p[0] + '" cy="' + p[1] + '" r="4" fill="#fff" stroke="' + col + '" stroke-width="2.4"><title>' + esc((s.name ? s.name + " · " : "") + labels[p[3]] + ": " + mcN(p[2])) + '</title></circle>'; });
+  });
+  let leg = "";
+  if(series.length > 1) leg = '<div class="mc-stack-leg">' + series.map(function(s, k){ return '<span><i style="background:' + (s.color || MC_PAL[k % MC_PAL.length]) + '"></i>' + esc(s.name || "") + '</span>'; }).join("") + '</div>';
+  return '<svg class="mc-svg" style="max-width:' + Math.round(W * 1.8) + 'px;margin:0 auto" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(o.aria || "Diagram garis") + '"><defs>' + defs + '</defs>' + grid + out + '</svg>' + leg;
+}
+function mcStack(data){
+  data = (data || []).filter(function(d){ return d.value > 0; });
+  const tot = data.reduce(function(a, d){ return a + d.value; }, 0);
+  if(!tot) return mcEmpty();
+  return '<div class="mc-stack">' + data.map(function(d, i){ return '<span style="width:' + d.value / tot * 100 + '%;background:' + (d.color || MC_PAL[i % MC_PAL.length]) + ';animation-delay:' + i * 90 + 'ms" title="' + esc(d.label) + ': ' + d.value + '"></span>'; }).join("") + '</div>'
+    + '<div class="mc-stack-leg">' + data.map(function(d, i){ return '<span><i style="background:' + (d.color || MC_PAL[i % MC_PAL.length]) + '"></i>' + esc(d.label) + ' <b>' + d.value + '</b></span>'; }).join("") + '</div>';
+}
+function mcSpark(values, col){
+  const v = values.filter(function(x){ return x !== null && x !== undefined; });
+  if(v.length < 2) return "";
+  const W = 92, H = 34, mx = Math.max.apply(null, v), mn = Math.min.apply(null, v), rg = (mx - mn) || 1;
+  const pts = v.map(function(x, i){ return [i * (W - 4) / (v.length - 1) + 2, H - 4 - (x - mn) / rg * (H - 10)]; });
+  return '<svg class="mc-spark" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true"><path d="' + mcSmooth(pts) + '" fill="none" stroke="' + (col || "#fff") + '" stroke-width="2.2" stroke-linecap="round"/></svg>';
+}
+function mcKpi(o){
+  return '<div class="mc-kpi" style="--k1:' + (o.c1 || "#123d2a") + ';--k2:' + (o.c2 || "#1f7a4d") + '"><div class="k-l">' + esc(o.label) + '</div><div class="k-v">' + esc(String(o.value)) + '</div><div class="k-s">' + esc(o.sub || "") + '</div>' + (o.spark ? mcSpark(o.spark) : "") + '</div>';
+}
+
 function renderDashboard(root){
   /* ---- Periode tahun ajaran aktif: dipilih di dashboard, tersimpan sebagai periode "aktif"
      (sama dengan tanda aktif di menu Perangkat Ajar). Semua statistik di bawah mengikuti
@@ -7967,28 +8404,46 @@ function renderDashboard(root){
     </div>
   `;
 
+  /* ---- Grafik statistik dashboard ---- */
+  const siswaById = Object.fromEntries(siswa.map(x=>[x.id,x]));
+  const bln = (t)=> String(t||"").slice(0,7);
+  const blnLabel = (k)=> (MC_BULAN[(+k.slice(5,7))-1]||"").slice(0,3) + " " + k.slice(2,4);
+  const cH = {H:0,S:0,I:0,D:0,A:0}, hadirBln = {}, nilaiBln = {}, jurnalBln = {}, nilaiKelas = {}, nilaiSemua = [];
+  absensi.forEach(a=>{ const k = bln(a.tanggal); (a.records||[]).forEach(r=>{ if(cH[r.status]===undefined) return; cH[r.status]++; const o = hadirBln[k] || (hadirBln[k] = {h:0,t:0}); o.t++; if(r.status==="H") o.h++; }); });
+  penilaian.forEach(p=>{ const v = Number(p.nilai); if(isNaN(v)) return; nilaiSemua.push(v); const k = bln(p.tanggal); if(k){ const o = nilaiBln[k] || (nilaiBln[k] = {s:0,n:0}); o.s += v; o.n++; } const kl = (siswaById[p.siswaId]||{}).kelas; if(kl){ const o = nilaiKelas[kl] || (nilaiKelas[kl] = {s:0,n:0}); o.s += v; o.n++; } });
+  jurnal.forEach(j=>{ const k = bln(j.tanggal); if(k) jurnalBln[k] = (jurnalBln[k]||0) + 1; });
+  const bulanUrut = Array.from(new Set([].concat(Object.keys(hadirBln), Object.keys(nilaiBln), Object.keys(jurnalBln)))).filter(Boolean).sort().slice(-8);
+  const kelasSiswa = {}; siswa.forEach(x=>{ const k = x.kelas || "-"; kelasSiswa[k] = (kelasSiswa[k]||0) + 1; });
+  const sparkH = bulanUrut.map(k=> hadirBln[k] ? hadirBln[k].h/hadirBln[k].t*100 : null);
+  const sparkN = bulanUrut.map(k=> nilaiBln[k] ? nilaiBln[k].s/nilaiBln[k].n : null);
+  const totAbs = Object.values(cH).reduce((a,b)=>a+b,0);
+  const dashChartsHtml = `
+    <div class="mc-kpis">
+      ${mcKpi({label:"Total Siswa", value:siswa.length, sub:`${getKelasList().length} kelas terdaftar`, c1:"#123d2a", c2:"#1f7a4d"})}
+      ${mcKpi({label:"Rata-rata Kehadiran", value:hadirPct, sub:`${absensi.length} pertemuan diabsen${periode?" pada periode ini":""}`, c1:"#0f6f67", c2:"#14a39a", spark:sparkH})}
+      ${mcKpi({label:"Rata-rata Nilai", value:rataNilai, sub:`${penilaian.length} entri penilaian${periode?" pada periode ini":""}`, c1:"#1d5f8a", c2:"#2f8fbf", spark:sparkN})}
+      ${mcKpi({label:"Jurnal Mengajar", value:jurnal.length, sub:`kegiatan tercatat${periode?" pada periode ini":""}`, c1:"#8a6a0e", c2:"#c9a227"})}
+    </div>
+    <div class="mc-grid">
+      ${mcCard("Komposisi Kehadiran","Seluruh presensi pada periode ini",
+        mcDonut({data:[{label:"Hadir",value:cH.H,color:MC_HADIR.H},{label:"Sakit",value:cH.S,color:MC_HADIR.S},{label:"Izin",value:cH.I,color:MC_HADIR.I},{label:"Dispen",value:cH.D,color:MC_HADIR.D},{label:"Alpa",value:cH.A,color:MC_HADIR.A}], big:totAbs?Math.round(cH.H/totAbs*100)+"%":"–", small:"hadir", empty:"Belum ada data absensi."}), "#14a39a")}
+      ${mcCard("Sebaran Nilai","Jumlah entri penilaian per rentang nilai",
+        mcBars({data:mcBins(nilaiSemua,[0,60,70,80,90,101],["< 60","60–69","70–79","80–89","90–100"],[MC_GRADE.D,"#e0a526",MC_GRADE.B,"#2f8fbf",MC_GRADE.A]), empty:"Belum ada data nilai."}), "#2f8fbf")}
+      ${mcCard("Siswa per Kelas","Jumlah siswa terdaftar tiap kelas",
+        `<div class="mc-scroll">${mcHBars({data:Object.keys(kelasSiswa).sort(naturalCompare).map((k,i)=>({label:"Kelas "+k, value:kelasSiswa[k], color:MC_PAL[i%MC_PAL.length]})), max:Math.max(1,...Object.values(kelasSiswa)), unit:"", empty:"Belum ada data siswa."})}</div>`, "#1f7a4d")}
+    </div>
+    <div class="mc-grid w2">
+      ${mcCard("Tren Bulanan","Persentase kehadiran dan rata-rata nilai tiap bulan",
+        mcLine({labels:bulanUrut.map(blnLabel), series:[{name:"Kehadiran (%)", values:sparkH, color:"#14a39a"},{name:"Rata-rata nilai", values:sparkN, color:"#c9a227"}], max:100, min:0, empty:"Belum cukup data untuk tren."}), "#c9a227")}
+      ${mcCard("Rata-rata Nilai per Kelas","Dari seluruh entri penilaian",
+        mcHBars({data:Object.keys(nilaiKelas).sort(naturalCompare).map(k=>({label:"Kelas "+k, value:nilaiKelas[k].s/nilaiKelas[k].n, sub:nilaiKelas[k].n+" entri"})), max:100, auto:true, empty:"Belum ada data nilai."}), "#7a5fc0")}
+    </div>
+    ${bulanUrut.some(k=>jurnalBln[k]) ? `<div class="mc-grid">${mcCard("Aktivitas Jurnal Mengajar","Jumlah jurnal per bulan", mcBars({data:bulanUrut.map(k=>({label:blnLabel(k), value:jurnalBln[k]||0})), color:"#c9a227", height:150, empty:""}), "#c9a227")}</div>` : ""}
+  `;
+
   root.innerHTML = `
     ${periodeCardHtml}
-    <div class="grid grid-3">
-      <div class="card stat-card">
-        <div class="stat-icon">⚭</div>
-        <div class="label">Total Siswa</div>
-        <div class="value">${siswa.length}</div>
-        <div class="sub">${getKelasList().length} kelas terdaftar</div>
-      </div>
-      <div class="card stat-card">
-        <div class="stat-icon">☑</div>
-        <div class="label">Rata-rata Kehadiran</div>
-        <div class="value">${hadirPct}</div>
-        <div class="sub">${absensi.length} pertemuan diabsen${periode?" pada periode ini":""}</div>
-      </div>
-      <div class="card stat-card">
-        <div class="stat-icon">▦</div>
-        <div class="label">Rata-rata Nilai</div>
-        <div class="value">${rataNilai}</div>
-        <div class="sub">${penilaian.length} entri penilaian${periode?" pada periode ini":""}</div>
-      </div>
-    </div>
+    ${dashChartsHtml}
 
     <div class="grid grid-2" style="margin-top:16px;">
       <div class="card">
@@ -9277,12 +9732,32 @@ function pgInitPeringkat(box){
     let list = perAng(ang).filter(function(r){ return (!kelas || r.s.kelas === kelas) && (!cari || (r.s.nama + " " + (r.s.nis || "")).toLowerCase().indexOf(cari.toLowerCase()) > -1); });
     list.sort(function(a, b){ return (a.rankAng === null) - (b.rankAng === null) || (a.rankAng || 0) - (b.rankAng || 0) || naturalCompare(a.s.nama, b.s.nama); });
     const totBobot = PR_INDIKATOR.reduce(function(a, i){ return a + set.bobot[i.id]; }, 0);
+    /* grafik: dasar = angkatan + kelas yang dipilih (pencarian nama tidak memengaruhi statistik) */
+    const dasar = perAng(ang).filter(function(r){ return !kelas || r.s.kelas === kelas; });
+    const berskor = dasar.filter(function(r){ return r.total !== null; });
+    const skor = berskor.map(function(r){ return r.total; });
+    const rataSkor = skor.length ? skor.reduce(function(a, b){ return a + b; }, 0) / skor.length : null;
+    const top10 = berskor.slice().sort(function(a, b){ return b.total - a.total; }).slice(0, 10);
+    const kelasStat = {}; berskor.forEach(function(r){ const o = kelasStat[r.s.kelas] || (kelasStat[r.s.kelas] = { s:0, n:0 }); o.s += r.total; o.n++; });
+    const indStat = PR_INDIKATOR.map(function(i){ const v = dasar.map(function(r){ return r.sk[i.id]; }).filter(function(x){ return x !== null && x !== undefined; }); return { label:i.ikon + " " + i.label, sub:v.length + " siswa berdata", value: v.length ? v.reduce(function(a, b){ return a + b; }, 0) / v.length : 0 }; });
+    const grafik = '<div class="mc-kpis" style="margin-top:6px;">'
+        + mcKpi({ label:"Siswa Diperingkat", value:berskor.length, sub:"dari " + dasar.length + " siswa kelas " + ang + (kelas ? " (" + kelas + ")" : ""), c1:"#123d2a", c2:"#1f7a4d" })
+        + mcKpi({ label:"Rata-rata Skor", value:mcN(rataSkor), sub:"skor gabungan 0–100", c1:"#1d5f8a", c2:"#2f8fbf" })
+        + mcKpi({ label:"Skor Tertinggi", value:top10.length ? mcN(top10[0].total) : "–", sub:top10.length ? top10[0].s.nama : "belum ada data", c1:"#8a6a0e", c2:"#c9a227" })
+        + mcKpi({ label:"Skor Terendah", value:skor.length ? mcN(Math.min.apply(null, skor)) : "–", sub:"dari siswa yang punya data", c1:"#7a2e3a", c2:"#c0455f" })
+      + '</div><div class="mc-grid">'
+        + mcCard("10 Besar Angkatan " + ang, kelas ? "Kelas " + kelas : "Skor gabungan tertinggi", mcHBars({ data:top10.map(function(r){ return { label:r.s.nama, sub:"Kelas " + r.s.kelas, value:r.total }; }), max:100, auto:true, rank:true, empty:"Belum ada siswa yang punya data nilai." }), "#c9a227")
+        + mcCard("Sebaran Skor", "Jumlah siswa per rentang skor", mcBars({ data:mcBins(skor, [0, 60, 70, 80, 90, 101], ["< 60", "60–69", "70–79", "80–89", "90–100"], [MC_GRADE.D, "#e0a526", MC_GRADE.B, "#2f8fbf", MC_GRADE.A]), empty:"Belum ada skor." }), "#2f8fbf")
+        + mcCard("Rata-rata per Indikator", "Skor rata-rata tiap indikator", mcHBars({ data:indStat, max:100, auto:true, empty:"Belum ada data." }), "#7a5fc0")
+      + '</div>'
+      + (Object.keys(kelasStat).length > 1 ? '<div class="mc-grid">' + mcCard("Rata-rata Skor per Kelas", "Perbandingan kelas pada angkatan " + ang, '<div class="mc-scroll">' + mcHBars({ data:Object.keys(kelasStat).sort(naturalCompare).map(function(k){ return { label:"Kelas " + k, sub:kelasStat[k].n + " siswa", value:kelasStat[k].s / kelasStat[k].n }; }), max:100, auto:true }) + '</div>', "#14a39a") + '</div>' : "");
     box.innerHTML =
       '<div class="pg-panel-head"><div class="pg-panel-icon">🏆</div><div><h3 style="margin:0;">Peringkat Siswa per Angkatan</h3><div class="desc">Gabungan seluruh data aplikasi: nilai, ujian online, absensi, sikap, prestasi, dan asesmen</div></div></div>'
       + '<div style="display:flex; gap:8px; flex-wrap:wrap; margin:14px 0 12px;">' + PR_ANGKATAN.map(function(a){ const n = perAng(a).length; return '<button type="button" class="btn ' + (a === ang ? "btn-primary" : "btn-ghost") + ' btn-sm" data-pr-ang="' + a + '" style="width:auto;">Kelas ' + a + ' <span style="opacity:.75;">(' + n + ')</span></button>'; }).join("")
       + '<span style="flex:1;"></span><button type="button" class="btn btn-ghost btn-sm" id="prBobot" style="width:auto;">⚖ Atur Bobot</button><button type="button" class="btn btn-ghost btn-sm" id="prXls" style="width:auto;">⭳ Excel</button><button type="button" class="btn btn-gold btn-sm" id="prPdf" style="width:auto;">⭳ PDF</button></div>'
       + '<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;"><select id="prKelas" style="width:auto; min-width:150px; padding:9px 12px; border:1.5px solid var(--line); border-radius:10px; font-family:inherit; font-size:13px; background:#fff;"><option value="">Semua kelas ' + ang + '</option>' + daftarKelas.map(function(k){ return '<option value="' + esc(k) + '"' + (k === kelas ? " selected" : "") + '>' + esc(k) + '</option>'; }).join("") + '</select><input type="text" id="prCari" placeholder="Cari nama / NIS..." value="' + esc(cari) + '" style="width:auto; min-width:150px; padding:9px 12px; border:1.5px solid var(--line); border-radius:10px; font-family:inherit; font-size:13px; background:#fff; min-width:220px;"></div>'
       + '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;">' + PR_INDIKATOR.map(function(i){ return '<button type="button" data-pr-ind="' + i.id + '" style="background:#f3faf6; border:1.5px solid #dce7e0; border-radius:999px; padding:3px 10px; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; color:inherit;" title="Ketuk untuk penjelasan">' + i.ikon + ' ' + i.label + ' · ' + (totBobot ? Math.round(set.bobot[i.id] / totBobot * 100) : 0) + '%</button>'; }).join("") + '</div>'
+      + grafik
       + (list.length ? '<div class="table-wrap"><table><thead><tr><th class="c">Peringkat</th><th>Nama Siswa</th><th>Kelas</th><th class="c">Skor</th>' + PR_INDIKATOR.map(function(i){ return '<th class="c"><button type="button" data-pr-ind="' + i.id + '" title="Ketuk untuk melihat indikator ' + esc(i.label) + '" style="border:1.5px solid transparent; background:#fff; border-radius:10px; cursor:pointer; font-size:16px; padding:3px 7px; line-height:1;">' + i.ikon + '</button></th>'; }).join("") + '<th class="c">Peringkat Kelas</th></tr></thead><tbody>'
         + list.map(function(r){ return '<tr><td class="c" style="font-weight:800; font-size:15px;">' + (r.rankAng ? (medali(r.rankAng) || r.rankAng) : '<span style="color:#9aa8a0;">–</span>') + '</td><td><a href="#" data-pr-detail="' + r.s.id + '" style="color:#14663f; font-weight:700; text-decoration:underline dotted; text-underline-offset:3px;">' + esc(r.s.nama) + '</a><div style="font-size:11px; color:var(--ink-soft);">NIS ' + esc(r.s.nis || "-") + '</div></td><td>' + esc(r.s.kelas || "-") + '</td>'
             + '<td class="c">' + (r.total === null ? '<span style="font-size:11px; color:#9aa8a0;">Belum ada data</span>' : '<b style="font-size:15px; color:#14663f;">' + f1(r.total) + '</b>') + '</td>'
@@ -12313,6 +12788,28 @@ function renderAbsensi(root){
           <div class="pk-sum-box"><strong>${pct===null?"-":pct+"%"}</strong><small>rata-rata hadir</small></div>
         </div>
         <div class="pk-sum-stat">${STATUS_URUT.map(k=>`<span class="pk-st pk-st-${k.toLowerCase()}"><b>${tot[k]}</b>${NAMA_STATUS[k]}</span>`).join("")}</div>
+      </div>${grafikAbsen(tot, semua, pct)}`;
+    };
+    /* Grafik presensi: komposisi status + tren kehadiran (per bulan untuk rekap tahunan, per pertemuan untuk lainnya) */
+    const grafikAbsen = (tot, semua, pct)=>{
+      const pctRec = a=>{ let t = 0, h = 0; (a.records||[]).forEach(r=>{ if(STATUS_URUT.indexOf(r.status)>=0){ t++; if(r.status==="H") h++; } }); return t ? h/t*100 : null; };
+      let tren = "";
+      if(tahunan){
+        const dari = sem==="genap" ? 6 : 0, sampai = sem==="ganjil" ? 6 : 12, lab = [], val = [];
+        for(let i=dari;i<sampai;i++){
+          const idx = 6+i, k = `${taY + Math.floor(idx/12)}-${String((idx%12)+1).padStart(2,"0")}`;
+          const rb = recs.filter(a=> (a.tanggal||"").slice(0,7)===k); let t = 0, h = 0;
+          rb.forEach(a=> (a.records||[]).forEach(r=>{ if(STATUS_URUT.indexOf(r.status)>=0){ t++; if(r.status==="H") h++; } }));
+          lab.push((BULAN_ID[(+k.slice(5,7))-1]||"").slice(0,3)); val.push(t ? Math.round(h/t*100) : null);
+        }
+        tren = mcCard("Kehadiran per Bulan","Persentase hadir tiap bulan", mcBars({data:lab.map((l,i)=>({label:l, value:val[i]||0, color: val[i]===null ? "#c5cfc9" : mcWarna(val[i],100)})), max:100, unit:"%", dec:0, ref:75, refLabel:"75%"}), "#14a39a");
+      } else {
+        const urut = recs.slice().sort((a,b)=> (a.tanggal||"").localeCompare(b.tanggal||"")).slice(-14);
+        tren = mcCard("Tren Kehadiran","Persentase hadir tiap pertemuan", mcLine({labels:urut.map(a=> (a.tanggal||"").slice(8,10)+"/"+(a.tanggal||"").slice(5,7)), series:[{name:"Hadir (%)", values:urut.map(pctRec).map(v=> v===null ? null : Math.round(v)), color:"#14a39a"}], max:100, min:0}), "#14a39a");
+      }
+      return `<div class="mc-grid w2" style="margin:12px 24px;">
+        ${mcCard("Komposisi Kehadiran","Seluruh status presensi pada periode ini", mcDonut({data:STATUS_URUT.map(k=>({label:NAMA_STATUS[k], value:tot[k], color:MC_HADIR[k]})), big:pct===null?"–":pct+"%", small:"hadir"}), "#1f7a4d")}
+        ${tren}
       </div>`;
     };
 
@@ -13844,6 +14341,39 @@ function renderPenilaian(root){
     });
   }
 
+  /* Ringkasan grafik di atas Lembar Penilaian */
+  function grafikLembar(kelas, siswaKelas){
+    const ids = new Set(siswaKelas.map(s=>s.id));
+    const pen = DB.get(DB.keys.penilaian, []).filter(p=> ids.has(p.siswaId));
+    if(!pen.length) return "";
+    const avgS = (sid, j)=>{ const a = pen.filter(p=>p.siswaId===sid && p.jenis===j); return a.length ? a.reduce((x,p)=>x+Number(p.nilai||0),0)/a.length : null; };
+    const rows = siswaKelas.map(s=>{ const t = avgS(s.id,"Tugas"), m = avgS(s.id,"Sumatif"), a = avgS(s.id,"SAS"); return { nama:s.nama, akhir:hitungNilaiAkhir(t,m,a) }; }).filter(r=> r.akhir!==null);
+    const v = rows.map(r=>r.akhir), rata = v.length ? v.reduce((a,b)=>a+b,0)/v.length : null;
+    const cnt = {A:0,B:0,C:0,D:0}; v.forEach(x=>{ cnt[x>=90?"A":x>=80?"B":x>=70?"C":"D"]++; });
+    const jenis = [["Tugas","#2f8fbf"],["Sumatif","#c9a227"],["SAS","#7a5fc0"]].map(([j,c])=>{ const q = pen.filter(p=>p.jenis===j).map(p=>Number(p.nilai)).filter(x=>!isNaN(x)); return { label:j, value:q.length ? q.reduce((a,b)=>a+b,0)/q.length : 0, color:c }; });
+    const rendah = rows.slice().sort((a,b)=>a.akhir-b.akhir).slice(0,5);
+    return `<div class="mc-kpis">
+        ${mcKpi({label:"Siswa Bernilai", value:rows.length, sub:`dari ${siswaKelas.length} siswa kelas ${kelas}`, c1:"#123d2a", c2:"#1f7a4d"})}
+        ${mcKpi({label:"Rata-rata Nilai Akhir", value:mcN(rata), sub:"kelas ini", c1:"#1d5f8a", c2:"#2f8fbf"})}
+        ${mcKpi({label:"Tuntas (≥ 70)", value:v.length?Math.round(v.filter(x=>x>=70).length/v.length*100)+"%":"–", sub:`${v.filter(x=>x>=70).length} dari ${v.length} siswa`, c1:"#0f6f67", c2:"#14a39a"})}
+        ${mcKpi({label:"Perlu Pendampingan", value:v.filter(x=>x<70).length, sub:"nilai akhir di bawah 70", c1:"#7a2e3a", c2:"#c0455f"})}
+      </div>
+      <div class="mc-grid">
+        ${mcCard("Rata-rata per Komponen","Tugas, Sumatif, dan SAS", mcBars({data:jenis, max:100, dec:1, ref:70, refLabel:"70"}), "#2f8fbf")}
+        ${mcCard("Sebaran Predikat","Jumlah siswa tiap predikat", mcDonut({data:[{label:"A (≥ 90)",value:cnt.A,color:MC_GRADE.A},{label:"B (80–89)",value:cnt.B,color:MC_GRADE.B},{label:"C (70–79)",value:cnt.C,color:MC_GRADE.C},{label:"D (< 70)",value:cnt.D,color:MC_GRADE.D}], big:v.length, small:"siswa"}), "#1f7a4d")}
+        ${mcCard("Perlu Perhatian","5 nilai akhir terendah", mcHBars({data:rendah.map(r=>({label:r.nama, value:r.akhir})), max:100, auto:true, empty:"Belum ada nilai."}), "#c0455f")}
+      </div>`;
+  }
+  function grafikKehadiranKelas(siswaKelas, cnt){
+    const tot = {H:0,S:0,I:0,A:0,D:0}; siswaKelas.forEach(s=>{ Object.keys(tot).forEach(k=> tot[k]+=cnt[s.id][k]); });
+    const semua = Object.values(tot).reduce((a,b)=>a+b,0); if(!semua) return "";
+    const pr = siswaKelas.map(s=>{ const c = cnt[s.id], t = c.H+c.S+c.I+c.A+c.D; return { nama:s.nama, pct: t ? c.H/t*100 : null }; }).filter(r=>r.pct!==null).sort((a,b)=>a.pct-b.pct).slice(0,6);
+    return `<div class="mc-grid w2" style="margin-bottom:14px;">
+      ${mcCard("Komposisi Kehadiran","Seluruh presensi kelas", mcDonut({data:[{label:"Hadir",value:tot.H,color:MC_HADIR.H},{label:"Sakit",value:tot.S,color:MC_HADIR.S},{label:"Izin",value:tot.I,color:MC_HADIR.I},{label:"Dispen",value:tot.D,color:MC_HADIR.D},{label:"Alpa",value:tot.A,color:MC_HADIR.A}], big:Math.round(tot.H/semua*100)+"%", small:"hadir"}), "#14a39a")}
+      ${mcCard("Kehadiran Terendah","6 siswa dengan persentase hadir terendah", mcHBars({data:pr.map(r=>({label:r.nama, value:Math.round(r.pct)})), max:100, unit:"%", auto:true}), "#d0453b")}
+    </div>`;
+  }
+
   function drawLembar(){
     const kelas = PEN_STATE.kelas;
     const siswaKelas = siswaAll.filter(s=>s.kelas===kelas).sort((a,b)=> naturalCompare(a.nama,b.nama));
@@ -13872,6 +14402,7 @@ function renderPenilaian(root){
           <button type="button" class="pn-btn pn-btn-gold" id="downloadPdfBtn">${svgIcon("download")}<span>Unduh PDF Nilai Kelas ${esc(kelas)}</span></button>
         </div>
       </div>
+      ${grafikLembar(kelas, siswaKelas)}
       <div class="pn-tablewrap pn-gridwrap"><table class="pn-grid">
         <thead>
           <tr class="pn-grp">
@@ -14132,6 +14663,7 @@ function renderPenilaian(root){
         </div>
         <div class="pn-btns"><button type="button" class="pn-btn" id="goAbsensi"><span>Buka menu Absensi</span>${svgIcon("arrowright")}</button></div>
       </div>
+      ${grafikKehadiranKelas(siswaKelas, cnt)}
       <div class="pn-tablewrap"><table class="pn-table">
         <thead><tr><th style="width:44px;">No</th><th>NIS</th><th>Nama Siswa</th><th class="c">Hadir</th><th class="c">Sakit</th><th class="c">Izin</th><th class="c">Alpa</th><th class="c">Dispen</th><th>% Hadir</th></tr></thead>
         <tbody>
@@ -14826,7 +15358,7 @@ function doPost(e){
     const ss = SpreadsheetApp.getActiveSpreadsheet();
 
     if(data.action === "ping"){
-      return respond({ ok:true, pesan:"Server CBT aktif", versi:14, v:6 });
+      return respond({ ok:true, pesan:"Server CBT aktif", versi:15, v:6 });
     }
 
     if(data.action === "status"){
@@ -15374,6 +15906,11 @@ function aiNilaiGemini(items){
     }
   }
   throw new Error(galat);
+}
+/* Jalankan SEKALI dari editor Apps Script (pilih fungsi ini lalu klik Jalankan) untuk memberi izin akses internet ke Gemini. */
+function otorisasiAI(){
+  const r = UrlFetchApp.fetch("https://generativelanguage.googleapis.com/", { muteHttpExceptions:true });
+  Logger.log("Izin akses internet OK (kode " + r.getResponseCode() + "). Sekarang: Terapkan > Kelola deployment > Edit > Versi baru > Terapkan.");
 }
 function aiBatas(nama){
   const c = CacheService.getScriptCache(), k = "ai_" + String(nama || "x").substring(0, 40);
@@ -16954,6 +17491,7 @@ function renderUjianCBT(root){
             <button class="btn btn-gold btn-sm" id="cbtHasilDlPdfBtn" style="width:auto;">⭳ PDF</button>
           </div>
         </div>
+        <div id="cbtHasilCharts" style="padding:12px 14px 0;"></div>
         <div class="doc-shell-body pad0"><div style="font-size:11.5px; color:var(--ink-soft); padding:8px 14px 0;">Ketuk nama siswa untuk melihat jawaban lengkapnya.</div><div class="pn-tablewrap"><table class="pn-table">
           <thead><tr><th>Tes</th><th>Nama</th><th>Kelas</th><th>Skor</th><th>Benar/Total</th><th>Waktu</th><th>Pelanggaran</th><th></th></tr></thead>
           <tbody id="cbtHasilTbody"></tbody>
@@ -17575,9 +18113,33 @@ function renderUjianCBT(root){
     reader.onload = ()=> prosesCsv(reader.result);
     reader.readAsText(file);
   };
+  function gambarGrafikHasil(list){
+    const box = root.querySelector("#cbtHasilCharts"); if(!box) return;
+    if(!list.length){ box.innerHTML = ""; return; }
+    const sk = list.map(h=> Number(h.skor)).filter(v=> !isNaN(v));
+    const rata = sk.length ? sk.reduce((a,b)=>a+b,0)/sk.length : null;
+    const lulus = sk.filter(v=> v>=70).length, curang = list.filter(h=> h.pelanggaran>0).length;
+    const perTes = {}, perKelas = {};
+    list.forEach(h=>{ const v = Number(h.skor); if(isNaN(v)) return; const t = h.testJudul || "(tes)", k = h.kelas || "-"; (perTes[t] = perTes[t] || []).push(v); (perKelas[k] = perKelas[k] || []).push(v); });
+    const av = a=> a.reduce((x,y)=>x+y,0)/a.length;
+    box.innerHTML = `
+      <div class="mc-kpis">
+        ${mcKpi({label:"Hasil Tersimpan", value:list.length, sub:hasilFilterTes.value || hasilFilterKelas.value ? "sesuai filter" : "semua tes dan kelas", c1:"#123d2a", c2:"#1f7a4d"})}
+        ${mcKpi({label:"Rata-rata Skor", value:mcN(rata), sub:`tertinggi ${sk.length ? mcN(Math.max.apply(null,sk)) : "–"} · terendah ${sk.length ? mcN(Math.min.apply(null,sk)) : "–"}`, c1:"#1d5f8a", c2:"#2f8fbf"})}
+        ${mcKpi({label:"Tuntas (≥ 70)", value:sk.length ? Math.round(lulus/sk.length*100)+"%" : "–", sub:`${lulus} dari ${sk.length} peserta`, c1:"#0f6f67", c2:"#14a39a"})}
+        ${mcKpi({label:"Terdeteksi Curang", value:curang, sub:"keluar halaman saat ujian", c1:"#7a2e3a", c2:"#c0455f"})}
+      </div>
+      <div class="mc-grid">
+        ${mcCard("Sebaran Skor","Jumlah peserta per rentang skor", mcBars({data:mcBins(sk,[0,60,70,80,90,101],["< 60","60–69","70–79","80–89","90–100"],[MC_GRADE.D,"#e0a526",MC_GRADE.B,"#2f8fbf",MC_GRADE.A]), ref:null}), "#2f8fbf")}
+        ${mcCard("Ketuntasan","Peserta dengan skor ≥ 70", mcDonut({data:[{label:"Tuntas",value:lulus,color:MC_GRADE.A},{label:"Belum tuntas",value:sk.length-lulus,color:MC_GRADE.D}], big:sk.length, small:"peserta"}), "#1f7a4d")}
+        ${mcCard("Rata-rata per Tes","Rata-rata skor tiap tes", `<div class="mc-scroll">${mcHBars({data:Object.keys(perTes).map(t=>({label:t, value:av(perTes[t]), sub:perTes[t].length+" peserta"})), max:100, auto:true})}</div>`, "#c9a227")}
+      </div>
+      ${Object.keys(perKelas).length>1 ? `<div class="mc-grid">${mcCard("Rata-rata Skor per Kelas","Perbandingan antarkelas", `<div class="mc-scroll">${mcHBars({data:Object.keys(perKelas).sort(naturalCompare).map(k=>({label:"Kelas "+k, value:av(perKelas[k]), sub:perKelas[k].length+" peserta"})), max:100, auto:true})}</div>`, "#7a5fc0")}</div>` : ""}`;
+  }
   function drawHasil(){
     isiFilterTes();
     const list = getHasilFiltered();
+    gambarGrafikHasil(list);
     const kosongKeterangan = [hasilFilterTes.value ? `tes "${esc(hasilFilterTes.options[hasilFilterTes.selectedIndex].text)}"` : "", hasilFilterKelas.value ? `kelas ${esc(hasilFilterKelas.value)}` : ""].filter(Boolean).join(" dan ");
     hasilTbody.innerHTML = list.length ? list.map(h=>`
       <tr>
@@ -17726,7 +18288,8 @@ function renderUjianCBT(root){
       chip("Terputus: "+n("Terputus"), "#eceff1", "#5b6b64") +
       chip("Selesai: "+n("Selesai"), "#e8eefc", "#2a4aa0") +
       chip("Terindikasi curang: "+curang, curang ? "#fde8ec" : "#f3f6f4", curang ? "#b3364f" : "#6b8577") +
-      (menunggu.length ? chip("🔔 Minta tes ulang: "+menunggu.length, "#fff0cc", "#8a5a00") : "");
+      (menunggu.length ? chip("🔔 Minta tes ulang: "+menunggu.length, "#fff0cc", "#8a5a00") : "") +
+      (list.length ? `<div style="flex:1 1 100%; margin-top:4px;">${mcStack([{label:"Mengerjakan",value:n("Mengerjakan"),color:"#1f7a4d"},{label:"Terputus",value:n("Terputus"),color:"#9aa8a0"},{label:"Selesai",value:n("Selesai"),color:"#2f8fbf"}])}</div>` : "");
 
     /* Kotak permintaan izin mengulang tes: tombol Izinkan / Tolak */
     pantauIzinBox.innerHTML = menunggu.length ? `
@@ -17904,6 +18467,7 @@ function renderNilaiAkhir(root){
   const periodeAktif = DB.get(DB.keys.perangkatAjar, []).find(p=>p.aktif);
 
   root.innerHTML = `
+    <div id="nkCharts"></div>
     <div class="card">
       <div class="section-title">
         <div><h3>Rekap Nilai Akhir</h3><div class="desc">Akumulasi dari semua penilaian — Bobot: ${bobotLabel()}</div></div>
@@ -17967,8 +18531,33 @@ function renderNilaiAkhir(root){
     return `<span class="na-rank" title="${esc(naKeteranganPeringkat(r))}">${medali}<strong>${r.rank}</strong><small>/${r.rankDari}</small></span>${tie}`;
   }
 
+  function gambarGrafikNA(rows){
+    const box = root.querySelector("#nkCharts"); if(!box) return;
+    const ada = rows.filter(r=> r.akhir!==null), v = ada.map(r=> r.akhir);
+    const rata = v.length ? v.reduce((a,b)=>a+b,0)/v.length : null;
+    const tuntas = v.length ? Math.round(v.filter(x=>x>=70).length/v.length*100) : null;
+    const best = ada.slice().sort((a,b)=> b.akhir-a.akhir)[0], low = ada.slice().sort((a,b)=> a.akhir-b.akhir)[0];
+    const cnt = {A:0,B:0,C:0,D:0}; ada.forEach(r=>{ if(cnt[r.predikat]!==undefined) cnt[r.predikat]++; });
+    const perKelas = {}; ada.forEach(r=>{ const o = perKelas[r.kelas] || (perKelas[r.kelas] = {s:0,n:0}); o.s += r.akhir; o.n++; });
+    const kl = Object.keys(perKelas).sort(naturalCompare);
+    const top = ada.slice().sort((a,b)=> b.akhir-a.akhir).slice(0,5);
+    box.innerHTML = `
+      <div class="mc-kpis">
+        ${mcKpi({label:"Siswa Bernilai", value:ada.length, sub:`dari ${rows.length} siswa ${sel.value?"kelas "+sel.value:"(semua kelas)"}`, c1:"#123d2a", c2:"#1f7a4d"})}
+        ${mcKpi({label:"Rata-rata Nilai Akhir", value:rata===null?"–":mcN(rata), sub:"seluruh siswa bernilai", c1:"#1d5f8a", c2:"#2f8fbf"})}
+        ${mcKpi({label:"Tuntas (≥ 70)", value:tuntas===null?"–":tuntas+"%", sub:`${v.filter(x=>x>=70).length} dari ${v.length} siswa`, c1:"#0f6f67", c2:"#14a39a"})}
+        ${mcKpi({label:"Nilai Tertinggi", value:best?mcN(best.akhir):"–", sub:best?best.nama:"belum ada data", c1:"#8a6a0e", c2:"#c9a227"})}
+      </div>
+      <div class="mc-grid">
+        ${mcCard("Sebaran Predikat","Jumlah siswa tiap predikat", mcDonut({data:[{label:"A (≥ 90)",value:cnt.A,color:MC_GRADE.A},{label:"B (80–89)",value:cnt.B,color:MC_GRADE.B},{label:"C (70–79)",value:cnt.C,color:MC_GRADE.C},{label:"D (< 70)",value:cnt.D,color:MC_GRADE.D}], big:ada.length, small:"siswa", empty:"Belum ada nilai akhir."}), "#1f7a4d")}
+        ${mcCard("Distribusi Nilai Akhir","Jumlah siswa per rentang nilai", mcBars({data:mcBins(v,[0,60,70,80,90,101],["< 60","60–69","70–79","80–89","90–100"],[MC_GRADE.D,"#e0a526",MC_GRADE.B,"#2f8fbf",MC_GRADE.A]), ref:null, empty:"Belum ada nilai akhir."}), "#2f8fbf")}
+        ${mcCard("5 Nilai Tertinggi","Siswa dengan nilai akhir terbaik", mcHBars({data:top.map(r=>({label:r.nama, sub:"Kelas "+r.kelas, value:r.akhir})), max:100, auto:true, rank:true, empty:"Belum ada nilai akhir."}), "#c9a227")}
+      </div>
+      ${kl.length>1 ? `<div class="mc-grid">${mcCard("Rata-rata Nilai Akhir per Kelas","Perbandingan antarkelas", `<div class="mc-scroll">${mcHBars({data:kl.map(k=>({label:"Kelas "+k, value:perKelas[k].s/perKelas[k].n, sub:perKelas[k].n+" siswa"})), max:100, auto:true})}</div>`, "#7a5fc0")}</div>` : ""}`;
+  }
   function draw(){
     const rows = computeRows();
+    gambarGrafikNA(rows);
     tbody.innerHTML = rows.length ? rows.map(r=>`
       <tr>
         <td><strong>${esc(r.nama)}</strong></td>
@@ -20259,6 +20848,8 @@ function renderELearning(root){
       <div class="ja-stats" id="jaStats"></div>
     </div>
 
+    <div id="jaCharts"></div>
+
     <div class="ja-bar">
       <input type="search" id="jaQ" class="ja-in ja-grow" placeholder="Cari nama siswa…" aria-label="Cari nama siswa">
       <select id="jaKelas" class="ja-in" aria-label="Kelas"></select>
@@ -20275,6 +20866,7 @@ function renderELearning(root){
     </div>
   </div>`;
 
+  const elCharts = root.querySelector("#jaCharts");
   const elStats = root.querySelector("#jaStats"), elList = root.querySelector("#jaList"), elDetail = root.querySelector("#jaDetail");
   const elKelas = root.querySelector("#jaKelas"), elTopik = root.querySelector("#jaTopik"), elSrc = root.querySelector("#jaSrc");
 
@@ -20325,6 +20917,35 @@ function renderELearning(root){
       + kartu(tuntas, "Sudah tuntas", "minimal satu topik", "ok")
       + kartu(tertulis, "Jawaban tertulis", "apersepsi dan refleksi", "gold")
       + kartu(r == null ? "–" : r, "Rata-rata nilai uji", "KKM " + K.kkm, r != null && r < K.kkm ? "bad" : "");
+  }
+
+  function gambarGrafik(){
+    const d = disaring();
+    const tops = {}; let tuntas = 0, jalan = 0; const semua = { um:[], uv:[], pt:[] }, mood = [0,0,0,0,0,0], aiV = { ap:[], rf:[] };
+    d.forEach(function(e){
+      const done = Object.keys(e.snap).some(function(t){ return e.snap[t].done; });
+      if(done) tuntas++; else jalan++;
+      Object.keys(e.snap).forEach(function(tid){
+        if(A.topik && tid !== A.topik) return;
+        const s = e.snap[tid], o = tops[tid] || (tops[tid] = { um:[], uv:[], pt:[] });
+        ["um", "uv", "pt"].forEach(function(k){ if(s.sc && s.sc[k] != null){ o[k].push(+s.sc[k]); semua[k].push(+s.sc[k]); } });
+        if(s.mood >= 1 && s.mood <= 5) mood[s.mood]++;
+        const ai = s.ai || {}; ["ap", "rf"].forEach(function(k){ (ai[k] || []).forEach(function(r){ if(r && typeof r.s === "number") aiV[k].push(r.s); }); });
+      });
+    });
+    const avg = function(v){ return v.length ? v.reduce(function(a, b){ return a + b; }, 0) / v.length : null; };
+    const gabung = semua.um.concat(semua.uv, semua.pt);
+    const rataKomp = [["Uji Materi", semua.um, "#2f8fbf"], ["Uji Video", semua.uv, "#14a39a"], ["Pos Tes", semua.pt, "#c9a227"], ["Apersepsi", aiV.ap, "#7a5fc0"], ["Refleksi", aiV.rf, "#c0455f"]].map(function(x){ return { label:x[0], value:avg(x[1]) || 0, color:x[2] }; });
+    const topikData = Object.keys(tops).sort(function(a, b){ const ia = K.topics.findIndex(function(t){ return t.id === a; }), ib = K.topics.findIndex(function(t){ return t.id === b; }); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); }).map(function(tid){ const o = tops[tid]; return { label:topikJudul(tid), value:avg(o.um.concat(o.uv, o.pt)) || 0, sub:o.um.concat(o.uv, o.pt).length + " nilai" }; });
+    const moodTotal = mood.reduce(function(a, b){ return a + b; }, 0);
+    elCharts.innerHTML = '<div class="mc-grid">'
+      + mcCard("Ketuntasan Siswa", "Siswa dengan minimal satu topik tuntas", mcDonut({ data:[{ label:"Tuntas", value:tuntas, color:MC_GRADE.A }, { label:"Sedang berjalan", value:jalan, color:"#e0a526" }], big:d.length, small:"siswa", empty:"Belum ada siswa tercatat." }), "#1f7a4d")
+      + mcCard("Rata-rata per Tahap", "Nilai uji dan penilaian AI untuk jawaban tertulis", mcBars({ data:rataKomp, max:100, dec:1, ref:K.kkm, refLabel:"KKM " + K.kkm, empty:"Belum ada nilai." }), "#2f8fbf")
+      + mcCard("Sebaran Nilai Uji", "Gabungan uji materi, uji video, dan pos tes", mcBars({ data:mcBins(gabung, [0, 60, 70, 80, 90, 101], ["< 60", "60–69", "70–79", "80–89", "90–100"], [MC_GRADE.D, "#e0a526", MC_GRADE.B, "#2f8fbf", MC_GRADE.A]), empty:"Belum ada nilai uji." }), "#c9a227")
+      + '</div><div class="mc-grid w2">'
+      + mcCard("Rata-rata Nilai per Topik", "Seluruh nilai uji pada tiap topik", '<div class="mc-scroll">' + mcHBars({ data:topikData, max:100, auto:true, empty:"Belum ada data topik." }) + '</div>', "#7a5fc0")
+      + mcCard("Suasana Hati Siswa", "Dari pilihan emoji pada tahap refleksi", mcDonut({ data:[5, 4, 3, 2, 1].map(function(m){ return { label:JA_MOOD[m] + " " + ["", "Sangat sedih", "Kurang baik", "Biasa saja", "Senang", "Sangat senang"][m], value:mood[m], color:["", "#d0453b", "#e0683f", "#e0a526", "#14a39a", "#1f7a4d"][m] }; }), big:moodTotal, small:"refleksi", empty:"Belum ada refleksi." }), "#c0455f")
+      + '</div>';
   }
 
   function gambarList(){
@@ -20423,7 +21044,7 @@ function renderELearning(root){
     };
   }
 
-  function gambarSemua(){ gambarStat(); gambarList(); gambarDetail(); }
+  function gambarSemua(){ gambarStat(); gambarGrafik(); gambarList(); gambarDetail(); }
 
   function pasangList(){
     elList.onclick = function(ev){
