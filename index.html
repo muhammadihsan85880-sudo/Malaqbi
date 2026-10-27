@@ -15878,16 +15878,21 @@ function aiNilaiGemini(items){
   const pilihan = sp.getProperty("gemini_model");
   const daftar = pilihan ? [pilihan] : ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.0-flash"];
   let galat = "AI tidak dapat dihubungi";
+  const mulai = Date.now();
+  function detail(r){ try{ const e = JSON.parse(r.getContentText()).error; return e && e.message ? String(e.message).substring(0, 160) : ""; }catch(x){ return ""; } }
   for(let m = 0; m < daftar.length; m++){
+    const b2 = JSON.parse(JSON.stringify(body));
+    if(/2\.5-flash/.test(daftar[m])) b2.generationConfig.thinkingConfig = { thinkingBudget:0 };
     for(let coba = 0; coba < 2; coba++){
+      if(Date.now() - mulai > 38000) throw new Error(galat + " (waktu habis di server)");
       const r = UrlFetchApp.fetch("https://generativelanguage.googleapis.com/v1beta/models/" + daftar[m] + ":generateContent", {
-        method:"post", contentType:"application/json", headers:{ "x-goog-api-key": kunci }, payload: JSON.stringify(body), muteHttpExceptions:true
+        method:"post", contentType:"application/json", headers:{ "x-goog-api-key": kunci }, payload: JSON.stringify(b2), muteHttpExceptions:true
       });
       const kode = r.getResponseCode();
-      if(kode === 404) break;
-      if(kode === 400 || kode === 403){ throw new Error("Kunci Gemini tidak valid atau tidak diizinkan (kode " + kode + "). Periksa kunci API di Pengaturan."); }
-      if(kode === 429 || kode >= 500){ galat = kode === 429 ? "Kuota AI sedang penuh, coba lagi sebentar" : "Layanan AI sedang sibuk"; Utilities.sleep(1500); continue; }
-      if(kode !== 200){ galat = "AI menolak permintaan (kode " + kode + ")"; break; }
+      if(kode === 404){ galat = "Model " + daftar[m] + " tidak ditemukan"; break; }
+      if(kode === 400 || kode === 403){ throw new Error("Kunci Gemini tidak valid atau tidak diizinkan (kode " + kode + "): " + detail(r) + " Periksa kunci API di Pengaturan."); }
+      if(kode === 429 || kode >= 500){ galat = (kode === 429 ? "Kuota AI sedang penuh, coba lagi sebentar" : "Layanan AI sedang sibuk (kode " + kode + ")") + " " + detail(r); if(kode === 429) break; Utilities.sleep(1000); continue; }
+      if(kode !== 200){ galat = "AI menolak permintaan (kode " + kode + ") " + detail(r); break; }
       try{
         const j = JSON.parse(r.getContentText());
         const c = j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts;
