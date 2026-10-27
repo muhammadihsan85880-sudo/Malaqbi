@@ -15867,7 +15867,7 @@ function aiPetunjuk(){
 /* Cari model Gemini yang benar-benar tersedia untuk kunci ini (nama model berganti seiring waktu). Hasil disimpan 6 jam. */
 function aiDaftarModel(kunci){
   const cache = CacheService.getScriptCache();
-  const ada = cache.get("ai_models");
+  const ada = cache.get("ai_models2");
   if(ada){ try{ const a = JSON.parse(ada); if(a.length) return a; }catch(x){} }
   const baku = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash"];
   try{
@@ -15879,11 +15879,13 @@ function aiDaftarModel(kunci){
     ms.sort(function(a, b){
       const va = parseFloat((a.match(/([0-9]+[.]?[0-9]*)/) || [0, 0])[1]), vb = parseFloat((b.match(/([0-9]+[.]?[0-9]*)/) || [0, 0])[1]);
       const la = /latest/.test(a) ? 1 : 0, lb = /latest/.test(b) ? 1 : 0;
-      return la !== lb ? lb - la : vb - va;
+      const p = function(n){ return /2[.]5-flash$/.test(n) ? 1 : 0; };
+      if(p(a) !== p(b)) return p(b) - p(a);
+      return la !== lb ? la - lb : vb - va;
     });
     const hasil = ms.slice(0, 4);
     if(!hasil.length) return baku;
-    cache.put("ai_models", JSON.stringify(hasil), 21600);
+    cache.put("ai_models2", JSON.stringify(hasil), 21600);
     return hasil;
   }catch(x){ return baku; }
 }
@@ -15897,7 +15899,7 @@ function aiNilaiGemini(items){
     teks += "### BUTIR " + (i + 1) + NL + "id: " + it.id + NL + "Jenis: " + it.jenis + NL + "Pertanyaan: " + it.soal + NL
       + "Pedoman penilaian: " + (it.pedoman || "(tidak ada)") + NL + "Jawaban siswa: <<<" + it.jawaban + ">>>" + NL + NL;
   });
-  const body = { contents:[{ parts:[{ text:teks }] }], generationConfig:{ temperature:0.2, responseMimeType:"application/json" } };
+  const body = { contents:[{ parts:[{ text:teks }] }], generationConfig:{ temperature:0.2, responseMimeType:"application/json", maxOutputTokens:2048 } };
   const pilihan = sp.getProperty("gemini_model");
   const daftar = pilihan ? [pilihan] : aiDaftarModel(kunci);
   let galat = "AI tidak dapat dihubungi";
@@ -15907,12 +15909,13 @@ function aiNilaiGemini(items){
     const b2 = JSON.parse(JSON.stringify(body));
     if(/2[.]5-flash/.test(daftar[m]) && !/lite/.test(daftar[m])) b2.generationConfig.thinkingConfig = { thinkingBudget:0 };
     for(let coba = 0; coba < 2; coba++){
-      if(Date.now() - mulai > 38000) throw new Error(galat + " (waktu habis di server)");
+      if(Date.now() - mulai > 30000) throw new Error(galat + " (waktu habis di server setelah " + Math.round((Date.now() - mulai) / 1000) + " dtk, model: " + daftar.join(", ") + ")");
       const r = UrlFetchApp.fetch("https://generativelanguage.googleapis.com/v1beta/models/" + daftar[m] + ":generateContent", {
         method:"post", contentType:"application/json", headers:{ "x-goog-api-key": kunci }, payload: JSON.stringify(b2), muteHttpExceptions:true
       });
       const kode = r.getResponseCode();
       if(kode === 404){ galat = "Model Gemini tidak tersedia untuk kunci ini (" + daftar.join(", ") + ")"; break; }
+      if(kode === 400 && b2.generationConfig.thinkingConfig && /thinking/i.test(detail(r))){ delete b2.generationConfig.thinkingConfig; continue; }
       if(kode === 400 || kode === 403){ throw new Error("Kunci Gemini tidak valid atau tidak diizinkan (kode " + kode + "): " + detail(r) + " Periksa kunci API di Pengaturan."); }
       if(kode === 429 || kode >= 500){ galat = (kode === 429 ? "Kuota AI sedang penuh, coba lagi sebentar" : "Layanan AI sedang sibuk (kode " + kode + ")") + " " + detail(r); if(kode === 429) break; Utilities.sleep(1000); continue; }
       if(kode !== 200){ galat = "AI menolak permintaan (kode " + kode + ") " + detail(r); break; }
@@ -15933,7 +15936,7 @@ function aiNilaiGemini(items){
       }catch(errP){ galat = "Jawaban AI tidak terbaca, coba lagi"; }
     }
   }
-  throw new Error(galat);
+  throw new Error(galat + " [" + Math.round((Date.now() - mulai) / 1000) + " dtk, model: " + daftar.join(", ") + "]");
 }
 /* Jalankan SEKALI dari editor Apps Script (pilih fungsi ini lalu klik Jalankan) untuk memberi izin akses internet ke Gemini. */
 function otorisasiAI(){
