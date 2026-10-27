@@ -5333,7 +5333,7 @@ function renderSet() {
     @@LT@@div class="row" style="margin-top:12px">@@LT@@button class="btn sm" id="bs">Simpan@@LT@@/button>@@LT@@button class="btn out sm" id="bt">Uji koneksi@@LT@@/button>@@LT@@button class="btn out sm" id="bpush">⬆ Kirim konten ke server@@LT@@/button>@@LT@@/div>@@LT@@/div>
     @@LT@@div class="card">@@LT@@h2>Penilaian AI@@LT@@/h2>@@LT@@p class="sub">Soal essay, apersepsi, dan refleksi dinilai otomatis begitu siswa mengirim jawaban. Kunci API disimpan aman di server Apps Script (tidak pernah ikut ke halaman siswa). Nilai apersepsi/refleksi tetap bisa Anda koreksi manual di tab Nilai.@@LT@@/p>
     @@LT@@p class="hint" id="aiSt">Memeriksa…@@LT@@/p>@@LT@@p class="hint">Setelah menempel Code.gs versi 16, jalankan fungsi @@LT@@b>otorisasiAI@@LT@@/b> sekali di editor Apps Script lalu terapkan @@LT@@b>Versi baru@@LT@@/b>. Klik @@LT@@b>Tes penilaian@@LT@@/b> untuk memastikan.@@LT@@/p>
-    @@LT@@label class="f" for="aiProv">Penyedia AI@@LT@@/label>@@LT@@select class="inp" id="aiProv">@@LT@@option value="groq">Groq (gratis, cepat — disarankan)@@LT@@/option>@@LT@@option value="openrouter">OpenRouter (ada model gratis)@@LT@@/option>@@LT@@option value="gemini">Google Gemini@@LT@@/option>@@LT@@/select>
+    @@LT@@label class="f" for="aiProv">Penyedia AI@@LT@@/label>@@LT@@select class="inp" id="aiProv">@@LT@@option value="openrouter">OpenRouter (ada model gratis)@@LT@@/option>@@LT@@option value="mistral">Mistral (ada tingkat gratis)@@LT@@/option>@@LT@@option value="cerebras">Cerebras (gratis, cepat)@@LT@@/option>@@LT@@option value="deepseek">DeepSeek (berbayar, murah)@@LT@@/option>@@LT@@option value="claude">Claude / Anthropic (berbayar)@@LT@@/option>@@LT@@option value="openai">OpenAI (berbayar)@@LT@@/option>@@LT@@option value="groq">Groq (gratis)@@LT@@/option>@@LT@@option value="gemini">Google Gemini@@LT@@/option>@@LT@@/select>
     @@LT@@label class="f" for="aiKey" id="aiKeyL">Kunci API@@LT@@/label>@@LT@@input class="inp" id="aiKey" type="password" autocomplete="off" placeholder="Tempel kunci API">
     @@LT@@label class="f" for="aiMod">Model (opsional)@@LT@@/label>@@LT@@input class="inp" id="aiMod" placeholder="Kosongkan untuk model bawaan">
     @@LT@@p class="hint" id="aiHelp">@@LT@@/p>
@@ -5373,9 +5373,9 @@ function renderSet() {
     updSrv();
   };
   const aiSt = $("#aiSt");
-  const aiStatus = async () => { if (!Store.cloud()) { aiSt.textContent = "Hubungkan server (URL Web App) terlebih dahulu agar penilaian AI dapat dipakai."; return; } try { const j = await api({ action: "el_ai_status" }); aiSt.textContent = j.ada ? "✓ Kunci " + ({ groq: "Groq", openrouter: "OpenRouter", gemini: "Gemini" }[j.provider] || "AI") + " terpasang di server. Penilaian AI aktif." : "Belum ada kunci. Soal essay masih dinilai manual oleh guru."; } catch (e) { aiSt.textContent = "Status tidak terbaca: " + e.message + " (pastikan Code.gs terbaru sudah dipasang)"; } };
+  const aiStatus = async () => { if (!Store.cloud()) { aiSt.textContent = "Hubungkan server (URL Web App) terlebih dahulu agar penilaian AI dapat dipakai."; return; } try { const j = await api({ action: "el_ai_status" }); aiSt.textContent = j.ada ? "✓ Kunci " + ({ groq: "Groq", openrouter: "OpenRouter", mistral: "Mistral", deepseek: "DeepSeek", cerebras: "Cerebras", openai: "OpenAI", claude: "Claude", gemini: "Gemini" }[j.provider] || "AI") + " terpasang di server. Penilaian AI aktif." : "Belum ada kunci. Soal essay masih dinilai manual oleh guru."; } catch (e) { aiSt.textContent = "Status tidak terbaca: " + e.message + " (pastikan Code.gs terbaru sudah dipasang)"; } };
   aiStatus();
-  const AI_H = { groq: "Buat kunci gratis di console.groq.com/keys (daftar dengan akun Google, lalu Create API Key).", openrouter: "Buat kunci di openrouter.ai/keys. Model berakhiran :free tidak berbayar.", gemini: "Kunci dari aistudio.google.com/apikey (model bisa sering sibuk)." };
+  const AI_H = { claude: "Buat kunci di console.anthropic.com (Settings, API Keys). Perlu saldo kredit; model Haiku paling hemat.", mistral: "Buat kunci di console.mistral.ai (menu API Keys; pilih paket Experiment/gratis).", deepseek: "Isi saldo kecil lalu buat kunci di platform.deepseek.com/api_keys.", cerebras: "Buat kunci gratis di cloud.cerebras.ai.", openai: "Buat kunci di platform.openai.com/api-keys (perlu saldo).", groq: "Buat kunci gratis di console.groq.com/keys (daftar dengan akun Google, lalu Create API Key).", openrouter: "Buat kunci di openrouter.ai/keys. Model berakhiran :free tidak berbayar.", gemini: "Kunci dari aistudio.google.com/apikey. Jika model sering sibuk (503), coba lagi nanti atau ganti penyedia." };
   const aiProv = $("#aiProv"), aiHelp = () => { $("#aiHelp").textContent = AI_H[aiProv.value]; };
   aiProv.onchange = aiHelp; aiHelp();
   $("#aiSave").onclick = async () => { const k = $("#aiKey").value.trim(); if (!k) { toast("Tempel kunci API terlebih dahulu"); return; } try { await api({ action: "el_ai_simpan", kunci: k, provider: aiProv.value, model: $("#aiMod").value.trim() }); $("#aiKey").value = ""; AI_ST.off = false; toast("✓ Kunci tersimpan di server"); } catch (e) { toast("⚠ " + e.message); } aiStatus(); };
@@ -15727,7 +15727,7 @@ function doPost(e){
       if(data.hapus){ spK.deleteProperty("gemini_key"); spK.deleteProperty("ai_key"); spK.deleteProperty("ai_provider"); spK.deleteProperty("ai_model"); return respond({ ok:true, ada:false }); }
       const kn = String(data.kunci || "").replace(/ /g, "");
       if(kn.length < 20 || kn.length > 200) return elGalat("Kunci API tidak tampak benar");
-      const pvn = data.provider === "groq" || data.provider === "openrouter" ? data.provider : "gemini";
+      const pvn = AI_PV[data.provider] ? data.provider : "gemini";
       if(pvn === "gemini") spK.setProperty("gemini_key", kn); else spK.setProperty("ai_key", kn);
       spK.setProperty("ai_provider", pvn);
       if(data.model) spK.setProperty("ai_model", String(data.model).substring(0, 80)); else spK.deleteProperty("ai_model");
@@ -15971,15 +15971,24 @@ function otorisasiAI(){
   Logger.log("Izin akses internet OK (kode " + r.getResponseCode() + "). Sekarang: Terapkan > Kelola deployment > Edit > Versi baru > Terapkan.");
 }
 /* Penyedia AI yang dipakai: groq (disarankan, gratis), openrouter, atau gemini. Diatur dari Pengaturan Panel Guru. */
+const AI_PV = {
+  groq: { url:"https://api.groq.com/openai/v1/chat/completions", model:["llama-3.3-70b-versatile", "llama-3.1-8b-instant"], json:true },
+  openrouter: { url:"https://openrouter.ai/api/v1/chat/completions", model:["meta-llama/llama-3.3-70b-instruct:free", "google/gemma-3-27b-it:free", "openrouter/auto"], json:false },
+  mistral: { url:"https://api.mistral.ai/v1/chat/completions", model:["mistral-small-latest", "open-mistral-nemo"], json:true },
+  deepseek: { url:"https://api.deepseek.com/chat/completions", model:["deepseek-chat"], json:true },
+  cerebras: { url:"https://api.cerebras.ai/v1/chat/completions", model:["llama-3.3-70b", "llama3.1-8b"], json:true },
+  claude: { url:"https://api.anthropic.com/v1/messages", model:["claude-haiku-5-5", "claude-sonnet-5-5"], json:false, anthropic:true },
+  openai: { url:"https://api.openai.com/v1/chat/completions", model:["gpt-4o-mini", "gpt-4.1-mini"], json:true }
+};
 function aiPenyedia(){
   const sp = PropertiesService.getScriptProperties();
   const p = sp.getProperty("ai_provider");
-  if(p === "groq" || p === "openrouter" || p === "gemini") return p;
+  if(AI_PV[p] || p === "gemini") return p;
   return sp.getProperty("gemini_key") ? "gemini" : "";
 }
 function aiNilaiGemini(items){
   const p = aiPenyedia();
-  if(p === "groq" || p === "openrouter") return aiNilaiOpenAI(items, p);
+  if(AI_PV[p]) return aiNilaiOpenAI(items, p);
   return aiNilaiGeminiAsli(items);
 }
 function aiNilaiOpenAI(items, p){
@@ -15992,17 +16001,24 @@ function aiNilaiOpenAI(items, p){
     teks += "### BUTIR " + (i + 1) + NL + "id: " + it.id + NL + "Jenis: " + it.jenis + NL + "Pertanyaan: " + it.soal + NL
       + "Pedoman penilaian: " + (it.pedoman || "(tidak ada)") + NL + "Jawaban siswa: <<<" + it.jawaban + ">>>" + NL + NL;
   });
-  const url = p === "groq" ? "https://api.groq.com/openai/v1/chat/completions" : "https://openrouter.ai/api/v1/chat/completions";
+  const cfg = AI_PV[p], url = cfg.url;
   const pilihan = sp.getProperty("ai_model");
-  const daftar = pilihan ? [pilihan] : (p === "groq" ? ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"] : ["meta-llama/llama-3.3-70b-instruct:free", "google/gemma-3-27b-it:free", "openrouter/auto"]);
+  const daftar = pilihan ? [pilihan] : cfg.model;
   let galat = "AI tidak dapat dihubungi";
   const mulai = Date.now();
   for(let m = 0; m < daftar.length; m++){
     for(let coba = 0; coba < 2; coba++){
       if(Date.now() - mulai > 30000) throw new Error(galat + " (waktu habis di server)");
-      const isi = { model: daftar[m], temperature: 0.2, max_tokens: 1500, messages: [{ role:"system", content:"Kamu penilai jawaban siswa. Balas hanya dengan JSON." }, { role:"user", content: teks }] };
-      if(p === "groq") isi.response_format = { type:"json_object" };
-      const r = UrlFetchApp.fetch(url, { method:"post", contentType:"application/json", headers:{ Authorization:"Bearer " + kunci }, payload: JSON.stringify(isi), muteHttpExceptions:true });
+      let isi, hdr;
+      if(cfg.anthropic){
+        isi = { model: daftar[m], max_tokens: 1500, temperature: 0.2, system: "Kamu penilai jawaban siswa. Balas hanya dengan JSON.", messages: [{ role:"user", content: teks }] };
+        hdr = { "x-api-key": kunci, "anthropic-version": "2023-06-01" };
+      } else {
+        isi = { model: daftar[m], temperature: 0.2, max_tokens: 1500, messages: [{ role:"system", content:"Kamu penilai jawaban siswa. Balas hanya dengan JSON." }, { role:"user", content: teks }] };
+        if(cfg.json) isi.response_format = { type:"json_object" };
+        hdr = { Authorization:"Bearer " + kunci };
+      }
+      const r = UrlFetchApp.fetch(url, { method:"post", contentType:"application/json", headers:hdr, payload: JSON.stringify(isi), muteHttpExceptions:true });
       const kode = r.getResponseCode();
       let det = ""; try{ const e = JSON.parse(r.getContentText()).error; det = e && e.message ? String(e.message).substring(0, 160) : ""; }catch(x){}
       Logger.log("AI " + p + " model=" + daftar[m] + " kode=" + kode + " dtk=" + Math.round((Date.now() - mulai) / 1000) + " " + (kode === 200 ? "" : det));
@@ -16012,7 +16028,7 @@ function aiNilaiOpenAI(items, p){
       if(kode !== 200){ galat = "AI menolak permintaan (kode " + kode + ") " + det; break; }
       try{
         const j = JSON.parse(r.getContentText());
-        const t = String(j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content || "");
+        const t = cfg.anthropic ? String(j.content && j.content[0] && j.content[0].text || "") : String(j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content || "");
         let arr = null;
         const o1 = t.indexOf("{"), o2 = t.lastIndexOf("}"), a1 = t.indexOf("["), a2 = t.lastIndexOf("]");
         if(o1 >= 0 && o2 > o1){ try{ const ob = JSON.parse(t.substring(o1, o2 + 1)); arr = ob.hasil || ob.results || ob.penilaian || null; }catch(x1){} }
