@@ -2478,6 +2478,16 @@
 @media (max-width:560px){.mc-grid,.mc-grid.w2{grid-template-columns:1fr}.mc-hr{grid-template-columns:minmax(60px,38%) 1fr auto}.mc-kpi .k-v{font-size:28px}}
 @media (prefers-reduced-motion:reduce){.mc-bar,.mc-arc,.mc-line,.mc-area,.mc-hr .f,.mc-stack span{animation:none!important;stroke-dashoffset:0!important}}
 
+.qr-box{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin:10px 0 12px;padding:14px;border:1px solid #d6e8dc;border-radius:14px;background:#fff}
+.qr-img{line-height:0;border:1px solid #e3ede7;border-radius:10px;overflow:hidden;flex:none}
+.qr-img svg{display:block;max-width:100%;height:auto}
+.qr-cap{display:flex;flex-direction:column;align-items:flex-start;gap:3px;font-size:13px;color:#3f5f4f;min-width:140px;flex:1}
+.qr-cap span{font-size:12px;color:#6b7f74}
+.qr-full{position:fixed;inset:0;z-index:99999;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:16px}
+.qr-full-in{text-align:center;max-width:100%}
+.qr-full-in svg{width:min(78vmin,640px);height:min(78vmin,640px)}
+.qr-full-t{font-family:"Iowan Old Style",Georgia,serif;font-size:clamp(18px,3vmin,30px);font-weight:700;color:#123d2a;margin-top:10px}
+.qr-full-s{font-size:clamp(12px,2vmin,16px);color:#6b7f74;margin-top:4px}
 /* ===== E-Learning: Arsip Jawaban Siswa ===== */
 .ja{--ja-forest:#123d2a;--ja-leaf:#1f7a4d;--ja-gold:#c9a227;--ja-line:#e1e8e3;--ja-mut:#5f7268;display:flex;flex-direction:column;gap:14px;padding:14px 18px 34px;font-family:"Google Sans","Segoe UI",Roboto,system-ui,-apple-system,sans-serif;color:#16231c}
 .ja-hero{background:linear-gradient(120deg,#082a1b,#123d2a 55%,#1f7a4d);color:#fff;border-radius:18px;padding:20px 22px 18px;border-bottom:3px solid var(--ja-gold);box-shadow:0 22px 46px -24px rgba(8,28,19,.55);position:relative;overflow:hidden}
@@ -3562,6 +3572,46 @@ async function aiRetryTertunda() {
     if (S.topic && !S.done && S.step !== "apersepsi" && await aiNilaiTulis("apersepsi", S.topicJudul, apersepsiQOf(S.topic), i => S.apersepsi[i], S.ai.ap)) ubah = true;
   } catch (e) {}
   if (ubah) { saveSoon(); if (S.done && S.step === "selesai") renderStudent(); }
+}
+
+/* Guru: nilai ulang jawaban tertulis (apersepsi & refleksi) semua siswa yang belum bernilai AI */
+async function aiNilaiUlangSemua(onProg) {
+  const recs = await Store.list("s:"); let n = 0, ubahRec = 0, gagal = 0, i = 0;
+  for (const rec of recs) {
+    i++; if (onProg) onProg(i, recs.length);
+    const items = [], peta = {}, tulis = {};
+    const kumpul = (kode, ai, jenis, judul, Q, getAns) => {
+      Q.forEach((q, k) => {
+        const a = String(getAns(k) || "").trim(); if (!a) return;
+        const h = aiHash(a), arr = ai[jenis === "apersepsi" ? "ap" : "rf"]; if (arr[k] && arr[k].h === h) return;
+        const id = kode + "|" + (jenis === "apersepsi" ? "ap" : "rf") + "|" + k;
+        items.push({ id, jenis, soal: (judul ? "[Topik: " + judul + "] " : "") + (typeof q === "string" ? q : (q && q.q) || ""), pedoman: "", jawaban: a });
+        peta[id] = { h }; tulis[id] = (v) => { arr[k] = v; };
+      });
+    };
+    for (const tid of Object.keys(rec.hist || {})) {
+      const h = rec.hist[tid]; h.ai = Object.assign(freshAi(), h.ai || {});
+      kumpul("H" + tid, h.ai, "apersepsi", h.judul, apersepsiQOf(tid), k => (h.apersepsi || [])[k]);
+      kumpul("H" + tid, h.ai, "refleksi", h.judul, refleksiQOf(tid), k => h.refleksi && h.refleksi[k] && h.refleksi[k].a);
+    }
+    if (rec.topic && !(rec.hist || {})[rec.topic]) {
+      rec.ai = Object.assign(freshAi(), rec.ai || {});
+      kumpul("C", rec.ai, "apersepsi", rec.topicJudul, apersepsiQOf(rec.topic), k => (rec.apersepsi || [])[k]);
+      kumpul("C", rec.ai, "refleksi", rec.topicJudul, refleksiQOf(rec.topic), k => rec.refleksi && rec.refleksi[k] && rec.refleksi[k].a);
+    }
+    if (!items.length) continue;
+    let ubah = false;
+    for (let a = 0; a < items.length; a += 12) {
+      const bag = items.slice(a, a + 12);
+      try {
+        const j = await api({ action: "el_ai_nilai", nama: rec.nama, items: bag, _to: 60000 });
+        const kecil = {}; bag.forEach(b => { kecil[b.id] = peta[b.id]; });
+        n += aiTerap(j.hasil || [], kecil, (id, v) => { tulis[id](v); ubah = true; });
+      } catch (e) { gagal++; if (/belum dipasang|tidak valid|UrlFetchApp|external_request|izin untuk memanggil/i.test(e.message)) throw e; }
+    }
+    if (ubah) { await Store.put(skey(rec.kelas, rec.nama), rec); ubahRec++; }
+  }
+  return { n, ubahRec, gagal, total: recs.length };
 }
 
 /* ===== Dialog ===== */
@@ -5337,7 +5387,7 @@ function renderSet() {
     @@LT@@label class="f" for="aiKey" id="aiKeyL">Kunci API@@LT@@/label>@@LT@@input class="inp" id="aiKey" type="password" autocomplete="off" placeholder="Tempel kunci API">
     @@LT@@label class="f" for="aiMod">Model (opsional)@@LT@@/label>@@LT@@input class="inp" id="aiMod" placeholder="Kosongkan untuk model bawaan">
     @@LT@@p class="hint" id="aiHelp">@@LT@@/p>
-    @@LT@@div class="row" style="margin-top:12px">@@LT@@button class="btn sm" id="aiSave">Simpan kunci@@LT@@/button>@@LT@@button class="btn out sm" id="aiTest">Tes penilaian@@LT@@/button>@@LT@@button class="btn out sm" id="aiDel">Hapus kunci@@LT@@/button>@@LT@@/div>@@LT@@/div>
+    @@LT@@div class="row" style="margin-top:12px">@@LT@@button class="btn sm" id="aiSave">Simpan kunci@@LT@@/button>@@LT@@button class="btn out sm" id="aiTest">Tes penilaian@@LT@@/button>@@LT@@button class="btn out sm" id="aiDel">Hapus kunci@@LT@@/button>@@LT@@/div>@@LT@@p class="hint" style="margin-top:14px">Jawaban siswa yang masuk sebelum AI aktif (apersepsi & refleksi) belum bernilai AI. Klik tombol ini untuk menilainya sekarang. Esai uji materi/video/pos tes dinilai saat siswa mengirim jawaban.@@LT@@/p>@@LT@@div class="row">@@LT@@button class="btn out sm" id="aiUlang">Nilai ulang jawaban siswa dengan AI@@LT@@/button>@@LT@@span class="hint" id="aiUlangSt">@@LT@@/span>@@LT@@/div>@@LT@@/div>
     @@LT@@div class="card">@@LT@@h2>Cadangan data@@LT@@/h2>@@LT@@p class="sub">Unduh cadangan berisi seluruh konten (topik, materi, soal, video), data siswa, dan nilai guru. Simpan sebelum memindahkan situs ke hosting baru; impor untuk memulihkan.@@LT@@/p>
     @@LT@@div class="row">@@LT@@button class="btn sm" id="bk">⬇ Unduh cadangan (.json)@@LT@@/button>@@LT@@label class="btn out sm" style="cursor:pointer">⬆ Impor cadangan@@LT@@input type="file" id="bi" accept=".json,application/json" style="display:none">@@LT@@/label>@@LT@@/div>@@LT@@/div>
     @@LT@@div class="card">@@LT@@h2>Hapus semua data siswa@@LT@@/h2>@@LT@@p class="sub">Menghapus seluruh data login, nilai, dan refleksi semua kelas. Tidak dapat dibatalkan.@@LT@@/p>@@LT@@button class="btn red sm" id="ba">Hapus semua data siswa@@LT@@/button>@@LT@@/div>`;
@@ -5379,12 +5429,23 @@ function renderSet() {
   const aiProv = $("#aiProv"), aiHelp = () => { $("#aiHelp").textContent = AI_H[aiProv.value]; };
   aiProv.onchange = aiHelp; aiHelp();
   $("#aiSave").onclick = async () => { const k = $("#aiKey").value.trim(); if (!k) { toast("Tempel kunci API terlebih dahulu"); return; } try { await api({ action: "el_ai_simpan", kunci: k, provider: aiProv.value, model: $("#aiMod").value.trim() }); $("#aiKey").value = ""; AI_ST.off = false; toast("✓ Kunci tersimpan di server"); } catch (e) { toast("⚠ " + e.message); } aiStatus(); };
+  $("#aiUlang").onclick = async () => {
+    const st = $("#aiUlangSt"), b = $("#aiUlang"); if (b.disabled) return;
+    if (!(await ask("Nilai ulang dengan AI?", "Semua jawaban apersepsi & refleksi yang belum bernilai AI akan dinilai. Proses bisa beberapa menit; jangan tutup halaman ini.", "Mulai", "Batal"))) return;
+    b.disabled = true;
+    try {
+      const r = await aiNilaiUlangSemua((i, t) => { st.textContent = "Memproses " + i + " / " + t + " siswa…"; });
+      st.textContent = "Selesai: " + r.n + " jawaban dinilai pada " + r.ubahRec + " siswa" + (r.gagal ? " (" + r.gagal + " permintaan gagal, ulangi nanti)" : "") + ".";
+      await refreshRows();
+    } catch (e) { if (aiGalatTeks(e.message) === "IZIN") await modal(aiIzinHtml(), { light: true }); else { st.textContent = "Berhenti: " + e.message; } }
+    b.disabled = false;
+  };
   $("#aiDel").onclick = async () => { if (!(await ask("Hapus kunci AI?", "Penilaian essay kembali manual oleh guru.", "Hapus", "Batal"))) return; try { await api({ action: "el_ai_simpan", hapus: true }); toast("Kunci dihapus"); } catch (e) { toast("⚠ " + e.message); } aiStatus(); };
   $("#aiTest").onclick = async () => {
     toast("Menguji penilaian AI…");
     try {
       const j = await api({ action: "el_ai_nilai", nama: "guru", items: [{ id: "tes", jenis: "essay", soal: "Jelaskan makna sila kedua Pancasila.", pedoman: "Kemanusiaan yang adil dan beradab: menghargai martabat manusia dan HAM.", jawaban: "Sila kedua berarti kita memperlakukan semua orang dengan adil dan beradab serta menghormati hak asasi manusia." }], _to: 60000 }), r = (j.hasil || [])[0];
-      await modal(`@@LT@@h3>Penilaian AI berfungsi@@LT@@/h3>@@LT@@p style="color:#4b5f54;line-height:1.6;text-align:left">Contoh jawaban dinilai @@LT@@b>${r ? r.s : "?"}/100@@LT@@/b>.@@LT@@br>${esc(r ? r.f : "")}@@LT@@/p>@@LT@@button class="btn sm" data-r="ok">Tutup@@LT@@/button>`, { light: true });
+      await modal(`@@LT@@h3>Penilaian AI berfungsi@@LT@@/h3>@@LT@@p style="color:#4b5f54;line-height:1.6;text-align:left">Contoh jawaban dinilai @@LT@@b>${r ? r.skor : "?"}/100@@LT@@/b>.@@LT@@br>${esc(r ? r.umpan : "")}@@LT@@/p>@@LT@@button class="btn sm" data-r="ok">Tutup@@LT@@/button>`, { light: true });
     } catch (e) { if (aiGalatTeks(e.message) === "IZIN") await modal(aiIzinHtml(), { light: true }); else await modal(`@@LT@@h3>⚠️ Penilaian AI gagal@@LT@@/h3>@@LT@@p style="color:#4b5f54;line-height:1.6;text-align:left">${esc(e.message)}@@LT@@/p>@@LT@@button class="btn sm" data-r="ok">Tutup@@LT@@/button>`, { light: true }); }
   };
   $("#bpush").onclick = async () => { const r = await pushContent(); toast(r.ok ? "✓ Konten terkirim dan terverifikasi di server" : "⚠ Gagal: " + r.msg); updSrv(); };
@@ -8324,6 +8385,122 @@ function mcSpark(values, col){
 function mcKpi(o){
   return '<div class="mc-kpi" style="--k1:' + (o.c1 || "#123d2a") + ';--k2:' + (o.c2 || "#1f7a4d") + '"><div class="k-l">' + esc(o.label) + '</div><div class="k-v">' + esc(String(o.value)) + '</div><div class="k-s">' + esc(o.sub || "") + '</div>' + (o.spark ? mcSpark(o.spark) : "") + '</div>';
 }
+
+/* ===== Kode QR (offline, tanpa pustaka luar) — mode byte, koreksi galat M ===== */
+const QR_ECC = [-1, 10, 16, 26, 18, 24, 16, 18, 22, 22, 26, 30, 22, 22, 24, 24, 28, 28, 26, 26, 26, 26, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28];
+const QR_BLK = [-1, 1, 1, 1, 2, 2, 4, 4, 4, 5, 5, 5, 8, 9, 9, 10, 10, 11, 13, 14, 16, 17, 17, 18, 20, 21, 23, 25, 26, 28, 29, 31, 33, 35, 37, 38, 40, 43, 45, 47, 49];
+function qrRawModules(v) {
+  let r = (16 * v + 128) * v + 64;
+  if (v >= 2) { const n = Math.floor(v / 7) + 2; r -= (25 * n - 10) * n - 55; if (v >= 7) r -= 36; }
+  return r;
+}
+function qrGfMul(x, y) { let z = 0; for (let i = 7; i >= 0; i--) { z = (z << 1) ^ ((z >>> 7) * 0x11D); z ^= ((y >>> i) & 1) * x; } return z; }
+function qrRsDiv(deg) {
+  const r = new Array(deg).fill(0); r[deg - 1] = 1; let root = 1;
+  for (let i = 0; i < deg; i++) { for (let j = 0; j < deg; j++) { r[j] = qrGfMul(r[j], root); if (j + 1 < deg) r[j] ^= r[j + 1]; } root = qrGfMul(root, 2); }
+  return r;
+}
+function qrRsRem(data, div) {
+  const r = new Array(div.length).fill(0);
+  data.forEach(b => { const f = b ^ r.shift(); r.push(0); div.forEach((c, i) => { r[i] ^= qrGfMul(c, f); }); });
+  return r;
+}
+function qrMatrix(text) {
+  const bytes = Array.from(new TextEncoder().encode(String(text)));
+  let ver = 1;
+  for (; ver <= 40; ver++) {
+    const cap = Math.floor(qrRawModules(ver) / 8) - QR_ECC[ver] * QR_BLK[ver];
+    const need = 4 + (ver < 10 ? 8 : 16) + bytes.length * 8;
+    if (need <= cap * 8) break;
+  }
+  if (ver > 40) return null;
+  const nData = Math.floor(qrRawModules(ver) / 8) - QR_ECC[ver] * QR_BLK[ver];
+  const bits = [];
+  const put = (val, len) => { for (let i = len - 1; i >= 0; i--) bits.push((val >>> i) & 1); };
+  put(4, 4); put(bytes.length, ver < 10 ? 8 : 16); bytes.forEach(b => put(b, 8));
+  put(0, Math.min(4, nData * 8 - bits.length));
+  put(0, (8 - bits.length % 8) % 8);
+  for (let pad = 0xEC; bits.length < nData * 8; pad ^= 0xEC ^ 0x11) put(pad, 8);
+  const data = []; for (let i = 0; i < bits.length; i += 8) { let b = 0; for (let j = 0; j < 8; j++) b = (b << 1) | bits[i + j]; data.push(b); }
+  /* koreksi galat + interleave */
+  const nb = QR_BLK[ver], eccLen = QR_ECC[ver], raw = Math.floor(qrRawModules(ver) / 8), nShort = nb - raw % nb, shortLen = Math.floor(raw / nb);
+  const blocks = [], div = qrRsDiv(eccLen);
+  for (let i = 0, k = 0; i < nb; i++) {
+    const dat = data.slice(k, k + shortLen - eccLen + (i < nShort ? 0 : 1)); k += dat.length;
+    const ecc = qrRsRem(dat, div); if (i < nShort) dat.push(0); blocks.push(dat.concat(ecc));
+  }
+  const all = [];
+  for (let i = 0; i < blocks[0].length; i++) blocks.forEach((b, j) => { if (i !== shortLen - eccLen || j >= nShort) all.push(b[i]); });
+  /* gambar modul */
+  const size = ver * 4 + 17, mod = [], fn = [];
+  for (let i = 0; i < size; i++) { mod.push(new Array(size).fill(false)); fn.push(new Array(size).fill(false)); }
+  const setF = (x, y, d) => { mod[y][x] = d; fn[y][x] = true; };
+  for (let i = 0; i < size; i++) { setF(6, i, i % 2 === 0); setF(i, 6, i % 2 === 0); }
+  const finder = (x, y) => { for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) { const d = Math.max(Math.abs(dx), Math.abs(dy)), xx = x + dx, yy = y + dy; if (xx >= 0 && xx < size && yy >= 0 && yy < size) setF(xx, yy, d !== 2 && d !== 4); } };
+  finder(3, 3); finder(size - 4, 3); finder(3, size - 4);
+  let al = [];
+  if (ver > 1) { const n = Math.floor(ver / 7) + 2, step = ver === 32 ? 26 : Math.ceil((ver * 4 + 4) / (n * 2 - 2)) * 2; al = [6]; for (let p = size - 7; al.length < n; p -= step) al.splice(1, 0, p); }
+  al.forEach((cx, i) => al.forEach((cy, j) => {
+    if ((i === 0 && j === 0) || (i === 0 && j === al.length - 1) || (i === al.length - 1 && j === 0)) return;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) setF(cx + dx, cy + dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1);
+  }));
+  const fmt = mask => {
+    const d = (0 << 3) | mask; let r = d; for (let i = 0; i < 10; i++) r = (r << 1) ^ ((r >>> 9) * 0x537);
+    const b = ((d << 10) | r) ^ 0x5412, g = i => ((b >>> i) & 1) !== 0;
+    for (let i = 0; i <= 5; i++) setF(8, i, g(i)); setF(8, 7, g(6)); setF(8, 8, g(7)); setF(7, 8, g(8));
+    for (let i = 9; i < 15; i++) setF(14 - i, 8, g(i));
+    for (let i = 0; i < 8; i++) setF(size - 1 - i, 8, g(i));
+    for (let i = 8; i < 15; i++) setF(8, size - 15 + i, g(i));
+    setF(8, size - 8, true);
+  };
+  fmt(0);
+  if (ver >= 7) { let r = ver; for (let i = 0; i < 12; i++) r = (r << 1) ^ ((r >>> 11) * 0x1F25); const b = (ver << 12) | r; for (let i = 0; i < 18; i++) { const bit = ((b >>> i) & 1) !== 0, a = size - 11 + i % 3, c = Math.floor(i / 3); setF(a, c, bit); setF(c, a, bit); } }
+  let bi = 0;
+  for (let right = size - 1; right >= 1; right -= 2) {
+    if (right === 6) right = 5;
+    for (let vert = 0; vert < size; vert++) for (let j = 0; j < 2; j++) {
+      const x = right - j, up = ((right + 1) & 2) === 0, y = up ? size - 1 - vert : vert;
+      if (!fn[y][x] && bi < all.length * 8) { mod[y][x] = ((all[bi >>> 3] >>> (7 - (bi & 7))) & 1) !== 0; bi++; }
+    }
+  }
+  const MASKS = [(x, y) => (x + y) % 2 === 0, (x, y) => y % 2 === 0, (x, y) => x % 3 === 0, (x, y) => (x + y) % 3 === 0, (x, y) => (Math.floor(x / 3) + Math.floor(y / 2)) % 2 === 0, (x, y) => x * y % 2 + x * y % 3 === 0, (x, y) => (x * y % 2 + x * y % 3) % 2 === 0, (x, y) => ((x + y) % 2 + x * y % 3) % 2 === 0];
+  const mask = m => { for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) if (!fn[y][x] && MASKS[m](x, y)) mod[y][x] = !mod[y][x]; };
+  const penalty = () => {
+    let p = 0;
+    for (let y = 0; y < size; y++) { let run = 1; for (let x = 1; x < size; x++) { if (mod[y][x] === mod[y][x - 1]) { run++; if (run === 5) p += 3; else if (run > 5) p++; } else run = 1; } }
+    for (let x = 0; x < size; x++) { let run = 1; for (let y = 1; y < size; y++) { if (mod[y][x] === mod[y - 1][x]) { run++; if (run === 5) p += 3; else if (run > 5) p++; } else run = 1; } }
+    for (let y = 0; y < size - 1; y++) for (let x = 0; x < size - 1; x++) if (mod[y][x] === mod[y][x + 1] && mod[y][x] === mod[y + 1][x] && mod[y][x] === mod[y + 1][x + 1]) p += 3;
+    let dark = 0; mod.forEach(r => r.forEach(v => { if (v) dark++; }));
+    p += Math.floor(Math.abs(dark * 20 - size * size * 10) / (size * size)) * 10;
+    return p;
+  };
+  let best = 0, bestP = 1e9;
+  for (let m = 0; m < 8; m++) { mask(m); fmt(m); const p = penalty(); if (p < bestP) { bestP = p; best = m; } mask(m); }
+  mask(best); fmt(best);
+  return mod;
+}
+function mcQrSvg(text, px) {
+  const m = qrMatrix(text); if (!m) return "";
+  const n = m.length, q = 4, t = n + q * 2; let d = "";
+  for (let y = 0; y < n; y++) { let x = 0; while (x < n) { if (m[y][x]) { let w = 1; while (x + w < n && m[y][x + w]) w++; d += "M" + (x + q) + " " + (y + q) + "h" + w + "v1h-" + w + "z"; x += w; } else x++; } }
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + t + " " + t + '" width="' + (px || 220) + '" height="' + (px || 220) + '" role="img" aria-label="Kode QR link" shape-rendering="crispEdges"><rect width="' + t + '" height="' + t + '" fill="#fff"/><path d="' + d + '" fill="#000"/></svg>';
+}
+
+function qrBoxHtml(link, label, px) {
+  const svg = mcQrSvg(link, px || 200);
+  if (!svg) return '<div class="qr-box"><small>Link terlalu panjang untuk dibuat QR.</small></div>';
+  return '<div class="qr-box"><div class="qr-img">' + svg + '</div><div class="qr-cap"><b>Scan dengan kamera HP</b><span>' + esc(label || "") + '</span>'
+    + '<button type="button" class="btn btn-ghost btn-sm" data-qrbig="' + esc(link) + '" data-qrlabel="' + esc(label || "") + '" style="width:auto;margin-top:8px;">⛶ Tampilkan layar penuh</button></div></div>';
+}
+function qrLayarPenuh(link, label) {
+  const o = document.createElement("div");
+  o.className = "qr-full";
+  o.innerHTML = '<div class="qr-full-in">' + mcQrSvg(link, 640) + '<div class="qr-full-t">' + esc(label || "Scan untuk membuka") + '</div><div class="qr-full-s">Arahkan kamera HP ke kode ini · klik di mana saja untuk menutup</div></div>';
+  o.onclick = () => o.remove();
+  document.addEventListener("keydown", function esc1(e) { if (e.key === "Escape") { o.remove(); document.removeEventListener("keydown", esc1); } });
+  document.body.appendChild(o);
+}
+document.addEventListener("click", e => { const b = e.target.closest && e.target.closest("[data-qrbig]"); if (b) qrLayarPenuh(b.dataset.qrbig, b.dataset.qrlabel); });
 
 function renderDashboard(root){
   /* ---- Periode tahun ajaran aktif: dipilih di dashboard, tersimpan sebagai periode "aktif"
@@ -15973,7 +16150,7 @@ function otorisasiAI(){
 /* Penyedia AI yang dipakai: groq (disarankan, gratis), openrouter, atau gemini. Diatur dari Pengaturan Panel Guru. */
 const AI_PV = {
   groq: { url:"https://api.groq.com/openai/v1/chat/completions", model:["llama-3.3-70b-versatile", "llama-3.1-8b-instant"], json:true },
-  openrouter: { url:"https://openrouter.ai/api/v1/chat/completions", model:["meta-llama/llama-3.3-70b-instruct:free", "google/gemma-3-27b-it:free", "openrouter/auto"], json:false },
+  openrouter: { url:"https://openrouter.ai/api/v1/chat/completions", model:["meta-llama/llama-3.3-70b-instruct:free", "google/gemma-3-27b-it:free"], json:false },
   mistral: { url:"https://api.mistral.ai/v1/chat/completions", model:["mistral-small-latest", "open-mistral-nemo"], json:true },
   deepseek: { url:"https://api.deepseek.com/chat/completions", model:["deepseek-chat"], json:true },
   cerebras: { url:"https://api.cerebras.ai/v1/chat/completions", model:["llama-3.3-70b", "llama3.1-8b"], json:true },
@@ -17987,6 +18164,7 @@ function renderUjianCBT(root){
     openModal("Link Ujian untuk Siswa", `
       <p style="font-size:13px; line-height:1.6; margin-bottom:10px;">Bagikan link ini ke siswa. Link langsung terbuka di HP tanpa unduh atau instal apa pun.</p>
       <div class="field"><label>${esc(t.judul)}</label><input type="text" id="cbtLinkBox" readonly value="${esc(link)}" onclick="this.select()"></div>
+      ${qrBoxHtml(link, t.judul)}
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <button type="button" class="btn btn-primary btn-sm" id="cbtLinkSalin" style="width:auto;">⧉ Salin Link</button>
         <button type="button" class="btn btn-gold btn-sm" id="cbtLinkWA" style="width:auto;">📲 Bagikan ke WhatsApp</button>
@@ -21289,11 +21467,13 @@ function renderELearningPanel(root){
         <input type="text" readonly data-topiklink="${esc(t.id)}" value="${esc(C.linkSiswa("el_" + t.id))}" style="flex:2 1 220px; font-size:11.5px; padding:6px 8px;">
         <button type="button" class="btn btn-ghost btn-sm" data-copy="${esc(t.id)}" style="width:auto; padding:5px 9px;">⧉</button>
         <button type="button" class="btn btn-ghost btn-sm" data-open="${esc(t.id)}" style="width:auto; padding:5px 9px;">↗</button>
+        <button type="button" class="btn btn-ghost btn-sm" data-qrt="${esc(t.id)}" title="Tampilkan QR topik ini" style="width:auto; padding:5px 9px;">QR</button>
         <button type="button" class="btn btn-ghost btn-sm" data-toggle="${esc(t.id)}" style="width:auto; padding:5px 9px;">${topikAktif[t.id] === false ? "Aktifkan" : "Nonaktifkan"}</button>
       </div>`;
     openModal("Link Siswa E-Learning", `
       <p style="font-size:13px; line-height:1.6; margin:0 0 10px;">Siswa membuka link ini di perangkat masing-masing, memilih kelas &amp; nama, lalu belajar. Kemajuan, nilai, dan permintaan izin mengulang masuk ke <b>Panel Guru → Pemantauan</b>. Soal & materi yang Anda simpan di Panel Guru langsung dipakai siswa.</p>
       <div class="field"><label>Link semua topik (siswa memilih sendiri)</label><input type="text" id="elpLink" readonly value="${esc(url)}"></div>
+      <div id="elpQr">${qrBoxHtml(url, "Link semua topik E-Learning")}</div>
       <div style="display:flex; gap:8px; flex-wrap:wrap; margin:6px 0 10px;">
         <button type="button" class="btn btn-ghost btn-sm" id="elpCopy" style="width:auto;">⧉ Salin Link</button>
         <button type="button" class="btn btn-ghost btn-sm" id="elpOpen" style="width:auto;">↗ Buka</button>
@@ -21381,6 +21561,10 @@ function renderELearningPanel(root){
       };
       document.querySelectorAll("[data-copy]").forEach(b => b.onclick = () => {
         const inp = document.querySelector('[data-topiklink="' + b.dataset.copy + '"]'); if(inp) salin(inp.value);
+      });
+      document.querySelectorAll("[data-qrt]").forEach(b => b.onclick = () => {
+        const inp = document.querySelector('[data-topiklink="' + b.dataset.qrt + '"]'), box = document.getElementById("elpQr");
+        if(inp && box){ const tt = (C.currentTopics().find(x => x.id === b.dataset.qrt) || {}).judul || "Topik"; box.innerHTML = qrBoxHtml(inp.value, tt); box.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
       });
       document.querySelectorAll("[data-open]").forEach(b => b.onclick = () => {
         const inp = document.querySelector('[data-topiklink="' + b.dataset.open + '"]'); if(inp) window.open(inp.value, "_blank");
