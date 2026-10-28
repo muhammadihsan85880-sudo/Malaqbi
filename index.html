@@ -2488,6 +2488,35 @@
 .qr-full-in svg{width:min(78vmin,640px);height:min(78vmin,640px)}
 .qr-full-t{font-family:"Iowan Old Style",Georgia,serif;font-size:clamp(18px,3vmin,30px);font-weight:700;color:#123d2a;margin-top:10px}
 .qr-full-s{font-size:clamp(12px,2vmin,16px);color:#6b7f74;margin-top:4px}
+
+/* ===== Mode gelap + menu kartu pengguna ===== */
+html[data-theme="dark"]:has(#app:not([hidden])){filter:invert(1) hue-rotate(180deg) contrast(.93) brightness(1.03);background:#fff}
+html[data-theme="dark"]:has(#app:not([hidden])) img,
+html[data-theme="dark"]:has(#app:not([hidden])) video,
+html[data-theme="dark"]:has(#app:not([hidden])) canvas,
+html[data-theme="dark"]:has(#app:not([hidden])) .sidebar-wrap,
+html[data-theme="dark"]:has(#app:not([hidden])) .sb-flyout,
+html[data-theme="dark"]:has(#app:not([hidden])) .qr-img,
+html[data-theme="dark"]:has(#app:not([hidden])) .qr-full,
+html[data-theme="dark"]:has(#app:not([hidden])) .topbar,
+html[data-theme="dark"]:has(#app:not([hidden])) .mc-kpi,
+html[data-theme="dark"]:has(#app:not([hidden])) .ja-hero,
+html[data-theme="dark"]:has(#app:not([hidden])) .notif-head,
+html[data-theme="dark"]:has(#app:not([hidden])) .kp-month-head,
+html[data-theme="dark"]:has(#app:not([hidden])) .ja-av,
+html[data-theme="dark"]:has(#app:not([hidden])) [style*="gradient"][style*="color:#fff"],
+html[data-theme="dark"]:has(#app:not([hidden])) [style*="background-image"]{filter:invert(1) hue-rotate(180deg)}
+html[data-theme="dark"]:has(#app:not([hidden])) .sidebar-wrap img,
+html[data-theme="dark"]:has(#app:not([hidden])) .sidebar-wrap [style*="background-image"],
+html[data-theme="dark"]:has(#app:not([hidden])) .qr-full svg{filter:none}
+@media print{html[data-theme="dark"], html[data-theme="dark"] *{filter:none !important}}
+.sf-menu{position:fixed;z-index:99998;min-width:230px;background:#fff;border:1px solid #d6e8dc;border-radius:14px;box-shadow:0 18px 44px -14px rgba(8,28,19,.45);padding:6px;font-size:14px}
+.sf-menu button{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:0;background:transparent;border-radius:10px;font:inherit;color:#16231c;cursor:pointer;text-align:left}
+.sf-menu button:hover,.sf-menu button:focus-visible{background:#eaf6ef;outline:none}
+.sf-menu .sf-sw{margin-left:auto;width:36px;height:20px;border-radius:999px;background:#c3d6ca;position:relative;flex:none;transition:background .16s}
+.sf-menu .sf-sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .16s}
+.sf-menu button[aria-checked="true"] .sf-sw{background:#1f7a4d}
+.sf-menu button[aria-checked="true"] .sf-sw::after{transform:translateX(16px)}
 /* ===== E-Learning: Arsip Jawaban Siswa ===== */
 .ja{--ja-forest:#123d2a;--ja-leaf:#1f7a4d;--ja-gold:#c9a227;--ja-line:#e1e8e3;--ja-mut:#5f7268;display:flex;flex-direction:column;gap:14px;padding:14px 18px 34px;font-family:"Google Sans","Segoe UI",Roboto,system-ui,-apple-system,sans-serif;color:#16231c}
 .ja-hero{background:linear-gradient(120deg,#082a1b,#123d2a 55%,#1f7a4d);color:#fff;border-radius:18px;padding:20px 22px 18px;border-bottom:3px solid var(--ja-gold);box-shadow:0 22px 46px -24px rgba(8,28,19,.55);position:relative;overflow:hidden}
@@ -2862,7 +2891,7 @@
       </div>
     </div>
     <nav class="menu" id="menuList"></nav>
-    <div class="sidebar-foot" id="sidebarFoot" role="button" tabindex="0" title="Buka Profil Guru"></div>
+    <div class="sidebar-foot" id="sidebarFoot" role="button" tabindex="0" title="Menu profil"></div>
   </aside>
   <button type="button" class="sb-toggle" id="sbToggle" aria-label="Ciutkan menu" aria-expanded="true" title="Ciutkan menu">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
@@ -5544,7 +5573,7 @@ const DB = {
     jadwalGuruFoto:"lms_jadwal_guru_foto",
     ujianSoal:"lms_ujian_soal", ujianTes:"lms_ujian_tes",
     ujianConfig:"lms_ujian_config", ujianHasil:"lms_ujian_hasil",
-    sikepo:"lms_sikepo", sikepoLink:"lms_sikepo_link",
+    sikepo:"lms_sikepo", sikepoLink:"lms_sikepo_link", laporan:"lms_laporan",
     kalenderPendidikan:"lms_kalender_pendidikan",
     elArsip:"lms_el_arsip",
     gdrive:"lms_gdrive_settings",
@@ -7966,6 +7995,7 @@ const MENU = [
   { id:"jadwal_guru", label:"Jadwal Guru", ico:"table", sub:"Jadwal pelajaran mingguan & foto jadwal resmi" },
   { id:"perangkat_ajar", label:"Perangkat Ajar", ico:"briefcase", sub:"Tahun ajaran dan semester yang berlaku" },
   { id:"materi", label:"Materi Ajar", ico:"book", sub:"Kelola materi pembelajaran" },
+  { id:"laporan", label:"Laporan", ico:"laporan", sub:"Buat laporan kegiatan: observasi, pelatihan, pembelajaran, penilaian, pembimbingan, ekstrakurikuler, piket — lengkap dengan dokumentasi dan tanda tangan" },
   { id:"e_arsip", label:"E-Arsip", ico:"earsip", sub:"Arsip kegiatan sekolah: rapat, kegiatan, dan disposisi dinas beserta lampiran dan laporan PDF" },
   { id:"siswa", label:"Data Siswa", ico:"users", sub:"Kelola data peserta didik" },
   { id:"wali_kelas", label:"Wali Kelas", ico:"usercheck", sub:"Profil wali kelas dan siswa perwalian" },
@@ -7987,7 +8017,7 @@ const MENU = [
 const MENU_TREE = [
   { id:"dashboard" },
   { group:"g_agenda",   label:"Agenda",   ico:"agenda",   children:["agenda","riwayat_agenda","kalender_pendidikan","sikepo"] },
-  { group:"g_dokumen",  label:"Dokumen",  ico:"dokumen",  children:["jadwal_guru","perangkat_ajar","materi","e_arsip","siswa"] },
+  { group:"g_dokumen",  label:"Dokumen",  ico:"dokumen",  children:["jadwal_guru","perangkat_ajar","materi","e_arsip","laporan","siswa"] },
   { group:"g_akademik", label:"Akademik", ico:"akademik", children:["wali_kelas","catatan_wali","guru_wali","absensi","jurnal","catatan","penilaian","nilai_akhir","peringkat"] },
   { group:"g_lms", label:"LMS", ico:"elearn", children:["ujian_cbt","e_learning","e_learning_panel"] },
   { sep:true },
@@ -8004,6 +8034,7 @@ const ICON_PATHS = {
   notes:'<path d="M9 3h6a2 2 0 0 1 2 2v1H7V5a2 2 0 0 1 2-2z"/><path d="M7 6H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-1"/><path d="M8.5 12h7M8.5 16h4"/>',
   sikepo:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/>',
   history:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  laporan:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/>',
   earsip:'<rect x="3" y="3" width="18" height="5" rx="1"/><path d="M5 8v11a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>',
   dokumen:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8M8 9h2"/>',
   akademik:'<path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5M22 10v6"/>',
@@ -8152,10 +8183,41 @@ function renderSidebarFoot(){
   foot.innerHTML = `<div class="sf-card">${av}<div class="sf-t"><strong>${esc(nama)}</strong><small>${esc(sub)}</small></div><span class="sf-dot" title="Data tersimpan di perangkat"></span></div>`;
   if(!foot.dataset.bound){
     foot.dataset.bound = "1";
-    foot.addEventListener("click", ()=> navigate("profil"));
-    foot.addEventListener("keydown", e=>{ if(e.key==="Enter" || e.key===" "){ e.preventDefault(); navigate("profil"); } });
+    foot.title = "Menu profil";
+    foot.setAttribute("aria-haspopup", "menu");
+    foot.addEventListener("click", e=>{ e.stopPropagation(); toggleSfMenu(); });
+    foot.addEventListener("keydown", e=>{ if(e.key==="Enter" || e.key===" "){ e.preventDefault(); toggleSfMenu(); } });
   }
 }
+/* Tema (terang/gelap) disimpan sebagai preferensi tampilan di perangkat ini */
+const THEME_KEY = "malaqbi_theme";
+function temaGelap(){ return safeStorageGet(THEME_KEY) === "dark"; }
+function terapkanTema(){ if(temaGelap()) document.documentElement.setAttribute("data-theme", "dark"); else document.documentElement.removeAttribute("data-theme"); }
+function setTemaGelap(on){ safeStorageSet(THEME_KEY, on ? "dark" : "light"); terapkanTema(); }
+let sfMenuEl = null;
+function tutupSfMenu(){ if(sfMenuEl){ sfMenuEl.remove(); sfMenuEl = null; const f = document.getElementById("sidebarFoot"); if(f) f.setAttribute("aria-expanded", "false"); } }
+function toggleSfMenu(){
+  if(sfMenuEl){ tutupSfMenu(); return; }
+  const foot = document.getElementById("sidebarFoot"); if(!foot) return;
+  const r = foot.getBoundingClientRect(), m = document.createElement("div");
+  m.className = "sf-menu"; m.setAttribute("role", "menu");
+  m.innerHTML = '<button type="button" role="menuitem" data-sf="profil"><span aria-hidden="true">✎</span><span>Edit Profil</span></button>'
+    + '<button type="button" role="menuitemcheckbox" data-sf="tema" aria-checked="' + (temaGelap() ? "true" : "false") + '"><span aria-hidden="true">🌙</span><span>Mode Gelap</span><span class="sf-sw" aria-hidden="true"></span></button>';
+  m.style.left = Math.max(8, r.left + 8) + "px";
+  m.style.bottom = Math.max(8, window.innerHeight - r.top + 6) + "px";
+  document.body.appendChild(m); sfMenuEl = m; foot.setAttribute("aria-expanded", "true");
+  m.addEventListener("click", e=>{
+    e.stopPropagation();
+    const b = e.target.closest("[data-sf]"); if(!b) return;
+    if(b.dataset.sf === "profil"){ tutupSfMenu(); navigate("profil"); }
+    else { const on = b.getAttribute("aria-checked") !== "true"; b.setAttribute("aria-checked", on ? "true" : "false"); setTemaGelap(on); }
+  });
+  const first = m.querySelector("button"); if(first) first.focus();
+}
+document.addEventListener("click", e=>{ if(sfMenuEl && !e.target.closest(".sf-menu")) tutupSfMenu(); });
+document.addEventListener("keydown", e=>{ if(e.key === "Escape") tutupSfMenu(); });
+window.addEventListener("resize", tutupSfMenu);
+terapkanTema();
 function renderMenu(){
   initSidebarOnce();
   closeSidebarFlyout();
@@ -19632,6 +19694,273 @@ function eaHitungLampiran(id){
     });
 }
 
+/* =====================================================================
+   MENU LAPORAN (grup Dokumen) — pembuat laporan kegiatan guru
+   Format: kop surat, judul, bagian berhuruf A, B, C…, tabel keterangan,
+   dokumentasi foto (2 kolom + keterangan), tanda tangan otomatis.
+   Data: DB.keys.laporan (teks) + file foto di IndexedDB (owner "laporan_<id>").
+   ===================================================================== */
+const LAP_JENIS = [
+  { id:"observasi", ico:"🔍", label:"Observasi / Supervisi", judul:"LAPORAN OBSERVASI / SUPERVISI PEMBELAJARAN", peran:"Guru Mata Pelajaran",
+    tabel:["Hari / Tanggal","Waktu","Tempat","Supervisor / Observer","Kelas / Mata Pelajaran","Materi Pembelajaran"],
+    seksi:[["Dasar Pelaksanaan",""],["Tujuan Observasi",""],["Pelaksanaan Observasi",""],["Hasil Observasi / Temuan",""],["Refleksi dan Tindak Lanjut",""],["Penutup",""]] },
+  { id:"workshop", ico:"🎓", label:"Workshop / Pelatihan / Diklat", judul:"LAPORAN KEGIATAN WORKSHOP / PELATIHAN / DIKLAT", peran:"Peserta",
+    tabel:["Nama Kegiatan","Penyelenggara","Hari / Tanggal","Tempat","Narasumber","Jumlah Jam Pelajaran"],
+    seksi:[["Latar Belakang",""],["Tujuan Kegiatan",""],["Materi yang Disampaikan",""],["Hasil dan Manfaat Kegiatan",""],["Rencana Tindak Lanjut / Implementasi",""],["Penutup",""]] },
+  { id:"perencanaan", ico:"📝", label:"Perencanaan Pembelajaran", judul:"LAPORAN PERENCANAAN PEMBELAJARAN", peran:"Guru Mata Pelajaran",
+    tabel:["Mata Pelajaran","Kelas / Fase","Semester / Tahun Ajaran","Periode Penyusunan"],
+    seksi:[["Dasar Penyusunan",""],["Perangkat yang Disusun","CP/TP, ATP, Modul Ajar, Program Tahunan, Program Semester, Media dan Bahan Ajar."],["Proses Penyusunan",""],["Hasil Perencanaan",""],["Kendala dan Solusi",""],["Penutup",""]] },
+  { id:"pelaksanaan", ico:"👩‍🏫", label:"Pelaksanaan Pembelajaran", judul:"LAPORAN PELAKSANAAN PEMBELAJARAN", peran:"Guru Mata Pelajaran",
+    tabel:["Mata Pelajaran","Kelas","Hari / Tanggal","Materi / Topik","Jumlah Siswa Hadir","Model / Metode Pembelajaran"],
+    seksi:[["Tujuan Pembelajaran",""],["Kegiatan Pendahuluan",""],["Kegiatan Inti",""],["Kegiatan Penutup",""],["Hasil Pembelajaran",""],["Kendala dan Solusi",""],["Tindak Lanjut",""]] },
+  { id:"penilaian", ico:"📊", label:"Penilaian Pembelajaran", judul:"LAPORAN PENILAIAN PEMBELAJARAN", peran:"Guru Mata Pelajaran",
+    tabel:["Mata Pelajaran","Kelas","Semester / Tahun Ajaran","Jenis Penilaian","Jumlah Peserta","KKTP / KKM"],
+    seksi:[["Dasar Pelaksanaan",""],["Bentuk dan Instrumen Penilaian",""],["Pelaksanaan Penilaian",""],["Hasil Penilaian (Rata-rata, Tertinggi, Terendah, Ketuntasan)",""],["Analisis Hasil dan Tindak Lanjut (Remedial / Pengayaan)",""],["Penutup",""]] },
+  { id:"pembimbingan", ico:"🤝", label:"Pembimbingan", judul:"LAPORAN KEGIATAN PEMBIMBINGAN", peran:"Guru Pembimbing",
+    subs:["Wali Kelas","Guru Wali","Lomba"],
+    tabel:["Jenis Pembimbingan","Hari / Tanggal","Tempat","Kelas / Peserta Didik yang Dibimbing"],
+    seksi:[["Latar Belakang",""],["Tujuan Pembimbingan",""],["Pelaksanaan Pembimbingan",""],["Hasil yang Dicapai",""],["Kendala dan Solusi",""],["Tindak Lanjut",""]] },
+  { id:"ekskul", ico:"⚽", label:"Ekstrakurikuler", judul:"LAPORAN AKHIR KEGIATAN EKSTRAKURIKULER", peran:"Pembina Ekstrakurikuler",
+    tabel:["Nama Ekstrakurikuler","Pembina","Hari / Tanggal","Tempat","Jumlah Peserta","Semester / Tahun Ajaran"],
+    seksi:[["Pendahuluan / Latar Belakang",""],["Tujuan Kegiatan",""],["Pelaksanaan Kegiatan",""],["Hasil Kegiatan / Prestasi",""],["Kendala dan Solusi",""],["Penutup",""]] },
+  { id:"piket", ico:"🕘", label:"Piket", judul:"LAPORAN TUGAS PIKET HARIAN", peran:"Guru Piket",
+    tabel:["Hari / Tanggal","Waktu Piket","Guru Piket","Jumlah Siswa Hadir","Jumlah Siswa Tidak Hadir (Sakit / Izin / Alpa)","Jumlah Siswa Terlambat"],
+    seksi:[["Kegiatan Piket",""],["Kejadian / Peristiwa Penting",""],["Siswa Terlambat / Pelanggaran Tata Tertib",""],["Guru Tidak Hadir dan Penanganannya",""],["Tindak Lanjut / Catatan",""]] },
+  { id:"lainnya", ico:"📌", label:"Lainnya", judul:"LAPORAN KEGIATAN", peran:"Guru",
+    tabel:["Nama Kegiatan","Hari / Tanggal","Waktu","Tempat","Pihak Terkait"],
+    seksi:[["Latar Belakang",""],["Tujuan Kegiatan",""],["Pelaksanaan Kegiatan",""],["Hasil Kegiatan",""],["Kendala dan Solusi",""],["Penutup",""]] }
+];
+function lapJenis(id){ return LAP_JENIS.find(function(j){ return j.id === id; }) || LAP_JENIS[LAP_JENIS.length - 1]; }
+function lapGet(){ return DB.get(DB.keys.laporan, []); }
+function lapSet(a){ DB.set(DB.keys.laporan, a); }
+function lapHuruf(i){ return String.fromCharCode(65 + i); }
+function lapBaru(jid, sub){
+  const j = lapJenis(jid), p = DB.get(DB.keys.profil, {});
+  const tabel = j.tabel.map(function(l){ return { l:l, v:"" }; });
+  if(jid === "pembimbingan" && sub){ tabel[0].v = sub; }
+  if(jid === "ekskul"){ tabel[1].v = p.nama || ""; }
+  if(jid === "piket"){ tabel[2].v = p.nama || ""; }
+  if(jid === "workshop" || jid === "lainnya"){}
+  const judul = j.judul + (sub ? " " + sub.toUpperCase() : "");
+  return { id:uid(), jenis:jid, sub:sub || "", judul:judul, subjudul:"",
+    tabel:tabel, seksi:j.seksi.map(function(s){ return { j:s[0], t:s[1] }; }),
+    fotos:[], dokJudul:"Dokumentasi Kegiatan",
+    ttd:{ tempat:"Abang", tanggal:todayISO(), peran:j.peran, gambar:true, kepsek:true },
+    dibuat:new Date().toISOString(), diubah:new Date().toISOString() };
+}
+function lapOwner(id){ return "laporan_" + id; }
+function lapNl(x){ return esc(x).split("\n").join("<br>"); }
+
+/* Blok tanda tangan: Kepala Sekolah (kiri) & guru (kanan), data dari Profil Guru */
+function lapTtdHtml(r){
+  const p = DB.get(DB.keys.profil, {}), t = r.ttd || {};
+  const nama = p.nama || GURU_PENGGANTI_DEFAULT.nama, nip = p.nip || GURU_PENGGANTI_DEFAULT.nip;
+  const g = t.gambar !== false;
+  const kep = t.kepsek !== false;
+  const gKep = g ? `<div style="position:relative; height:64px; display:flex; align-items:center; justify-content:center;">
+      <img src="${STEMPEL_KEPSEK_DATAURL}" alt="" style="position:absolute; height:76px; opacity:.92; left:50%; top:50%; transform:translate(-58%,-50%);">
+      <img src="${TTD_KEPSEK_DATAURL}" alt="" style="position:relative; height:46px;"></div>` : `<div style="height:64px;"></div>`;
+  const gGuru = g ? `<div style="height:64px; display:flex; align-items:center; justify-content:center;"><img src="${TTD_GURU_DATAURL}" alt="" style="height:56px;"></div>` : `<div style="height:64px;"></div>`;
+  const tglTxt = (t.tempat ? esc(t.tempat) + ", " : "") + esc(formatTanggalPanjangISO(t.tanggal || todayISO()));
+  const kiri = kep ? `<p style="margin:0;">Mengetahui,</p><p style="margin:0 0 4px;">Kepala Sekolah</p>${gKep}
+      <p style="margin:0; font-weight:700; text-decoration:underline;">${esc(KEPALA_SEKOLAH.nama)}</p><p style="margin:2px 0 0;">NIP. ${esc(KEPALA_SEKOLAH.nip)}</p>` : "";
+  return `<table style="width:100%; margin-top:34px; font-size:12px; border-collapse:collapse; page-break-inside:avoid; break-inside:avoid;"><tr>
+    <td style="width:50%; text-align:center; vertical-align:top;">${kiri}</td>
+    <td style="width:50%; text-align:center; vertical-align:top;"><p style="margin:0;">${tglTxt}</p><p style="margin:0 0 4px;">${esc(t.peran || "Guru")},</p>${gGuru}
+      <p style="margin:0; font-weight:700; text-decoration:underline;">${esc(nama)}</p><p style="margin:2px 0 0;">NIP. ${esc(nip)}</p></td>
+  </tr></table>`;
+}
+
+/* HTML laporan lengkap (dipakai untuk pratinjau & cetak). fotoSrc: {fid: dataURL} */
+function lapHtml(r, fotoSrc){
+  const bar = function(huruf, jdl){ return `<div style="background:#e9e9e9; border-left:5px solid #c9a227; padding:5px 10px; margin:16px 0 8px; font-weight:700; font-size:12.5px; break-after:avoid; page-break-after:avoid;">${huruf}. ${esc(jdl)}</div>`; };
+  const baris = r.tabel.filter(function(x){ return (x.v || "").trim(); });
+  const tabel = baris.length ? `<table style="width:100%; border-collapse:collapse; margin-top:4px;">${baris.map(function(x){
+    return `<tr><td style="border:1px solid #888; padding:5px 8px; font-size:12px; width:34%; background:#1f3a68; color:#fff; vertical-align:top; font-weight:600;">${esc(x.l)}</td><td style="border:1px solid #888; padding:5px 8px; font-size:12px;">${lapNl(x.v)}</td></tr>`; }).join("")}</table>` : "";
+  let h = `<div style="font-family:Arial, Helvetica, sans-serif; padding:22px; color:#111; background:#fff;">
+    ${buildKopLaporanHtml(r.judul, r.subjudul ? esc(r.subjudul) : "")}${tabel}`;
+  let n = 0;
+  r.seksi.forEach(function(s){
+    if(!(s.j || "").trim() && !(s.t || "").trim()) return;
+    h += bar(lapHuruf(n++), s.j || "") + (s.t ? `<div style="font-size:12.5px; line-height:1.65; text-align:justify; padding:0 4px;">${lapNl(s.t)}</div>` : "");
+  });
+  if(r.fotos.length){
+    h += bar(lapHuruf(n++), r.dokJudul || "Dokumentasi");
+    h += `<table style="width:100%; border-collapse:separate; border-spacing:8px 10px; table-layout:fixed;">`;
+    for(let i = 0; i < r.fotos.length; i += 2){
+      h += "<tr>" + [r.fotos[i], r.fotos[i + 1]].map(function(f){
+        if(!f) return "<td></td>";
+        const src = fotoSrc && fotoSrc[f.fid];
+        return `<td style="vertical-align:top; text-align:center; break-inside:avoid; page-break-inside:avoid;">${src ? `<img src="${src}" alt="" style="width:100%; height:190px; object-fit:cover; border:1px solid #999;">` : `<div style="height:190px; border:1px dashed #aaa; font-size:11px; color:#888; display:flex; align-items:center; justify-content:center;">memuat…</div>`}<div style="font-size:11px; margin-top:3px; font-style:italic;">${esc(f.cap || "")}</div></td>`; }).join("") + "</tr>";
+    }
+    h += "</table>";
+  }
+  h += lapTtdHtml(r) + `</div>`;
+  return h;
+}
+function lapMuatFoto(r){
+  const peta = {};
+  return Promise.all(r.fotos.map(function(f){
+    return getFileFromDB(f.fid).then(function(rec){
+      if(!rec || !rec.blob) return;
+      return new Promise(function(res){ const fr = new FileReader(); fr.onload = function(){ peta[f.fid] = fr.result; res(); }; fr.onerror = function(){ res(); }; fr.readAsDataURL(rec.blob); });
+    }).catch(function(){});
+  })).then(function(){ return peta; });
+}
+function lapCetak(r){
+  toast("Menyiapkan laporan...");
+  lapMuatFoto(r).then(function(peta){
+    const area = document.getElementById("printArea"); area.innerHTML = lapHtml(r, peta); area.style.display = "block";
+    const asli = document.title; document.title = "MALAQBI_" + (r.judul || "LAPORAN").toUpperCase().replace(/[^A-Z0-9]+/g, "_");
+    window.print(); setTimeout(function(){ area.style.display = "none"; document.title = asli; }, 800);
+  });
+}
+function dataUrlKeBlob(u){
+  const p = u.split(","), m = /data:([^;]+)/.exec(p[0]), b = atob(p[1]), a = new Uint8Array(b.length);
+  for(let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i);
+  return new Blob([a], { type: m ? m[1] : "image/jpeg" });
+}
+
+function renderLaporan(root){
+  let kat = "semua", cari = "", edit = null, fotoSrc = {}, tmr = null;
+  root.innerHTML = `<style>${REDESIGN_CSS}
+    .lp-cards{ display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:12px; margin-bottom:18px; }
+    .lp-card{ border:1.5px solid var(--line); background:var(--card, #fff); border-radius:14px; padding:14px; cursor:pointer; text-align:left; font-family:inherit; transition:.15s; }
+    .lp-card:hover{ border-color:#1f7a4d; transform:translateY(-1px); }
+    .lp-card .ic{ font-size:24px; } .lp-card b{ display:block; font-size:13.5px; margin:6px 0 2px; } .lp-card small{ color:var(--ink-soft); font-size:11.5px; }
+    .lp-row{ display:flex; gap:10px; align-items:center; padding:12px 14px; border:1.5px solid var(--line); border-radius:12px; margin-bottom:8px; background:var(--card,#fff); }
+    .lp-row .t{ flex:1; min-width:0; } .lp-row .t b{ display:block; font-size:13.5px; } .lp-row .t small{ color:var(--ink-soft); font-size:11.5px; }
+    .lp-ed{ display:grid; grid-template-columns:minmax(300px,420px) 1fr; gap:18px; align-items:start; }
+    @media (max-width:980px){ .lp-ed{ grid-template-columns:1fr; } }
+    .lp-form .box{ border:1.5px solid var(--line); border-radius:12px; padding:12px; margin-bottom:12px; background:var(--card,#fff); }
+    .lp-form h4{ margin:0 0 8px; font-size:13px; }
+    .lp-form label{ display:block; font-size:11.5px; font-weight:700; color:var(--ink-soft); margin:8px 0 3px; }
+    .lp-form input, .lp-form textarea, .lp-form select{ width:100%; box-sizing:border-box; border:1.5px solid var(--line); border-radius:9px; padding:8px 10px; font-family:inherit; font-size:13px; background:#fff; color:#111; }
+    .lp-form textarea{ min-height:84px; resize:vertical; line-height:1.5; }
+    .lp-sec{ border:1px dashed var(--line); border-radius:10px; padding:8px; margin-bottom:8px; }
+    .lp-sec .hd{ display:flex; gap:6px; align-items:center; } .lp-sec .hd b{ width:22px; text-align:center; color:#14663f; }
+    .lp-mini{ border:1.5px solid var(--line); background:#fff; border-radius:8px; width:30px; height:30px; cursor:pointer; font-size:13px; flex:none; color:#111; }
+    .lp-fotos{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+    .lp-foto{ border:1px solid var(--line); border-radius:10px; padding:6px; } .lp-foto img{ width:100%; height:90px; object-fit:cover; border-radius:6px; display:block; margin-bottom:4px; }
+    .lp-prev{ overflow:hidden; border:1.5px solid var(--line); border-radius:12px; background:#fff; }
+    .lp-prev-in{ width:760px; transform-origin:top left; }
+  </style>
+  <div class="wk-hero"><div class="wk-hero-content"><div class="wk-avatar">📑</div>
+    <div class="wk-hero-info"><div class="wk-hero-name">Laporan</div><div class="wk-hero-chips"><span class="wk-chip wk-chip-gold" id="lpTotal"></span></div></div>
+  </div></div><div id="lpBody" style="margin-top:14px;"></div>`;
+  const body = document.getElementById("lpBody");
+
+  function simpan(){ if(!edit) return; edit.diubah = new Date().toISOString(); const a = lapGet(), i = a.findIndex(function(x){ return x.id === edit.id; }); if(i > -1) a[i] = edit; else a.unshift(edit); lapSet(a); }
+  function pasangPrev(){
+    const el = document.getElementById("lpPrev"); if(!el || !edit) return;
+    el.innerHTML = `<div class="lp-prev-in">${lapHtml(edit, fotoSrc)}</div>`;
+    const inn = el.firstChild, s = Math.min(1, (el.clientWidth - 2) / 760); inn.style.transform = "scale(" + s + ")"; el.style.height = Math.ceil(inn.offsetHeight * s + 2) + "px";
+  }
+  function jadwalPrev(){ clearTimeout(tmr); tmr = setTimeout(function(){ simpan(); pasangPrev(); }, 250); }
+
+  function daftar(){
+    edit = null;
+    const all = lapGet();
+    document.getElementById("lpTotal").textContent = all.length + " laporan";
+    let list = all.filter(function(r){ return (kat === "semua" || r.jenis === kat) && (!cari || (r.judul + " " + r.subjudul).toLowerCase().indexOf(cari.toLowerCase()) > -1); });
+    list.sort(function(a, b){ return (b.diubah || "").localeCompare(a.diubah || ""); });
+    body.innerHTML = `<h3 style="margin:0 0 8px; font-size:14px;">Buat laporan baru</h3>
+      <div class="lp-cards">${LAP_JENIS.map(function(j){ return `<button class="lp-card" data-baru="${j.id}"><span class="ic">${j.ico}</span><b>${esc(j.label)}</b><small>${j.subs ? esc(j.subs.join(" · ")) : "＋ Buat laporan"}${all.filter(function(r){ return r.jenis === j.id; }).length ? " · " + all.filter(function(r){ return r.jenis === j.id; }).length + " tersimpan" : ""}</small></button>`; }).join("")}</div>
+      <h3 style="margin:0 0 8px; font-size:14px;">Laporan tersimpan</h3>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+        <select id="lpKat" class="input" style="max-width:260px;"><option value="semua">Semua jenis</option>${LAP_JENIS.map(function(j){ return `<option value="${j.id}"${kat === j.id ? " selected" : ""}>${esc(j.label)}</option>`; }).join("")}</select>
+        <input id="lpCari" class="input" placeholder="Cari judul laporan…" value="${esc(cari)}" style="max-width:260px;"></div>
+      ${list.length ? list.map(function(r){ const j = lapJenis(r.jenis); return `<div class="lp-row"><span style="font-size:22px;">${j.ico}</span><div class="t"><b>${esc(r.judul)}</b><small>${esc(j.label)}${r.sub ? " · " + esc(r.sub) : ""} · ${esc(r.subjudul || "")} ${r.subjudul ? "· " : ""}${r.fotos.length} foto · diubah ${esc(formatTanggalPanjangISO((r.diubah || "").slice(0, 10)))}</small></div>
+        <button class="btn btn-sm" data-buka="${r.id}">Buka</button><button class="btn btn-sm" data-cetak="${r.id}">PDF</button><button class="btn btn-sm" data-dup="${r.id}" title="Duplikat">⧉</button><button class="btn btn-danger btn-sm" data-hapus="${r.id}">🗑</button></div>`; }).join("") : `<div class="empty" style="padding:22px; text-align:center; color:var(--ink-soft);">Belum ada laporan. Pilih jenis laporan di atas untuk memulai.</div>`}`;
+    body.querySelectorAll("[data-baru]").forEach(function(b){ b.onclick = function(){
+      const j = lapJenis(b.dataset.baru);
+      if(j.subs){ openModal("Jenis " + j.label, `<div class="lp-form"><label>Pilih jenis pembimbingan</label><select id="lpSub">${j.subs.map(function(s){ return `<option>${esc(s)}</option>`; }).join("")}</select></div>`, function(){ buka(lapBaru(j.id, document.getElementById("lpSub").value), true); }, "Buat"); }
+      else buka(lapBaru(j.id), true); }; });
+    document.getElementById("lpKat").onchange = function(){ kat = this.value; daftar(); };
+    document.getElementById("lpCari").oninput = function(){ cari = this.value; const pos = this.selectionStart; daftar(); const c = document.getElementById("lpCari"); c.focus(); c.setSelectionRange(pos, pos); };
+    body.querySelectorAll("[data-buka]").forEach(function(b){ b.onclick = function(){ buka(JSON.parse(JSON.stringify(lapGet().find(function(x){ return x.id === b.dataset.buka; }))), false); }; });
+    body.querySelectorAll("[data-cetak]").forEach(function(b){ b.onclick = function(){ lapCetak(lapGet().find(function(x){ return x.id === b.dataset.cetak; })); }; });
+    body.querySelectorAll("[data-dup]").forEach(function(b){ b.onclick = function(){
+      const src = lapGet().find(function(x){ return x.id === b.dataset.dup; }), c = JSON.parse(JSON.stringify(src)); c.id = uid(); c.judul += " (salinan)"; c.dibuat = c.diubah = new Date().toISOString();
+      Promise.all(c.fotos.map(function(f){ return getFileFromDB(f.fid).then(function(rec){ return rec && rec.blob ? saveFileToDB(lapOwner(c.id), new File([rec.blob], rec.filename, { type:rec.mimeType })).then(function(n){ f.fid = n.id; }) : null; }); }))
+        .then(function(){ const a = lapGet(); a.unshift(c); lapSet(a); toast("Laporan diduplikat", "ok"); daftar(); }); }; });
+    body.querySelectorAll("[data-hapus]").forEach(function(b){ b.onclick = function(){ confirmDelete("Hapus laporan ini beserta foto dokumentasinya?", function(){
+      lapSet(lapGet().filter(function(x){ return x.id !== b.dataset.hapus; })); listFilesByOwner(lapOwner(b.dataset.hapus)).then(function(l){ l.forEach(function(f){ deleteFileFromDB(f.id); }); }).catch(function(){}); daftar(); }); }; });
+  }
+
+  function buka(r, baru){
+    edit = r; fotoSrc = {};
+    if(baru) simpan();
+    lapMuatFoto(r).then(function(p){ fotoSrc = p; formEditor(); });
+  }
+
+  function formEditor(){
+    const r = edit, j = lapJenis(r.jenis);
+    body.innerHTML = `<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+      <button class="btn btn-sm" id="lpKembali">← Daftar Laporan</button><span style="flex:1"></span>
+      <button class="btn btn-sm" id="lpSimpan">💾 Simpan</button><button class="btn btn-gold btn-sm" id="lpPdf">🖨️ Cetak / Simpan PDF</button></div>
+    <div class="lp-ed"><div class="lp-form">
+      <div class="box"><h4>${j.ico} ${esc(j.label)}${r.sub ? " — " + esc(r.sub) : ""}</h4>
+        <label>Judul laporan</label><input id="lpJudul" value="${esc(r.judul)}">
+        <label>Sub-judul (mis. nama kegiatan, tahun pelajaran)</label><input id="lpSub2" value="${esc(r.subjudul)}" placeholder="Tahun Pelajaran 2026/2027"></div>
+      <div class="box"><h4>Keterangan kegiatan</h4>
+        ${r.tabel.map(function(x, i){ return `<label>${esc(x.l)}</label><input data-tv="${i}" value="${esc(x.v)}">`; }).join("")}
+        <button class="btn btn-sm" id="lpTbTambah" style="margin-top:10px;">＋ Tambah baris keterangan</button></div>
+      <div class="box"><h4>Isi laporan (bagian A, B, C…)</h4>
+        ${r.seksi.map(function(s, i){ return `<div class="lp-sec"><div class="hd"><b>${lapHuruf(i)}</b><input data-sj="${i}" value="${esc(s.j)}" placeholder="Judul bagian">
+          <button class="lp-mini" data-up="${i}" title="Naik">↑</button><button class="lp-mini" data-dn="${i}" title="Turun">↓</button><button class="lp-mini" data-del="${i}" title="Hapus">✕</button></div>
+          <textarea data-st="${i}" placeholder="Isi bagian ini…">${esc(s.t)}</textarea></div>`; }).join("")}
+        <button class="btn btn-sm" id="lpSecTambah">＋ Tambah bagian</button></div>
+      <div class="box"><h4>📷 Dokumentasi (huruf ${lapHuruf(r.seksi.filter(function(s){ return (s.j || "").trim() || (s.t || "").trim(); }).length)})</h4>
+        <label>Judul bagian dokumentasi</label><input id="lpDokJ" value="${esc(r.dokJudul)}">
+        <div class="lp-fotos" style="margin-top:8px;">${r.fotos.map(function(f, i){ return `<div class="lp-foto"><img src="${fotoSrc[f.fid] || ""}" alt=""><input data-fc="${i}" value="${esc(f.cap)}" placeholder="Keterangan foto">
+          <div style="display:flex; gap:4px; margin-top:4px;"><button class="lp-mini" data-fup="${i}">←</button><button class="lp-mini" data-fdn="${i}">→</button><button class="lp-mini" data-fdel="${i}">✕</button></div></div>`; }).join("")}</div>
+        <input type="file" id="lpFile" accept="image/*" multiple style="display:none"><button class="btn btn-sm" id="lpUp" style="margin-top:10px;">＋ Unggah foto dokumentasi</button>
+        <div style="font-size:11px; color:var(--ink-soft); margin-top:6px;">Foto otomatis dikecilkan dan disusun 2 kolom pada laporan.</div></div>
+      <div class="box"><h4>✍️ Tanda tangan</h4>
+        <label>Tempat</label><input id="lpTempat" value="${esc(r.ttd.tempat)}">
+        <label>Tanggal laporan</label><input type="date" id="lpTgl" value="${esc(r.ttd.tanggal)}">
+        <label>Jabatan / peran penandatangan (kanan)</label><input id="lpPeran" value="${esc(r.ttd.peran)}">
+        <label style="display:flex; gap:8px; align-items:center;"><input type="checkbox" id="lpKep" style="width:auto;"${r.ttd.kepsek !== false ? " checked" : ""}> Sertakan Kepala Sekolah (Mengetahui)</label>
+        <label style="display:flex; gap:8px; align-items:center;"><input type="checkbox" id="lpGbr" style="width:auto;"${r.ttd.gambar !== false ? " checked" : ""}> Sertakan gambar tanda tangan & stempel</label>
+        <div style="font-size:11px; color:var(--ink-soft); margin-top:6px;">Nama & NIP guru diambil dari Profil; Kepala Sekolah dari data sekolah.</div></div>
+    </div><div><div class="lp-prev" id="lpPrev"></div></div></div>`;
+    const $ = function(id){ return document.getElementById(id); };
+    $("lpKembali").onclick = function(){ simpan(); daftar(); };
+    $("lpSimpan").onclick = function(){ simpan(); toast("Laporan tersimpan", "ok"); };
+    $("lpPdf").onclick = function(){ simpan(); lapCetak(edit); };
+    const bind = function(id, fn){ $(id).oninput = $(id).onchange = function(){ fn(this); jadwalPrev(); }; };
+    bind("lpJudul", function(e){ r.judul = e.value; }); bind("lpSub2", function(e){ r.subjudul = e.value; });
+    bind("lpDokJ", function(e){ r.dokJudul = e.value; });
+    bind("lpTempat", function(e){ r.ttd.tempat = e.value; }); bind("lpTgl", function(e){ r.ttd.tanggal = e.value; }); bind("lpPeran", function(e){ r.ttd.peran = e.value; });
+    bind("lpKep", function(e){ r.ttd.kepsek = e.checked; }); bind("lpGbr", function(e){ r.ttd.gambar = e.checked; });
+    body.querySelectorAll("[data-tv]").forEach(function(e){ e.oninput = function(){ r.tabel[+e.dataset.tv].v = e.value; jadwalPrev(); }; });
+    body.querySelectorAll("[data-sj]").forEach(function(e){ e.oninput = function(){ r.seksi[+e.dataset.sj].j = e.value; jadwalPrev(); }; });
+    body.querySelectorAll("[data-st]").forEach(function(e){ e.oninput = function(){ r.seksi[+e.dataset.st].t = e.value; jadwalPrev(); }; });
+    body.querySelectorAll("[data-fc]").forEach(function(e){ e.oninput = function(){ r.fotos[+e.dataset.fc].cap = e.value; jadwalPrev(); }; });
+    const ulang = function(){ simpan(); formEditor(); };
+    const tukar = function(a, i, k){ const t = a[i]; a[i] = a[k]; a[k] = t; };
+    body.querySelectorAll("[data-up]").forEach(function(e){ e.onclick = function(){ const i = +e.dataset.up; if(i > 0){ tukar(r.seksi, i, i - 1); ulang(); } }; });
+    body.querySelectorAll("[data-dn]").forEach(function(e){ e.onclick = function(){ const i = +e.dataset.dn; if(i < r.seksi.length - 1){ tukar(r.seksi, i, i + 1); ulang(); } }; });
+    body.querySelectorAll("[data-del]").forEach(function(e){ e.onclick = function(){ r.seksi.splice(+e.dataset.del, 1); ulang(); }; });
+    body.querySelectorAll("[data-fup]").forEach(function(e){ e.onclick = function(){ const i = +e.dataset.fup; if(i > 0){ tukar(r.fotos, i, i - 1); ulang(); } }; });
+    body.querySelectorAll("[data-fdn]").forEach(function(e){ e.onclick = function(){ const i = +e.dataset.fdn; if(i < r.fotos.length - 1){ tukar(r.fotos, i, i + 1); ulang(); } }; });
+    body.querySelectorAll("[data-fdel]").forEach(function(e){ e.onclick = function(){ const f = r.fotos.splice(+e.dataset.fdel, 1)[0]; deleteFileFromDB(f.fid).catch(function(){}); delete fotoSrc[f.fid]; ulang(); }; });
+    $("lpSecTambah").onclick = function(){ r.seksi.push({ j:"", t:"" }); ulang(); };
+    $("lpTbTambah").onclick = function(){ openModal("Baris keterangan baru", `<div class="lp-form"><label>Nama baris (mis. Narasumber)</label><input id="lpNb"></div>`, function(){ const v = document.getElementById("lpNb").value.trim(); if(!v) return false; r.tabel.push({ l:v, v:"" }); ulang(); }, "Tambah"); };
+    $("lpUp").onclick = function(){ $("lpFile").click(); };
+    $("lpFile").onchange = function(){
+      const files = Array.prototype.slice.call(this.files || []); if(!files.length) return;
+      toast("Mengunggah " + files.length + " foto…");
+      files.reduce(function(pr, f){ return pr.then(function(){
+        return resizeImageFile(f, 1100, 0.78).then(function(u){ const b = dataUrlKeBlob(u); return saveFileToDB(lapOwner(r.id), new File([b], f.name.replace(/[.][^.]+$/, "") + ".jpg", { type:"image/jpeg" })).then(function(rec){ r.fotos.push({ fid:rec.id, cap:"" }); fotoSrc[rec.id] = u; }); }).catch(function(){ toast("Gagal memproses " + f.name); }); }); }, Promise.resolve())
+        .then(function(){ ulang(); toast("Foto ditambahkan", "ok"); });
+    };
+    pasangPrev();
+  }
+  daftar();
+}
+
 function renderEArsip(root){
   let tab = "semua", cari = "", bulan = "";
   root.innerHTML = `<style>${REDESIGN_CSS}
@@ -21675,6 +22004,7 @@ const RENDERERS = {
   perangkat_ajar: renderPerangkatAjar,
   materi: renderMateri,
   e_arsip: renderEArsip,
+  laporan: renderLaporan,
   siswa: renderSiswa,
   wali_kelas: renderWaliKelas,
   catatan_wali: renderCatatanWali,
