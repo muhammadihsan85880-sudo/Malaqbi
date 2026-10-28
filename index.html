@@ -5544,7 +5544,7 @@ const DB = {
     jadwalGuruFoto:"lms_jadwal_guru_foto",
     ujianSoal:"lms_ujian_soal", ujianTes:"lms_ujian_tes",
     ujianConfig:"lms_ujian_config", ujianHasil:"lms_ujian_hasil",
-    sikepo:"lms_sikepo",
+    sikepo:"lms_sikepo", sikepoLink:"lms_sikepo_link",
     kalenderPendidikan:"lms_kalender_pendidikan",
     elArsip:"lms_el_arsip",
     gdrive:"lms_gdrive_settings",
@@ -15344,20 +15344,44 @@ function bacaLog(v){
 /* Satu baris per siswa per tes. mode: mulai | hb | selesai
    Siswa yang sudah Selesai TIDAK bisa mulai lagi kecuali guru memberi izin (kolom Izin = Disetujui).
    Izin bersifat sekali pakai: begitu siswa mulai, baris direset untuk percobaan berikutnya. */
+/* Kunci cache untuk denyut (heartbeat) siswa: denyut biasa tidak menyentuh Spreadsheet maupun kunci skrip,
+   supaya puluhan siswa yang mengerjakan bersamaan tidak saling antre. */
+function kunciHb(testId, nis, nama){
+  const n = String(nis == null ? "" : nis).split("").filter(function(c){ return c >= "0" && c <= "9"; }).join("").replace(/^0+/, "");
+  return "hb_" + testId + "_" + (n || ("n:" + norm(nama))).substring(0, 120);
+}
 function catatPantau(ss, d, mode){
+  const logBaru = Array.isArray(d.log) ? d.log.slice(-50) : [];
+  const pelBaru = Number(d.pelanggaran) || 0;
+  const prog = (d.jawaban && typeof d.jawaban === "object") ? hitungProgres(ss, d.testId, d.jawaban) : null;
+  const cacheHb = CacheService.getScriptCache(), kHb = kunciHb(d.testId, d.nis, d.nama);
+  if(mode === "hb"){
+    let c = null;
+    try{ const v = cacheHb.get(kHb); if(v) c = JSON.parse(v); }catch(e1){}
+    const tNow = Date.now();
+    if(c && c.p === pelBaru && c.n === logBaru.length && tNow - c.f < 45000){
+      try{ c.t = tNow; cacheHb.put(kHb, JSON.stringify(c), 21600); }catch(e2){}
+      return { status: "Mengerjakan", percobaan: c.k || 1, pelanggaran: pelBaru, log: logBaru };
+    }
+  }
   const lock = LockService.getScriptLock();
-  lock.waitLock(10000);
+  if(mode === "hb"){
+    if(!lock.tryLock(4000)){
+      try{ const tt = Date.now(); cacheHb.put(kHb, JSON.stringify({ t: tt, f: 0, p: -1, n: -1, k: 1 }), 21600); }catch(e3){}
+      return { status: "Mengerjakan", percobaan: 1, pelanggaran: pelBaru, log: logBaru };
+    }
+  } else {
+    try{ lock.waitLock(25000); }catch(eL){ throw new Error("Server sedang ramai, coba lagi beberapa detik"); }
+  }
   try{
     const sh = sheetPantau(ss);
     const now = new Date();
-    const logBaru = Array.isArray(d.log) ? d.log.slice(-50) : [];
-    const pelBaru = Number(d.pelanggaran) || 0;
-    const prog = (d.jawaban && typeof d.jawaban === "object") ? hitungProgres(ss, d.testId, d.jawaban) : null;
     const row = cariBarisPantau(sh, d.testId, d.nis, d.nama);
     if(row < 0){
       const st = mode === "selesai" ? "Selesai" : "Mengerjakan";
       sh.appendRow([d.testId, String(d.nis), d.nama, d.kelas, st, pelBaru, JSON.stringify(logBaru), now, now,
         prog ? prog.terjawab : "", prog ? prog.skor : "", prog ? prog.totalSoal : "", "", 1, ""]);
+      try{ cacheHb.put(kHb, JSON.stringify({ t: Date.now(), f: Date.now(), p: pelBaru, n: logBaru.length, k: 1 }), 21600); }catch(e7){}
       return { status: st, pelanggaran: pelBaru, log: logBaru, percobaan: 1 };
     }
     const cur = sh.getRange(row, 1, 1, 15).getValues()[0];
@@ -15387,6 +15411,7 @@ function catatPantau(ss, d, mode){
     const st2 = mode === "selesai" ? "Selesai" : "Mengerjakan";
     sh.getRange(row, 1, 1, 15).setValues([[cur[0], cur[1], d.nama || cur[2], d.kelas || cur[3], st2, pel, JSON.stringify(log), cur[7], now,
       prog ? prog.terjawab : cur[9], prog ? prog.skor : cur[10], prog ? prog.totalSoal : cur[11], cur[12], percobaan, cur[14]]]);
+    try{ cacheHb.put(kHb, JSON.stringify({ t: Date.now(), f: Date.now(), p: pel, n: log.length, k: percobaan }), 21600); }catch(e4){}
     return { status: st2, pelanggaran: pel, log: log, percobaan: percobaan };
   } finally {
     lock.releaseLock();
@@ -15541,7 +15566,7 @@ function doPost(e){
     const ss = SpreadsheetApp.getActiveSpreadsheet();
 
     if(data.action === "ping"){
-      return respond({ ok:true, pesan:"Server CBT aktif", versi:16, v:6 });
+      return respond({ ok:true, pesan:"Server CBT aktif", versi:17, v:6 });
     }
 
     if(data.action === "status"){
@@ -15627,6 +15652,15 @@ function doPost(e){
           });
         });
       }
+      try{
+        const kk = daftar.map(function(x){ return kunciHb(data.testId, x.nis, x.nama); });
+        const got = kk.length ? CacheService.getScriptCache().getAll(kk) : {};
+        const tn = Date.now();
+        daftar.forEach(function(x, i){
+          if(x.status !== "Mengerjakan" || !got[kk[i]]) return;
+          try{ const c = JSON.parse(got[kk[i]]); if(c && c.t){ const dl = Math.max(0, Math.round((tn - c.t) / 1000)); if(dl < x.detikLalu) x.detikLalu = dl; } }catch(e5){}
+        });
+      }catch(e6){}
       return respond({ ok:true, siswa:daftar });
     }
 
@@ -17798,13 +17832,14 @@ function renderUjianCBT(root){
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <select id="cbtHasilFilterTes" style="width:auto; min-width:170px;"><option value="">Semua Tes</option></select>
             <select id="cbtHasilFilterKelas" style="width:auto; min-width:150px;"><option value="">Semua Kelas</option></select>
+            <select id="cbtHasilSort" style="width:auto; min-width:170px;" title="Urutkan hasil"><option value="waktu_desc">Urutkan: Waktu terbaru</option><option value="waktu_asc">Urutkan: Waktu terlama</option><option value="nama_asc">Urutkan: Nama A–Z</option><option value="nama_desc">Urutkan: Nama Z–A</option><option value="rank">Urutkan: Peringkat (skor tertinggi)</option></select>
             <button class="btn btn-ghost btn-sm" id="cbtHasilDlExcelBtn" style="width:auto;">⭳ Excel</button>
             <button class="btn btn-gold btn-sm" id="cbtHasilDlPdfBtn" style="width:auto;">⭳ PDF</button>
           </div>
         </div>
         <div id="cbtHasilCharts" style="padding:12px 14px 0;"></div>
         <div class="doc-shell-body pad0"><div style="font-size:11.5px; color:var(--ink-soft); padding:8px 14px 0;">Ketuk nama siswa untuk melihat jawaban lengkapnya.</div><div class="pn-tablewrap"><table class="pn-table">
-          <thead><tr><th>Tes</th><th>Nama</th><th>Kelas</th><th>Skor</th><th>Benar/Total</th><th>Waktu</th><th>Pelanggaran</th><th></th></tr></thead>
+          <thead><tr><th>Peringkat</th><th>Tes</th><th>Nama</th><th>Kelas</th><th>Skor</th><th>Benar/Total</th><th>Waktu</th><th>Pelanggaran</th><th></th></tr></thead>
           <tbody id="cbtHasilTbody"></tbody>
         </table></div></div>
       </div>
@@ -18361,14 +18396,34 @@ function renderUjianCBT(root){
     if(daftar.find(t=>t.id===terpilih)) hasilFilterTes.value = terpilih;
   }
   isiFilterTes();
+  const hasilSort = root.querySelector("#cbtHasilSort");
+  try{ const sv = localStorage.getItem("cbtHasilSort"); if(sv && hasilSort.querySelector('option[value="'+sv+'"]')) hasilSort.value = sv; }catch(e){}
   hasilFilterKelas.onchange = drawHasil;
   hasilFilterTes.onchange = drawHasil;
+  hasilSort.onchange = ()=>{ try{ localStorage.setItem("cbtHasilSort", hasilSort.value); }catch(e){} drawHasil(); };
+  let hasilRank = {};
   function getHasilFiltered(){
-    let list = DB.get(DB.keys.ujianHasil, []).sort((a,b)=> (b.waktu||"").localeCompare(a.waktu||""));
+    let list = DB.get(DB.keys.ujianHasil, []);
     if(hasilFilterKelas.value) list = list.filter(h=> h.kelas===hasilFilterKelas.value);
     if(hasilFilterTes.value) list = list.filter(h=> h.testId===hasilFilterTes.value);
+    /* peringkat per tes (skor sama = peringkat sama) */
+    hasilRank = {};
+    const perTes = {};
+    list.forEach(h=>{ (perTes[h.testId] = perTes[h.testId] || []).push(h); });
+    Object.keys(perTes).forEach(tid=>{ perTes[tid].forEach(h=>{ hasilRank[h.id] = 1 + perTes[tid].filter(o=> (Number(o.skor)||0) > (Number(h.skor)||0)).length; }); });
+    const nm = h=> String(h.nama||"").toLocaleLowerCase("id");
+    const wk = h=> String(h.waktu||"");
+    const mode = hasilSort.value;
+    list = list.slice().sort((a,b)=>{
+      if(mode==="nama_asc") return nm(a).localeCompare(nm(b),"id") || wk(b).localeCompare(wk(a));
+      if(mode==="nama_desc") return nm(b).localeCompare(nm(a),"id") || wk(b).localeCompare(wk(a));
+      if(mode==="waktu_asc") return wk(a).localeCompare(wk(b));
+      if(mode==="rank") return String(a.testJudul||"").localeCompare(String(b.testJudul||""),"id") || (hasilRank[a.id]-hasilRank[b.id]) || nm(a).localeCompare(nm(b),"id");
+      return wk(b).localeCompare(wk(a));
+    });
     return list;
   }
+  const labelRank = r => r===1 ? "🥇 1" : r===2 ? "🥈 2" : r===3 ? "🥉 3" : String(r);
   function parseCsvSimple(text){
     const lines = text.replace(/\r/g,"").split("\n").filter(l=>l.trim());
     if(!lines.length) return [];
@@ -18455,6 +18510,7 @@ function renderUjianCBT(root){
     const kosongKeterangan = [hasilFilterTes.value ? `tes "${esc(hasilFilterTes.options[hasilFilterTes.selectedIndex].text)}"` : "", hasilFilterKelas.value ? `kelas ${esc(hasilFilterKelas.value)}` : ""].filter(Boolean).join(" dan ");
     hasilTbody.innerHTML = list.length ? list.map(h=>`
       <tr>
+        <td style="white-space:nowrap; font-weight:700;">${labelRank(hasilRank[h.id]||"-")}</td>
         <td>${esc(h.testJudul)}</td>
         <td><a href="#" class="hasil-nama" data-detail="${h.id}" title="Lihat jawaban siswa" style="color:#14663f; font-weight:700; text-decoration:underline dotted; text-underline-offset:3px;">${esc(h.nama)}</a>${h.siswaId?"":' <span title="Tidak cocok dengan Data Siswa" style="color:var(--warn);">⚠</span>'}</td>
         <td>${esc(h.kelas)||"-"}</td>
@@ -18467,7 +18523,7 @@ function renderUjianCBT(root){
           <button class="icon-btn del" data-del-hasil="${h.id}" title="Hapus">🗑</button>
         </div></td>
       </tr>
-    `).join("") : `<tr class="empty-row"><td colspan="8">${kosongKeterangan ? `Tidak ada hasil untuk ${kosongKeterangan}.` : "Belum ada hasil. Ambil data dari server di atas."}</td></tr>`;
+    `).join("") : `<tr class="empty-row"><td colspan="9">${kosongKeterangan ? `Tidak ada hasil untuk ${kosongKeterangan}.` : "Belum ada hasil. Ambil data dari server di atas."}</td></tr>`;
     hasilTbody.querySelectorAll("[data-detail]").forEach(a=> a.onclick = (e)=>{
       e.preventDefault();
       const rec = DB.get(DB.keys.ujianHasil, []).find(x=>x.id===a.dataset.detail);
@@ -18496,8 +18552,8 @@ function renderUjianCBT(root){
     printSimpleReport({
       title: "Hasil Ujian Online (CBT)",
       subtitle,
-      columns: ["No","Tes","Nama","Kelas","Skor","Benar/Total","Waktu","Pelanggaran"],
-      rows: list.map((h,idx)=> [ idx+1, esc(h.testJudul), esc(h.nama), esc(h.kelas)||"-", h.skor, `${h.benar}/${h.total}`, esc((h.waktu||"").slice(0,16)), h.pelanggaran>0?`${h.pelanggaran}×`:"-" ]),
+      columns: ["No","Peringkat","Tes","Nama","Kelas","Skor","Benar/Total","Waktu","Pelanggaran"],
+      rows: list.map((h,idx)=> [ idx+1, hasilRank[h.id]||"-", esc(h.testJudul), esc(h.nama), esc(h.kelas)||"-", h.skor, `${h.benar}/${h.total}`, esc((h.waktu||"").slice(0,16)), h.pelanggaran>0?`${h.pelanggaran}×`:"-" ]),
       emptyMsg: "Belum ada hasil untuk diunduh"
     });
   }
@@ -18510,11 +18566,11 @@ function renderUjianCBT(root){
       ["Mata Pelajaran", profil.mapel||"-"],
       ["Guru", profil.nama||"-"],
       [],
-      ["No","Tes","Nama","Kelas","Skor","Benar","Total","Waktu","Pelanggaran"]
+      ["No","Peringkat","Tes","Nama","Kelas","Skor","Benar","Total","Waktu","Pelanggaran"]
     ];
-    list.forEach((h,idx)=> aoa.push([ idx+1, h.testJudul, h.nama, h.kelas||"-", h.skor, h.benar, h.total, (h.waktu||"").slice(0,16), h.pelanggaran||0 ]));
+    list.forEach((h,idx)=> aoa.push([ idx+1, hasilRank[h.id]||"-", h.testJudul, h.nama, h.kelas||"-", h.skor, h.benar, h.total, (h.waktu||"").slice(0,16), h.pelanggaran||0 ]));
     const ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws["!cols"] = [{wch:4},{wch:24},{wch:22},{wch:10},{wch:8},{wch:8},{wch:8},{wch:16},{wch:11}];
+    ws["!cols"] = [{wch:4},{wch:10},{wch:24},{wch:22},{wch:10},{wch:8},{wch:8},{wch:8},{wch:16},{wch:11}];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Hasil Ujian");
     XLSX.writeFile(wb, `Hasil-Ujian-${(hasilFilterKelas.value||"Semua-Kelas").replace(/\s+/g,"-")}.xlsx`);
@@ -19192,6 +19248,14 @@ function sikepoPratinjau(namaFile, sumber, jenis, tahunAwal, onSelesai){
   tampil();
 }
 
+const SIKEPO_URL_DEFAULT = "https://sso.baliprov.go.id/login";
+function sikepoLinkRapikan(v){
+  v = String(v || "").trim(); if(!v) return "";
+  if(!/^https?:\/\//i.test(v)) v = "https://" + v;
+  try{ const u = new URL(v); if(u.protocol !== "http:" && u.protocol !== "https:") return ""; return u.href; }catch(e){ return ""; }
+}
+function sikepoLinkAktif(){ const t = sikepoLinkRapikan(DB.get(DB.keys.sikepoLink, "")); return t || SIKEPO_URL_DEFAULT; }
+function sikepoHost(u){ try{ return new URL(u).host; }catch(e){ return u; } }
 function renderSikepo(root){
   let tab = "skp", tgl = todayISO(), bulan = todayISO().slice(0, 7);
   root.innerHTML = '<div class="pk-head"><h3>SIKEPO</h3><div class="pk-tabs" role="tablist" aria-label="SIKEPO">'
@@ -19204,10 +19268,24 @@ function renderSikepo(root){
         + '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>'
       + '</span>'
       + '<span><span style="display:block; font-weight:800; font-size:15.5px; color:var(--ink);">Buka SIKEPO Bali</span>'
-        + '<span style="display:block; font-size:12.5px; color:var(--ink-soft); margin-top:2px;">sso.baliprov.go.id — portal resmi SIKEPO untuk mengisi data langsung</span></span>'
+        + '<span id="skHostTxt" style="display:block; font-size:12.5px; color:var(--ink-soft); margin-top:2px;">' + esc(sikepoHost(sikepoLinkAktif())) + ' — portal SIKEPO untuk mengisi data langsung</span></span>'
     + '</button>'
+    + '<div class="card" style="margin:10px 0 14px; padding:12px 16px;"><label for="skLinkInp" style="display:block; font-size:12.5px; font-weight:700; margin-bottom:6px;">Link SIKEPO</label>'
+      + '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;"><input type="url" id="skLinkInp" inputmode="url" autocomplete="off" placeholder="https://…" value="' + esc(sikepoLinkAktif()) + '" style="flex:1 1 260px; min-width:0;">'
+      + '<button type="button" class="btn btn-primary btn-sm" id="skLinkSimpan" style="width:auto;">Simpan link</button>'
+      + '<button type="button" class="btn btn-ghost btn-sm" id="skLinkReset" style="width:auto;">Kembalikan bawaan</button></div>'
+      + '<p class="pn-hint" style="margin:6px 0 0;">Ubah bila alamat SIKEPO berpindah. Tombol <b>Buka SIKEPO</b> di atas akan memakai link yang tersimpan ini.</p></div>'
     + '<div id="skBody"></div>';
-  root.querySelector("#skOpenPortal").onclick = function(){ window.open("https://sso.baliprov.go.id/login", "_blank", "noopener"); };
+  root.querySelector("#skOpenPortal").onclick = function(){ window.open(sikepoLinkAktif(), "_blank", "noopener"); };
+  const skInp = root.querySelector("#skLinkInp");
+  function skHostSegarkan(){ const h = root.querySelector("#skHostTxt"); if(h) h.textContent = sikepoHost(sikepoLinkAktif()) + " — portal SIKEPO untuk mengisi data langsung"; }
+  root.querySelector("#skLinkSimpan").onclick = function(){
+    const v = sikepoLinkRapikan(skInp.value);
+    if(!v){ toast("Link tidak valid. Contoh: https://sso.baliprov.go.id/login","danger"); return; }
+    DB.set(DB.keys.sikepoLink, v); skInp.value = v; skHostSegarkan(); toast("Link SIKEPO disimpan","ok");
+  };
+  root.querySelector("#skLinkReset").onclick = function(){ DB.set(DB.keys.sikepoLink, ""); skInp.value = SIKEPO_URL_DEFAULT; skHostSegarkan(); toast("Link dikembalikan ke bawaan","ok"); };
+  skInp.addEventListener("keydown", function(e){ if(e.key === "Enter"){ e.preventDefault(); root.querySelector("#skLinkSimpan").click(); } });
   const body = root.querySelector("#skBody");
   root.querySelectorAll("[data-sk-tab]").forEach(function(b){
     b.onclick = function(){ tab = b.dataset.skTab; root.querySelectorAll("[data-sk-tab]").forEach(function(x){ x.classList.toggle("active", x === b); x.setAttribute("aria-selected", x === b ? "true" : "false"); }); gambar(); };
