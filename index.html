@@ -5574,7 +5574,7 @@ const DB = {
     jadwalGuruFoto:"lms_jadwal_guru_foto",
     ujianSoal:"lms_ujian_soal", ujianTes:"lms_ujian_tes",
     ujianConfig:"lms_ujian_config", ujianHasil:"lms_ujian_hasil",
-    sikepo:"lms_sikepo", sikepoLink:"lms_sikepo_link", laporan:"lms_laporan",
+    sikepo:"lms_sikepo", sikepoLink:"lms_sikepo_link", gameLink:"lms_game_link", laporan:"lms_laporan",
     kalenderPendidikan:"lms_kalender_pendidikan",
     elArsip:"lms_el_arsip",
     gdrive:"lms_gdrive_settings",
@@ -7990,6 +7990,7 @@ const MENU = [
   { id:"agenda", label:"Agenda Harian", ico:"agenda", sub:"Jadwal dan agenda kegiatan harian" },
   { id:"riwayat_agenda", label:"Riwayat Agenda Harian", ico:"history", sub:"Rekap agenda harian yang telah selesai per tanggal" },
   { id:"kalender_pendidikan", label:"Kalender Pendidikan", ico:"kalpend", sub:"Unggah PDF kalender pendidikan; kegiatannya dibaca otomatis dan disinkronkan ke Agenda Harian" },
+  { id:"ruang_game", label:"Ruang Game", ico:"game", sub:"Tautan menuju ruang game belajar" },
   { id:"sikepo", label:"SIKEPO", ico:"sikepo", sub:"Rencana aksi & realisasi kinerja ASN Provinsi Bali: unggah ekspor SIKEPO, catat kegiatan, laporkan per bulan" },
   { id:"profil", label:"Profil Guru", ico:"user", sub:"Informasi data guru pengampu" },
   { id:"sinkronisasi", label:"Cadangan & Sinkronisasi", ico:"cloud", sub:"Simpan dan perbarui data lewat Google Drive dari perangkat lain" },
@@ -8019,7 +8020,7 @@ const MENU_TREE = [
   { group:"g_agenda",   label:"Agenda",   ico:"agenda",   children:["agenda","riwayat_agenda","kalender_pendidikan","sikepo"] },
   { group:"g_dokumen",  label:"Dokumen",  ico:"dokumen",  children:["jadwal_guru","perangkat_ajar","materi","e_arsip","laporan","siswa"] },
   { group:"g_akademik", label:"Akademik", ico:"akademik", children:["wali_kelas","guru_wali","absensi","jurnal","catatan","penilaian","nilai_akhir","peringkat"] },
-  { group:"g_lms", label:"LMS", ico:"elearn", children:["ujian_cbt","e_learning","e_learning_panel"] },
+  { group:"g_lms", label:"LMS", ico:"elearn", children:["ujian_cbt","e_learning","e_learning_panel","ruang_game"] },
   { sep:true },
   { id:"profil" },
   { id:"sinkronisasi" },
@@ -8032,6 +8033,7 @@ const ICON_PATHS = {
   kalpend:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/>',
   guruwali:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="m16 11 2 2 4-4"/>',
   notes:'<path d="M9 3h6a2 2 0 0 1 2 2v1H7V5a2 2 0 0 1 2-2z"/><path d="M7 6H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-1"/><path d="M8.5 12h7M8.5 16h4"/>',
+  game:'<rect x="2" y="7" width="20" height="11" rx="4"/><path d="M7 10v5M4.5 12.5h5"/><circle cx="15.5" cy="11.5" r="1"/><circle cx="18" cy="14" r="1"/>',
   sikepo:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/>',
   history:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   laporan:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/>',
@@ -19335,6 +19337,31 @@ function sikepoLinkRapikan(v){
 }
 function sikepoLinkAktif(){ const t = sikepoLinkRapikan(DB.get(DB.keys.sikepoLink, "")); return t || SIKEPO_URL_DEFAULT; }
 function sikepoHost(u){ try{ return new URL(u).host; }catch(e){ return u; } }
+const GAME_URL_DEFAULT = "https://muhammadihsan23889-beep.github.io/gamepp/";
+function gameLinkAktif(){ const t = sikepoLinkRapikan(DB.get(DB.keys.gameLink, "")); return t || GAME_URL_DEFAULT; }
+function renderRuangGame(root){
+  root.innerHTML = '<div class="pk-head"><h3>Ruang Game</h3></div>'
+    + '<button type="button" id="rgOpen" class="card" style="display:flex; align-items:center; gap:14px; width:100%; text-align:left; cursor:pointer; border:none; font:inherit; padding:18px 22px;">'
+      + '<span style="display:flex; align-items:center; justify-content:center; width:42px; height:42px; flex:none; border-radius:12px; background:var(--green-50,#e9f6ee); color:var(--green,#1f7a4d);">'
+        + '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg></span>'
+      + '<span><span style="display:block; font-weight:800; font-size:15.5px; color:var(--ink);">Buka Ruang Game Belajar</span>'
+        + '<span id="rgHost" style="display:block; font-size:12.5px; color:var(--ink-soft); margin-top:2px;">' + esc(sikepoHost(gameLinkAktif())) + ' — game belajar untuk siswa</span></span></button>'
+    + '<div class="card" style="margin:10px 0 14px; padding:12px 16px;"><label for="rgInp" style="display:block; font-size:12.5px; font-weight:700; margin-bottom:6px;">Link Ruang Game</label>'
+      + '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;"><input type="url" id="rgInp" inputmode="url" autocomplete="off" placeholder="https://…" value="' + esc(gameLinkAktif()) + '" style="flex:1 1 260px; min-width:0;">'
+      + '<button type="button" class="btn btn-primary btn-sm" id="rgSimpan" style="width:auto;">Simpan link</button>'
+      + '<button type="button" class="btn btn-ghost btn-sm" id="rgReset" style="width:auto;">Kembalikan bawaan</button></div>'
+      + '<p class="pn-hint" style="margin:6px 0 0;">Ubah bila alamat ruang game berpindah. Tombol <b>Buka Ruang Game</b> di atas memakai link yang tersimpan ini.</p></div>';
+  const inp = root.querySelector("#rgInp");
+  const host = function(){ root.querySelector("#rgHost").textContent = sikepoHost(gameLinkAktif()) + " — game belajar untuk siswa"; };
+  root.querySelector("#rgOpen").onclick = function(){ window.open(gameLinkAktif(), "_blank", "noopener"); };
+  root.querySelector("#rgSimpan").onclick = function(){
+    const v = sikepoLinkRapikan(inp.value);
+    if(!v){ toast("Link tidak valid. Contoh: https://contoh.github.io/game/","danger"); return; }
+    DB.set(DB.keys.gameLink, v); inp.value = v; host(); toast("Link Ruang Game disimpan","ok");
+  };
+  root.querySelector("#rgReset").onclick = function(){ DB.set(DB.keys.gameLink, ""); inp.value = GAME_URL_DEFAULT; host(); toast("Link dikembalikan ke bawaan","ok"); };
+  inp.addEventListener("keydown", function(e){ if(e.key === "Enter"){ e.preventDefault(); root.querySelector("#rgSimpan").click(); } });
+}
 function renderSikepo(root){
   let tab = "skp", tgl = todayISO(), bulan = todayISO().slice(0, 7);
   root.innerHTML = '<div class="pk-head"><h3>SIKEPO</h3><div class="pk-tabs" role="tablist" aria-label="SIKEPO">'
@@ -22031,6 +22058,7 @@ const RENDERERS = {
   catatan: renderCatatan,
   penilaian: renderPenilaian,
   ujian_cbt: renderUjianCBT,
+  ruang_game: renderRuangGame,
   e_learning: renderELearning,
   e_learning_panel: renderELearningPanel,
   nilai_akhir: renderNilaiAkhir,
